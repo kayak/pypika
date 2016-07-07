@@ -1,4 +1,4 @@
-# -​*- coding: utf-8 -*​-
+# coding: utf8
 import unittest
 
 from pyqb import Query, F, Table, fn, CaseException, Case

@@ -1,4 +1,4 @@
-# -​*- coding: utf-8 -*​-
+# coding: utf8
 import unittest
 
 from pyqb import Query, Table, Tables, JoinException, fn, JoinType

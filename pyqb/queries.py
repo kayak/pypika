@@ -1,4 +1,4 @@
-# -​*- coding: utf-8 -*​-
+# coding: utf8
 from collections import OrderedDict
 
 from pyqb.enums import Equality, JoinType

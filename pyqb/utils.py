@@ -1,4 +1,4 @@
-# -​*- coding: utf-8 -*​-
+# coding: utf8
 import copy
 
 __author__ = "Timothy Heys"

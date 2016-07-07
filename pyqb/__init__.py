@@ -1,4 +1,4 @@
-# -​*- coding: utf-8 -*​-
+# coding: utf8
 
 from .enums import Order, JoinType
 from .queries import Query, Table, make_tables as Tables
