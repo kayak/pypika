@@ -6,9 +6,9 @@ Contents:
 .. toctree::
     :maxdepth: 2
 
-    1_getting_started/index
-    2_cookbook/index
-    modules
+    1_installation
+    2_getting_started
+    3_reference
 
 Indices and tables
 ==================
