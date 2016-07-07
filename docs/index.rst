@@ -1,7 +1,14 @@
-Welcome to pyqb's documentation!
-================================
+============================
+ PyQB - Python Query Builder
+============================
 
-Contents:
+.. include:: ../README.rst
+   :start-after: _intro_start:
+   :end-before:  _intro_end:
+
+
+Contents
+--------
 
 .. toctree::
     :maxdepth: 2
@@ -11,8 +18,4 @@ Contents:
     3_reference
 
 Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+------------------
