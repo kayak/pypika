@@ -247,23 +247,39 @@ class BetweenTests(unittest.TestCase):
     def test__between_number(self):
         c1 = Field('foo').between(0, 1)
         c2 = Field('foo', table=self.t).between(0, 1)
+        c3 = Field('foo')[0:1]
 
         self.assertEqual('foo BETWEEN 0 AND 1', str(c1))
         self.assertEqual('t0.foo BETWEEN 0 AND 1', str(c2))
+        self.assertEqual('foo BETWEEN 0 AND 1', str(c3))
 
     def test__between_date(self):
         c1 = Field('foo').between(date(2000, 1, 1), date(2000, 12, 31))
         c2 = Field('foo', table=self.t).between(date(2000, 1, 1), date(2000, 12, 31))
+        c3 = Field('foo')[date(2000, 1, 1):date(2000, 12, 31)]
 
         self.assertEqual("foo BETWEEN '2000-01-01' AND '2000-12-31'", str(c1))
         self.assertEqual("t0.foo BETWEEN '2000-01-01' AND '2000-12-31'", str(c2))
+        self.assertEqual("foo BETWEEN '2000-01-01' AND '2000-12-31'", str(c3))
 
     def test__between_datetime(self):
         c1 = Field('foo').between(datetime(2000, 1, 1, 0, 0, 0), datetime(2000, 12, 31, 23, 59, 59))
         c2 = Field('foo', table=self.t).between(datetime(2000, 1, 1, 0, 0, 0), datetime(2000, 12, 31, 23, 59, 59))
+        c3 = Field('foo')[datetime(2000, 1, 1, 0, 0, 0):datetime(2000, 12, 31, 23, 59, 59)]
 
         self.assertEqual("foo BETWEEN '2000-01-01T00:00:00' AND '2000-12-31T23:59:59'", str(c1))
         self.assertEqual("t0.foo BETWEEN '2000-01-01T00:00:00' AND '2000-12-31T23:59:59'", str(c2))
+        self.assertEqual("foo BETWEEN '2000-01-01T00:00:00' AND '2000-12-31T23:59:59'", str(c3))
+
+    def test_get_item_only_works_with_slice(self):
+        with self.assertRaises(TypeError):
+            Field('foo')[0]
+
+        with self.assertRaises(TypeError):
+            Field('foo')[date(2000, 1, 1)]
+
+        with self.assertRaises(TypeError):
+            Field('foo')[datetime(2000, 1, 1, 0, 0, 0)]
 
 
 class IsInTests(unittest.TestCase):

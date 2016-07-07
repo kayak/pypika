@@ -172,6 +172,11 @@ class Field(Term):
             name=self.name,
         )
 
+    def __getitem__(self, item):
+        if type(item) is not slice:
+            raise TypeError("Field' object is not subscriptable")
+        return self.between(item.start, item.stop)
+
 
 class Star(Field):
     def __init__(self, table=None):
