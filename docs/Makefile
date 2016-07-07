@@ -219,10 +219,9 @@ pseudoxml:
 .PHONY: gh-pages
 gh-pages:
 	git checkout gh-pages
-	make clean
 	git checkout master $(GH_PAGES_SOURCES)
 	git reset HEAD
-	make html
+	make clean html
 	mv -fv $(BUILDDIR)/html/* ../
 	rm -rf $(GH_PAGES_SOURCES) $(BUILDDIR)
 	git add -A
