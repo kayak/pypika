@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     # Application name:
-    name="MyApplication",
+    name="PyQB",
 
     # Version number (initial):
     version="0.0.1",
