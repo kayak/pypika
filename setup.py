@@ -24,7 +24,7 @@ setup(
 
     # License
     # license="LICENSE.txt",
-    description="Python Query builder API",
+    description="A query builder API for Python",
 
     classifiers=[
         'Development Status :: 5 - Production/Stable',
