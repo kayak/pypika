@@ -58,6 +58,7 @@ class UnionType(Enum):
 class DatePart(Enum):
     year = 'YEAR'
     month = 'MONTH'
+    week = 'WEEK'
     day = 'DAY'
     hour = 'HOUR'
     minute = 'MINUTE'
