@@ -48,3 +48,8 @@ class JoinType(Enum):
     right = 'RIGHT'
     inner = 'INNER'
     outer = 'OUTER'
+
+
+class UnionType(Enum):
+    distinct = ''
+    all = ' ALL'

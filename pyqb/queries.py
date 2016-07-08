@@ -1,8 +1,8 @@
 # coding: utf8
 from collections import OrderedDict
 
-from pyqb.enums import Equality, JoinType
-from pyqb.utils import JoinException
+from pyqb.enums import Equality, JoinType, UnionType
+from pyqb.utils import JoinException, UnionException
 from pyqb.utils import immutable
 from .terms import Field, Star, Term
 
@@ -161,6 +161,7 @@ class TableQuery(Query):
         self._orderby = []
 
         self._join = []
+        self._union = []
 
         self._nested = False
 
@@ -263,6 +264,22 @@ class TableQuery(Query):
 
         raise ValueError("Cannot join on type '%s'" % type(item))
 
+    @immutable
+    def union(self, other):
+        self._union.append((UnionType.distinct, other))
+        return self
+
+    @immutable
+    def union_all(self, other):
+        self._union.append((UnionType.all, other))
+        return self
+
+    def __add__(self, other):
+        return self.union(other)
+
+    def __mul__(self, other):
+        return self.union_all(other)
+
     def fields(self):
         # Don't return anything here. Subqueries have their own fields.
         return []
@@ -338,7 +355,20 @@ class TableQuery(Query):
                 alias=self._alias
             )
 
-        return querystring
+        unionstring = ''
+        if self._union:
+            for (type, other) in self._union:
+                if len(self._select) != len(other._select):
+                    raise UnionException("Queries must have an equal number of select statements in a union."
+                                         "\n\nMain Query:\n{query1}"
+                                         "\n\nUnion Query:\n{query2}".format(query1=querystring, query2=str(other)))
+
+                unionstring += ' UNION{type} {query}'.format(
+                    type=type.value,
+                    query=str(other)
+                )
+
+        return querystring + unionstring
 
 
 class Joiner(object):

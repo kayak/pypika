@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pyqb import Query, Table, Tables, JoinException, fn, JoinType
+from pyqb import Query, Table, Tables, JoinException, fn, JoinType, UnionException
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -86,6 +86,10 @@ class JoinBehaviorTests(unittest.TestCase):
                          'JOIN hij t2 ON t0.buz=t2.bam '
                          'WHERE t0.foo>1 AND t1.bar<>2', str(q))
 
+    def test_require_condition(self):
+        with self.assertRaises(JoinException):
+            Query.from_(self.t0).join(self.t1).on(None)
+
     def test_require_condition_with_both_tables(self):
         with self.assertRaises(JoinException):
             Query.from_(self.t0).join(self.t1).on(self.t0.foo == self.t2.bar)
@@ -166,3 +170,28 @@ class JoinBehaviorTests(unittest.TestCase):
 
         with self.assertRaises(JoinException):
             Query.from_(self.t0).groupby(self.t0.foo).having(self.t1.bar)
+
+
+class UnionTests(unittest.TestCase):
+    t0, t1 = Tables('abc', 'efg')
+
+    def test_union(self):
+        q0 = Query.from_(self.t0).select(self.t0.foo)
+        q1 = Query.from_(self.t1).select(self.t1.bar)
+
+        self.assertEqual('SELECT foo FROM abc UNION SELECT bar FROM efg', str(q0 + q1))
+        self.assertEqual('SELECT foo FROM abc UNION SELECT bar FROM efg', str(q0.union(q1)))
+
+    def test_union_all(self):
+        q0 = Query.from_(self.t0).select(self.t0.foo)
+        q1 = Query.from_(self.t1).select(self.t1.bar)
+
+        self.assertEqual('SELECT foo FROM abc UNION ALL SELECT bar FROM efg', str(q0 * q1))
+        self.assertEqual('SELECT foo FROM abc UNION ALL SELECT bar FROM efg', str(q0.union_all(q1)))
+
+    def test_require_equal_number_of_fields(self):
+        q0 = Query.from_(self.t0).select(self.t0.foo)
+        q1 = Query.from_(self.t1).select(self.t1.fiz, self.t1.buz)
+
+        with self.assertRaises(UnionException):
+            str(q0 + q1)

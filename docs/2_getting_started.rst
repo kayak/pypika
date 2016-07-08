@@ -272,6 +272,29 @@ calling :class:`Joiner.on()` the original query builder is returned and addition
 
     SELECT t0.* FROM history t0 JOIN customers t1 ON t0.customer_id=t1.id WHERE t1.id=5
 
+Unions
+------
+
+Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and the **PyQB** does
+not provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
+trying to cast a unioned query to string with through a :class:`UnionException` if the column sizes are mismatched.
+
+To create a union query, use either the :class:`Query.union()` method or `+` operator with two query instances. For a
+union all, use :class:`Query.union_all()` or the `*` operator.
+
+.. code-block:: python
+
+    provider_a, provider_b = Tables('provider_a', 'provider_b')
+    q = Query.from_(provider_a).select(
+        provider_a.created_time, provider_a.foo, provider_a.bar
+    ) + Query.from_(provider_b).select(
+        provider_b.created_time, provider_b.fiz, provider_b.buz
+    )
+
+.. code-block:: sql
+
+    SELECT created_time,foo,bar FROM provider_a UNION SELECT created_time,fiz,buz FROM provider_b
+
 
 Date, Time, and Intervals
 -------------------------
