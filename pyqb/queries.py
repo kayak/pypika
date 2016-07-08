@@ -18,7 +18,7 @@ class Selectable(object):
 
     def __getattr__(self, name):
         # This prevents Fields being when deepcopy functions are called
-        if name in ['__deepcopy__', '__getstate__', '__setstate__']:
+        if name in ['__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
             raise AttributeError("'Table' object has no attribute '%s'" % name)
 
         return Field(name, table=self)
