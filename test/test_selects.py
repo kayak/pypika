@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pyqb import Query, Table, Tables, F, Case, fn, GroupingException, Order, JoinType, JoinException
+from pypika import Query, Table, Tables, F, Case, fn, GroupingException, Order, JoinType, JoinException
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

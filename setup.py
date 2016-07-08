@@ -14,13 +14,13 @@ setup(
     author_email="theys@kayak.com",
 
     # Packages
-    packages=["pyqb"],
+    packages=["pypika"],
 
     # Include additional files into the package
     include_package_data=True,
 
     # Details
-    url="https://github.com/kayak/pyqb",
+    url="https://github.com/kayak/pypika",
 
     # License
     # license="LICENSE.txt",
@@ -39,7 +39,7 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
     ],
-    keywords=('pyqb python query builder querybuild sql mysql postgres psql oracle vertica aggregated '
+    keywords=('pypika python query builder querybuild sql mysql postgres psql oracle vertica aggregated '
               'relational database rdbms business analytics bi data science analysis pandas '
               'orm object mapper'),
 

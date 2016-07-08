@@ -1,8 +1,8 @@
 # coding: utf8
 import unittest
 
-from pyqb import Query, F, Table, fn, CaseException, Case
-from pyqb.terms import Interval
+from pypika import Query, F, Table, fn, CaseException, Case
+from pypika.terms import Interval
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

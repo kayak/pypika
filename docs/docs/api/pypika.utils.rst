@@ -1,7 +1,7 @@
-pyqb.queries module
+pypika.utils module
 ===================
 
-.. automodule:: pyqb.queries
+.. automodule:: pypika.utils
     :members:
     :undoc-members:
     :show-inheritance:

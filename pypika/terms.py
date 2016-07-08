@@ -2,8 +2,8 @@
 import re
 from datetime import date
 
-from pyqb.enums import Boolean, Equality, Arithmetic, Matching
-from pyqb.utils import CaseException, immutable
+from pypika.enums import Boolean, Equality, Arithmetic, Matching
+from pypika.utils import CaseException, immutable
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

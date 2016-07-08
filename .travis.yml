@@ -11,7 +11,7 @@ install:
     - "pip install coveralls"
 
 script:
-    - "coverage run --source=pyqb setup.py test"
+    - "coverage run --source=pypika setup.py test"
 
 after_success:
     coveralls

@@ -2,7 +2,7 @@
 import unittest
 from datetime import date, datetime
 
-from pyqb import Field, Table
+from pypika import Field, Table
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

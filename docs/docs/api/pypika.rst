@@ -1,20 +1,20 @@
-pyqb package
-============
+pypika package
+==============
 
 Submodules
 ----------
 
 .. toctree::
 
-   pyqb.enums
-   pyqb.queries
-   pyqb.terms
-   pyqb.utils
+   pypika.enums
+   pypika.queries
+   pypika.terms
+   pypika.utils
 
 Module contents
 ---------------
 
-.. automodule:: pyqb
+.. automodule:: pypika
     :members:
     :undoc-members:
     :show-inheritance:

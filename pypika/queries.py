@@ -1,9 +1,9 @@
 # coding: utf8
 from collections import OrderedDict
 
-from pyqb.enums import Equality, JoinType, UnionType
-from pyqb.utils import JoinException, UnionException
-from pyqb.utils import immutable
+from pypika.enums import Equality, JoinType, UnionType
+from pypika.utils import JoinException, UnionException
+from pypika.utils import immutable
 from .terms import Field, Star, Term
 
 __author__ = "Timothy Heys"
@@ -58,7 +58,7 @@ def make_tables(*names):
 
 class Query(Selectable, Term):
     """
-    Query is the primary class and entry point in pyqb. It is used to build queries iteratively using the builder design
+    Query is the primary class and entry point in pypika. It is used to build queries iteratively using the builder design
     pattern.
 
     This class is immutable.

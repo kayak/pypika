@@ -1,19 +1,19 @@
 Getting Started
 ===============
 
-The main classes in pyqb are :class:`pyqb.Query`, :class:`pyqb.Table`, and :class:`pyqb.Field`.
+The main classes in pypika are :class:`pypika.Query`, :class:`pypika.Table`, and :class:`pypika.Field`.
 
 .. code-block:: python
 
-    from pyqb import Query, Table, Field
+    from pypika import Query, Table, Field
 
 
 Building Queries
 ----------------
 
-The entry point for building queries is :class:`pyqb.Query`.  In order to select columns from a table, the table must
+The entry point for building queries is :class:`pypika.Query`.  In order to select columns from a table, the table must
 first be added to the query.  For simple queries with only one table, tables and and columns can be references using
-strings.  For more sophisticated queries a :class:`pyqb.Table` must be used.
+strings.  For more sophisticated queries a :class:`pypika.Table` must be used.
 
 .. code-block:: python
 
@@ -25,7 +25,7 @@ To convert the query into raw SQL, it can be cast to a string.
 
     str(q)
 
-Using :class:`pyqb.Table`
+Using :class:`pypika.Table`
 
 .. code-block:: python
 
@@ -42,12 +42,12 @@ Both of the above examples result in the following SQL:
 Arithmetic
 ----------
 
-Arithmetic expressions can also be constructed using pyqb.  Operators such as `+`, `-`, `*`, and `/` are implemented by
-:class:`pyqb.Field` which can be used simply with a :class:`pyqb.Table` or directly.
+Arithmetic expressions can also be constructed using pypika.  Operators such as `+`, `-`, `*`, and `/` are implemented by
+:class:`pypika.Field` which can be used simply with a :class:`pypika.Table` or directly.
 
 .. code-block:: python
 
-    from pyqb import Field
+    from pypika import Field
 
     q = Query.from_('account').select(
         Field('revenue') - Field('cost')
@@ -57,7 +57,7 @@ Arithmetic expressions can also be constructed using pyqb.  Operators such as `+
 
     SELECT revenue-cost FROM accounts
 
-Using :class:`pyqb.Table`
+Using :class:`pypika.Table`
 
 .. code-block:: python
 
@@ -103,7 +103,7 @@ More arithmetic examples
 Filtering
 ---------
 
-Queries can be filtered with :class:`pyqb.Criterion` by using equality or inequality operators
+Queries can be filtered with :class:`pypika.Criterion` by using equality or inequality operators
 
 .. code-block:: python
 
@@ -206,7 +206,7 @@ Grouping allows for aggregated results and works similar to ``SELECT`` clauses.
 
 .. code-block:: python
 
-    from pyqb import fn
+    from pypika import fn
 
     customers = Table('customers')
     q = Query.from_(customers).where(
@@ -226,7 +226,7 @@ takes a :class:`Criterion` parameter similar to the method :class:`Query.where()
 
 .. code-block:: python
 
-    from pyqb import fn
+    from pypika import fn
 
     payments = Table('payments')
     q = Query.from_(payments).where(
@@ -275,7 +275,7 @@ calling :class:`Joiner.on()` the original query builder is returned and addition
 Unions
 ------
 
-Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and the **PyQB** does
+Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and the **pypika** does
 not provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
 trying to cast a unioned query to string with through a :class:`UnionException` if the column sizes are mismatched.
 
@@ -299,7 +299,7 @@ union all, use :class:`Query.union_all()` or the `*` operator.
 Date, Time, and Intervals
 -------------------------
 
-Using :class:`pyqb.Interval`, queries can be constructed with date arithmetic.  Any combination of intervals can be used
+Using :class:`pypika.Interval`, queries can be constructed with date arithmetic.  Any combination of intervals can be used
 except for weeks and quarters, which must be used individually.  However, expressions can be chained.
 
 .. code-block:: python

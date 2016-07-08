@@ -11,6 +11,7 @@ Submodules
    test.test_functions
    test.test_inserts
    test.test_joins
+   test.test_pandas
    test.test_selects
    test.test_updates
 

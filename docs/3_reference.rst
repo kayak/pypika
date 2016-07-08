@@ -4,5 +4,5 @@ API Reference
 .. toctree::
    :maxdepth: 4
 
-   api/pyqb
+   api/pypika
    api/test

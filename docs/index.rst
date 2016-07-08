@@ -1,6 +1,5 @@
-============================
- PyQB - Python Query Builder
-============================
+PyPika - Python Query Builder
+=============================
 
 .. include:: ../README.rst
    :start-after: _intro_start:

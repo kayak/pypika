@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# pyqb documentation build configuration file, created by
+# pypika documentation build configuration file, created by
 # sphinx-quickstart on Wed Jul  6 17:51:50 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -206,7 +206,7 @@ html_static_path = ['static']
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pyqbdoc'
+htmlhelp_basename = 'pypikadoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -228,7 +228,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pyqb.tex', 'pyqb Documentation',
+    (master_doc, 'pypika.tex', 'pypika Documentation',
      'Timothy Heys', 'manual'),
 ]
 
@@ -258,7 +258,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pyqb', 'pyqb Documentation',
+    (master_doc, 'pypika', 'pypika Documentation',
      [author], 1)
 ]
 
@@ -272,8 +272,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'pyqb', 'pyqb Documentation',
-     author, 'pyqb', 'One line description of project.',
+    (master_doc, 'pypika', 'pypika Documentation',
+     author, 'pypika', 'One line description of project.',
      'Miscellaneous'),
 ]
 
