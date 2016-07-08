@@ -53,3 +53,13 @@ class JoinType(Enum):
 class UnionType(Enum):
     distinct = ''
     all = ' ALL'
+
+
+class DatePart(Enum):
+    year = 'YEAR'
+    month = 'MONTH'
+    day = 'DAY'
+    hour = 'HOUR'
+    minute = 'MINUTE'
+    second = 'SECOND'
+    microsecond = 'MICROSECOND'

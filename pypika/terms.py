@@ -622,3 +622,15 @@ class Functions(object):
     class CurTime(Function):
         def __init__(self, alias=None):
             super(Functions.CurTime, self).__init__('CURTIME', alias=alias)
+
+    class Extract(Function):
+        def __init__(self, date_part, field, alias=None):
+            super(Functions.Extract, self).__init__('EXTRACT', date_part.value, self._wrap(field), alias=alias)
+
+        def __str__(self):
+            # FIXME escape
+            return '{name}({part} FROM {field})'.format(
+                name=self.name,
+                part=self.params[0],
+                field=self.params[1],
+            )

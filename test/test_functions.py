@@ -1,8 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, F, Table, fn, CaseException, Case
-from pypika.terms import Interval
+from pypika import Query, F, Table, fn, CaseException, Case, Interval, DatePart
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -366,6 +365,7 @@ class CastTests(unittest.TestCase):
 
 class DateFunctionsTests(unittest.TestCase):
     dt = F('dt')
+    t = Table('abc')
 
     def test_add_microsecond(self):
         c = self.dt + Interval(microseconds=1)
@@ -471,3 +471,8 @@ class DateFunctionsTests(unittest.TestCase):
         c = self.dt + Interval(quarters=1) + Interval(weeks=1)
 
         self.assertEqual("dt+INTERVAL 1 QUARTER+INTERVAL 1 WEEK", str(c))
+
+    def test_extract_datepart(self):
+        q = Query.from_(self.t).select(fn.Extract(DatePart.hour, self.t.foo))
+
+        self.assertEqual("SELECT EXTRACT(HOUR FROM foo) FROM abc", str(q))
