@@ -2,12 +2,24 @@
 
 from setuptools import setup
 
+__major_version__ = 0
+__minor_version__ = 0
+__patch_version__ = 2
+
+
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
+
 setup(
     # Application name:
     name="PyPika",
 
     # Version number (initial):
-    version="0.0.1",
+    version='{major}.{minor}.{patch}'.format(major=__major_version__,
+                                             minor=__minor_version__,
+                                             patch=__patch_version__),
 
     # Application author details:
     author="Timothy Heys",
@@ -25,6 +37,7 @@ setup(
     # License
     # license="LICENSE.txt",
     description="A query builder API for Python",
+    long_description=readme(),
 
     classifiers=[
         'Development Status :: 5 - Production/Stable',
