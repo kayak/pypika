@@ -57,6 +57,7 @@ class UnionType(Enum):
 
 class DatePart(Enum):
     year = 'YEAR'
+    quarter = 'QUARTER'
     month = 'MONTH'
     week = 'WEEK'
     day = 'DAY'
