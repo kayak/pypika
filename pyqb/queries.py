@@ -67,31 +67,70 @@ class Query(Selectable, Term):
     @staticmethod
     def from_(table):
         """
+        Primary entry point for building queries that select from a table.
+
+        This function creates a new instance of a TableQuery for the parameter table.
 
         :param table:
             Type: Table or str
 
             An instance of a Table object or a string.
+
+        :returns TableQuery
         """
         if isinstance(table, Table):
             return TableQuery(table, [])
         return TableQuery(Table(table), [])
 
-    def select(self, *fields):
-        return self
-
     @staticmethod
     def select(*fields):
+        """
+        Secondary entry point for building queries that select without a table.  It is also possible to convert a Query
+        to a TableQuery after calling this function by calling the from_ function.  This function is perhaps useful for
+        testing SQL syntax.
+
+        :param table:
+            Type: Table or str
+
+            An instance of a Table object or a string.
+
+        :returns TableQuery
+        """
         return Query(fields)
 
     def __init__(self, select):
         super(Query, self).__init__(id(self), None)
 
-        self._select = select
+        self._select = list(select)
         self._distinct = False
 
         self._select_star = False
         self._select_star_tables = set()
+
+        # After instantiating, replace these functions with instance versions so the names can be reused.
+        self.from_ = self._instance_from_
+        self.select = self._instance_select
+
+    @immutable
+    def _instance_from_(self, table):
+        """
+        Add a table to the query.  This is an alternative path for when the static select function is called first which
+        allows a table to be added to the query second.
+
+
+        :param table:
+        :return:
+        """
+        if isinstance(table, Table):
+            return TableQuery(table, self._select)
+        return TableQuery(Table(table), self._select)
+
+    @immutable
+    def _instance_select(self, *fields):
+        for field in fields:
+            self._select.append(self._wrap(field))
+
+        return self
 
     def __str__(self):
         return 'SELECT {distinct}{select}'.format(
@@ -126,7 +165,11 @@ class TableQuery(Query):
         self._nested = False
 
     @immutable
-    def select(self, *fields):
+    def _instance_from_(self, table):
+        raise AttributeError("'TableQuery' object has no attribute 'from_'")
+
+    @immutable
+    def _instance_select(self, *fields):
         for field in fields:
             if isinstance(field, str):
                 self._select_field_str(field)

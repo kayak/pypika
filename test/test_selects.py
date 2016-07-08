@@ -66,6 +66,24 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM abc', str(q))
 
+    def test_select__no_table(self):
+        q = Query.select(1, 2, 3)
+
+        self.assertEqual('SELECT 1,2,3', str(q))
+
+    def test_select_then_add_table(self):
+        q = Query.select(1).select(2, 3).from_('abc').select('foo')
+
+        self.assertEqual('SELECT 1,2,3,foo FROM abc', str(q))
+
+    def test_static_from_function_removed_after_called(self):
+        with self.assertRaises(AttributeError):
+            Query.from_('abc').from_('efg')
+
+    def test_instance_from_function_removed_after_called(self):
+        with self.assertRaises(AttributeError):
+            Query.select(1).from_('abc').from_('efg')
+
 
 class WhereTests(unittest.TestCase):
     t = Table('abc')
