@@ -11,6 +11,11 @@ __version__ = "0.0.1"
 class SelectTests(unittest.TestCase):
     t = Table('abc')
 
+    def test_empty_query(self):
+        q = Query.from_('abc')
+
+        self.assertEqual('', str(q))
+
     def test_select__star(self):
         q = Query.from_('abc').select('*')
 

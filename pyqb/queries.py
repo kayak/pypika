@@ -240,6 +240,9 @@ class TableQuery(Query):
         return item
 
     def __str__(self):
+        if not self._select:
+            return ''
+
         if self._join:
             for i, table in enumerate(self._tables.values()):
                 table._alias = table._alias or 't%d' % i
