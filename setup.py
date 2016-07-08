@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     # Application name:
-    name="PyQB",
+    name="PyPika",
 
     # Version number (initial):
     version="0.0.1",

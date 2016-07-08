@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'PyQB'
+project = 'PyPika'
 copyright = '2016, Timothy Heys'
 author = 'Timothy Heys'
 
