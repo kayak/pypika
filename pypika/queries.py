@@ -170,41 +170,41 @@ class TableQuery(Query):
         raise AttributeError("'TableQuery' object has no attribute 'from_'")
 
     @immutable
-    def _instance_select(self, *fields):
-        for field in fields:
-            if isinstance(field, str):
-                self._select_field_str(field)
-            elif isinstance(field, Field):
-                self._select_field(self._replace_table_ref(field))
+    def _instance_select(self, *terms):
+        for term in terms:
+            if isinstance(term, str):
+                self._select_field_str(term)
+            elif isinstance(term, Field):
+                self._select_field(self._replace_table_ref(term))
             else:
-                self._select_function(self._replace_table_ref(field))
+                self._select_function(self._replace_table_ref(term))
 
         return self
 
-    def _select_field_str(self, field):
-        if field == '*':
+    def _select_field_str(self, term):
+        if term == '*':
             self._select_star = True
             self._select = [Star()]
             return
 
-        self._select_field(Field(field, table=self._table))
+        self._select_field(Field(term, table=self._table))
 
-    def _select_field(self, field):
+    def _select_field(self, term):
         if self._select_star:
             # Do not add select terms after a star is selected
             return
 
-        if field.table in self._select_star_tables:
+        if term.table in self._select_star_tables:
             # Do not add select terms for table after a table star is selected
             return
 
-        if isinstance(field, Star):
+        if isinstance(term, Star):
             self._select = [select
                             for select in self._select
-                            if select.table != field.table]
-            self._select_star_tables.add(field.table)
+                            if not hasattr(select, 'table') or term.table != select.table]
+            self._select_star_tables.add(term.table)
 
-        self._select.append(field)
+        self._select.append(term)
 
     def _select_function(self, function):
         self._select.append(function)

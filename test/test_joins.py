@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, JoinException, fn, JoinType, UnionException
+from pypika import Query, Table, Tables, JoinException, fn, JoinType, UnionException, Interval
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -32,6 +32,20 @@ class JoinTypeTests(unittest.TestCase):
         q = Query.from_(self.t0).join(self.t1, how=JoinType.outer).on(self.t0.foo == self.t1.bar).select('*')
 
         self.assertEqual('SELECT * FROM abc t0 OUTER JOIN efg t1 ON t0.foo=t1.bar', str(q))
+
+    def test_join_arithmetic_field(self):
+        q = Query.from_(self.t0).join(self.t1).on(self.t0.dt == (self.t1.dt - Interval(weeks=1))).select('*')
+
+        self.assertEqual('SELECT * FROM abc t0 JOIN efg t1 ON t0.dt=t1.dt-INTERVAL 1 WEEK', str(q))
+
+    def test_join_with_arithmetic_function_in_select(self):
+        q = Query.from_(
+            self.t0,
+        ).join(self.t1).on(
+            self.t0.dt == (self.t1.dt - Interval(weeks=1))
+        ).select(self.t0.fiz - self.t0.buz, self.t1.star)
+
+        self.assertEqual('SELECT t0.fiz-t0.buz,t1.* FROM abc t0 JOIN efg t1 ON t0.dt=t1.dt-INTERVAL 1 WEEK', str(q))
 
 
 class JoinBehaviorTests(unittest.TestCase):

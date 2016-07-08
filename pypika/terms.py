@@ -430,21 +430,20 @@ class Interval(object):
 
     trim_pattern = re.compile(r'^[0\-\.: ]+|[0\-\.: ]+$')
 
-    def __init__(self, **kwargs):
+    def __init__(self, years=0, months=0, days=0, hours=0, minutes=0, seconds=0, microseconds=0, quarters=0, weeks=0):
         self.largest = None
         self.smallest = None
 
-        if 'quarters' in kwargs:
-            self.quarters = int(kwargs['quarters'])
+        if quarters:
+            self.quarters = quarters
             return
 
-        if 'weeks' in kwargs:
-            self.weeks = int(kwargs['weeks'])
+        if weeks:
+            self.weeks = weeks
             return
 
-        for unit, label in zip(self.units, self.labels):
-            value = kwargs.get(unit)
-
+        for unit, label, value in zip(self.units, self.labels, [years, months, days,
+                                                                hours, minutes, seconds, microseconds]):
             if value:
                 setattr(self, unit, int(value))
                 self.largest = self.largest or label
