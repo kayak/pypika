@@ -472,7 +472,34 @@ class DateFunctionsTests(unittest.TestCase):
 
         self.assertEqual("dt+INTERVAL 1 QUARTER+INTERVAL 1 WEEK", str(c))
 
-    def test_extract_datepart(self):
-        q = Query.from_(self.t).select(fn.Extract(DatePart.hour, self.t.foo))
+    def _test_extract_datepart(self, date_part):
+        q = Query.from_(self.t).select(fn.Extract(date_part, self.t.foo))
 
-        self.assertEqual("SELECT EXTRACT(HOUR FROM foo) FROM abc", str(q))
+        self.assertEqual("SELECT EXTRACT(%s FROM foo) FROM abc" % date_part.value, str(q))
+
+    def test_extract_microsecond(self):
+        self._test_extract_datepart(DatePart.microsecond)
+
+    def test_extract_second(self):
+        self._test_extract_datepart(DatePart.second)
+
+    def test_extract_minute(self):
+        self._test_extract_datepart(DatePart.minute)
+
+    def test_extract_hour(self):
+        self._test_extract_datepart(DatePart.hour)
+
+    def test_extract_day(self):
+        self._test_extract_datepart(DatePart.day)
+
+    def test_extract_week(self):
+        self._test_extract_datepart(DatePart.week)
+
+    def test_extract_month(self):
+        self._test_extract_datepart(DatePart.month)
+
+    def test_extract_quarter(self):
+        self._test_extract_datepart(DatePart.quarter)
+
+    def test_extract_year(self):
+        self._test_extract_datepart(DatePart.year)
