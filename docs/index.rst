@@ -23,3 +23,9 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+
+.. include:: ../README.rst
+   :start-after: _available_badges_start:
+   :end-before:  _available_badges_end:

@@ -1,4 +1,15 @@
-from distutils.core import setup
+# coding: utf8
+
+import setuptools.command.test
+from setuptools import setup
+
+
+class TestCommand(setuptools.command.test.test):
+    def _test_args(self):
+        yield 'discover'
+        for arg in super(TestCommand, self)._test_args():
+            yield arg
+
 
 setup(
     # Application name:
@@ -28,4 +39,6 @@ setup(
     install_requires=[
         'aenum'
     ],
+    test_suite="test",
+    # cmdclass={'test': TestCommand},
 )
