@@ -12,12 +12,13 @@ __version__ = "0.0.1"
 
 
 class Selectable(object):
-    def __init__(self, alias):
+    def __init__(self, id, alias):
+        self._id = id
         self._alias = alias
 
     def __getattr__(self, name):
-        # FIXME make this safer
-        if name[:2] == '__':
+        # This prevents Fields being when deepcopy functions are called
+        if name in ['__deepcopy__', '__getstate__', '__setstate__']:
             raise AttributeError("'Table' object has no attribute '%s'" % name)
 
         return Field(name, table=self)
@@ -26,12 +27,14 @@ class Selectable(object):
     def star(self):
         return Star(table=self)
 
+    def __hash__(self):
+        return self._id
+
 
 class Table(Selectable):
     def __init__(self, name):
-        super(Table, self).__init__(None)
+        super(Table, self).__init__(id(self), None)
         self._name = name
-        self._id = id(self)
 
     def __str__(self):
         # FIXME escape
@@ -46,7 +49,7 @@ class Table(Selectable):
         return isinstance(other, Table) and self._name == other._name
 
     def __hash__(self):
-        return self._name.__hash__()
+        return self._id
 
 
 def make_tables(*names):
@@ -82,7 +85,7 @@ class Query(Selectable, Term):
         return Query(fields)
 
     def __init__(self, select):
-        Selectable.__init__(self, None)
+        super(Query, self).__init__(id(self), None)
 
         self._select = select
         self._distinct = False
@@ -109,8 +112,6 @@ class Query(Selectable, Term):
 class TableQuery(Query):
     def __init__(self, table, select):
         super(TableQuery, self).__init__(select)
-
-        self._id = id(self)
 
         self._table = table
         self._tables = OrderedDict({table._id: table})
