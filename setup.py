@@ -1,15 +1,6 @@
 # coding: utf8
 
-import setuptools.command.test
 from setuptools import setup
-
-
-class TestCommand(setuptools.command.test.test):
-    def _test_args(self):
-        yield 'discover'
-        for arg in super(TestCommand, self)._test_args():
-            yield arg
-
 
 setup(
     # Application name:
@@ -31,14 +22,30 @@ setup(
     # Details
     url="https://github.com/kayak/pyqb",
 
-    #
+    # License
     # license="LICENSE.txt",
     description="Python Query builder API",
+
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: PL/SQL',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Scientific/Engineering :: Information Analysis',
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Operating System :: POSIX',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows',
+    ],
+    keywords=('pyqb python query builder querybuild sql mysql postgres psql oracle vertica aggregated '
+              'relational database rdbms business analytics bi data science analysis pandas '
+              'orm object mapper'),
 
     # Dependent packages (distributions)
     install_requires=[
         'aenum'
     ],
     test_suite="test",
-    # cmdclass={'test': TestCommand},
 )
