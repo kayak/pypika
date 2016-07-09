@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, F, Case, fn, GroupingException, Order, JoinType, JoinException
+from pypika import Query, Table, Tables, Field as F, Case, fn, GroupingException, Order, JoinType, JoinException
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -355,7 +355,7 @@ class SubqueryTests(unittest.TestCase):
     def test_join_on_nonexistant_field(self):
         with self.assertRaises(JoinException):
             subquery = Query.from_('efg').select('fiz').where(F('buz') == 0)
-            q = Query.from_(self.t).join(subquery).on(
+            Query.from_(self.t).join(subquery).on(
                 self.t.bar == subquery.buz
             )
 

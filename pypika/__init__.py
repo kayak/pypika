@@ -2,8 +2,6 @@
 
 from .enums import Order, JoinType, DatePart
 from .queries import Query, Table, make_tables as Tables
-from .queries import Query as Q, Table as T, make_tables as Ts
-from .terms import Field as F
 from .terms import Field, Case, Interval, Functions as fn
 from .utils import JoinException, GroupingException, CaseException, UnionException
 

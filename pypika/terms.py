@@ -129,15 +129,13 @@ class ValueWrapper(Term):
         self.value = value
 
     def __str__(self):
-        t = type(self.value)
-
         # FIXME escape values
         if isinstance(self.value, date):
             return "'%s'" % self.value.isoformat()
-        elif t == str:
+        elif isinstance(self.value, str):
             return "'%s'" % self.value
-        elif t == bool:
-            return "true" if self.value else "false"
+        elif isinstance(self.value, bool):
+            return str.lower(str(self.value))
         return str(self.value)
 
     def fields(self):
@@ -173,7 +171,7 @@ class Field(Term):
         )
 
     def __getitem__(self, item):
-        if type(item) is not slice:
+        if not isinstance(item, slice):
             raise TypeError("Field' object is not subscriptable")
         return self.between(item.start, item.stop)
 
@@ -544,8 +542,8 @@ class Functions(object):
 
     # Type Functions
     class Cast(Function):
-        def __init__(self, term, type, alias=None):
-            super(Functions.Cast, self).__init__('CAST', term, type, alias=alias)
+        def __init__(self, term, as_type, alias=None):
+            super(Functions.Cast, self).__init__('CAST', term, as_type, alias=alias)
 
         def __str__(self):
             # FIXME escape
@@ -556,8 +554,8 @@ class Functions(object):
             )
 
     class Convert(Function):
-        def __init__(self, term, format, alias=None):
-            super(Functions.Convert, self).__init__('CONVERT', term, format, alias=alias)
+        def __init__(self, term, encoding, alias=None):
+            super(Functions.Convert, self).__init__('CONVERT', term, encoding, alias=alias)
 
         def __str__(self):
             # FIXME escape

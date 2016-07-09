@@ -12,8 +12,8 @@ __version__ = "0.0.1"
 
 
 class Selectable(object):
-    def __init__(self, id, alias):
-        self._id = id
+    def __init__(self, alias):
+        self._id = id(self)
         self._alias = alias
 
     def __getattr__(self, name):
@@ -33,7 +33,7 @@ class Selectable(object):
 
 class Table(Selectable):
     def __init__(self, name):
-        super(Table, self).__init__(id(self), None)
+        super(Table, self).__init__(None)
         self._name = name
 
     def __str__(self):
@@ -99,7 +99,7 @@ class Query(Selectable, Term):
         return Query(fields)
 
     def __init__(self, select):
-        super(Query, self).__init__(id(self), None)
+        super(Query, self).__init__(None)
 
         self._select = list(select)
         self._distinct = False
@@ -239,7 +239,7 @@ class TableQuery(Query):
     @immutable
     def groupby(self, *fields):
         for field in fields:
-            if type(field) is str:
+            if isinstance(field, str):
                 field = Field(field, table=self._table)
             self._groupby.append(self._replace_table_ref(field))
 
@@ -248,7 +248,7 @@ class TableQuery(Query):
     @immutable
     def orderby(self, *fields, **kwargs):
         for field in fields:
-            if type(field) is not Field:
+            if not isinstance(field, Field):
                 field = Field(field, table=self.table)
             self._orderby.append((field, kwargs.get('order')))
 
@@ -357,14 +357,14 @@ class TableQuery(Query):
 
         unionstring = ''
         if self._union:
-            for (type, other) in self._union:
+            for (union_type, other) in self._union:
                 if len(self._select) != len(other._select):
                     raise UnionException("Queries must have an equal number of select statements in a union."
                                          "\n\nMain Query:\n{query1}"
                                          "\n\nUnion Query:\n{query2}".format(query1=querystring, query2=str(other)))
 
                 unionstring += ' UNION{type} {query}'.format(
-                    type=type.value,
+                    type=union_type.value,
                     query=str(other)
                 )
 

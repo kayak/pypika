@@ -272,14 +272,18 @@ class BetweenTests(unittest.TestCase):
         self.assertEqual("foo BETWEEN '2000-01-01T00:00:00' AND '2000-12-31T23:59:59'", str(c3))
 
     def test_get_item_only_works_with_slice(self):
-        with self.assertRaises(TypeError):
-            Field('foo')[0]
+        f = None
 
         with self.assertRaises(TypeError):
-            Field('foo')[date(2000, 1, 1)]
+            f = Field('foo')[0]
 
         with self.assertRaises(TypeError):
-            Field('foo')[datetime(2000, 1, 1, 0, 0, 0)]
+            f = Field('foo')[date(2000, 1, 1)]
+
+        with self.assertRaises(TypeError):
+            f = Field('foo')[datetime(2000, 1, 1, 0, 0, 0)]
+
+        self.assertIsNone(f)
 
 
 class IsInTests(unittest.TestCase):
