@@ -200,6 +200,15 @@ class JoinBehaviorTests(unittest.TestCase):
                          'JOIN efg t1 ON t0.foo=t1.bar '
                          'ORDER BY t0.foo', str(test_query))
 
+    def test_prefixes_added_to_function_in_orderby(self):
+        test_query = Query.from_(self.t0).join(self.t1).on(
+            self.t0.foo == self.t1.bar
+        ).select(self.t0.foo, self.t1.buz).orderby(fn.Date(self.t0.foo))
+
+        self.assertEqual('SELECT t0.foo,t1.buz FROM abc t0 '
+                         'JOIN efg t1 ON t0.foo=t1.bar '
+                         'ORDER BY DATE(t0.foo)', str(test_query))
+
 
 class UnionTests(unittest.TestCase):
     t0, t1 = Tables('abc', 'efg')

@@ -319,6 +319,7 @@ class AliasTests(unittest.TestCase):
         self.assertEqual("SELECT CASE WHEN foo=1 THEN 'a' ELSE 'b' END bar FROM abc", str(q))
 
 
+
 class SubqueryTests(unittest.TestCase):
     t = Table('abc')
 
