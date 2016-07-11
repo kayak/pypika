@@ -1,7 +1,7 @@
 # coding: utf8
 from collections import OrderedDict
 
-from pypika.enums import Equality, JoinType, UnionType
+from pypika.enums import JoinType, UnionType
 from pypika.utils import JoinException, UnionException
 from pypika.utils import immutable
 from .terms import Field, Star, Term
@@ -409,15 +409,6 @@ class SubqueryJoiner(Joiner):
     def on(self, criterion):
         if criterion is None:
             raise JoinException("Parameter 'on' is required when joining a subquery but was not supplied.")
-
-        if Equality.eq != criterion.comparator or 2 > len(criterion.fields()):
-            # TODO write write a better message
-            raise JoinException('Equality Criterion of two fields is required for joining a subquery.  '
-                                '[%s] is invalid.' % str(criterion))
-
-        # TODO validate that one field comes from a table in the current query
-
-        # TODO validate that one field is included in subquey selects as alias or otherwise
 
         self.subquery._nested = True
         self.query._tables[self.subquery._id] = self.subquery
