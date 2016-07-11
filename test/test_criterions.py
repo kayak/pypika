@@ -2,7 +2,7 @@
 import unittest
 from datetime import date, datetime
 
-from pypika import Field, Table
+from pypika import Field, Table, fn
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -356,3 +356,53 @@ class ComplexCriterionTests(unittest.TestCase):
         c = Field('foo').isin([1, 2, 3]) & Field('bar').between(0, 1)
 
         self.assertEqual('foo IN (1,2,3) AND bar BETWEEN 0 AND 1', str(c))
+
+
+class CriterionOperationsTests(unittest.TestCase):
+    t0, t1 = Table('abc'), Table('efg')
+    t0._alias, t1._alias = 't0', 't1'
+
+    def test_field_for_table(self):
+        f = self.t0.foo.for_(self.t1)
+
+        self.assertEqual('t1.foo', str(f))
+
+    def test_arithmeticfunction_for_table(self):
+        f = (self.t0.foo + self.t0.bar).for_(self.t1)
+
+        self.assertEqual('t1.foo+t1.bar', str(f))
+
+    def test_criterion_for_table(self):
+        f = (self.t0.foo < self.t0.bar).for_(self.t1)
+
+        self.assertEqual('t1.foo<t1.bar', str(f))
+
+    def test_complexcriterion_for_table(self):
+        f = ((self.t0.foo < self.t0.bar) & (self.t0.fiz > self.t0.buz)).for_(self.t1)
+
+        self.assertEqual('t1.foo<t1.bar AND t1.fiz>t1.buz', str(f))
+
+    def test_function_with_only_fields_for_table(self):
+        f = fn.Sum(self.t0.foo).for_(self.t1)
+
+        self.assertEqual('SUM(t1.foo)', str(f))
+
+    def test_function_with_values_and_fields_for_table(self):
+        f = fn.Mod(self.t0.foo, 2).for_(self.t1)
+
+        self.assertEqual('MOD(t1.foo,2)', str(f))
+
+    def test_betweencriterion_for_table(self):
+        f = self.t0.foo[0:1].for_(self.t1)
+
+        self.assertEqual('t1.foo BETWEEN 0 AND 1', str(f))
+
+    def test_nullcriterion_for_table(self):
+        f = self.t0.foo.isnull().for_(self.t1)
+
+        self.assertEqual('t1.foo IS NULL', str(f))
+
+    def test_notnullcriterion_for_table(self):
+        f = self.t0.foo.notnull().for_(self.t1)
+
+        self.assertEqual('t1.foo IS NOT NULL', str(f))

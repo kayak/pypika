@@ -31,6 +31,17 @@ class Term(object):
 
         return ValueWrapper(val)
 
+    def for_(self, table):
+        """
+        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
+
+        :param table:
+            The table to replace with.
+        :return:
+            A copy of the field with it's table value replaced.
+        """
+        raise NotImplementedError()
+
     def fields(self):
         return [self]
 
@@ -156,8 +167,15 @@ class Field(Term):
             return ContainsCriterion(self, ListField([self._wrap(value) for value in arg]))
         return ContainsCriterion(self, arg)
 
+    @immutable
     def as_(self, alias):
-        return Field(self.name, alias=alias, table=self.table)
+        self._alias = alias
+        return self
+
+    @immutable
+    def for_(self, table):
+        self.table = table
+        return self
 
     def __str__(self):
         # FIXME escape
@@ -225,6 +243,12 @@ class BasicCriterion(Criterion):
         self.left._nested = True
         self.right._nested = True
 
+    @immutable
+    def for_(self, table):
+        self.left = self.left.for_(table)
+        self.right = self.right.for_(table)
+        return self
+
     def __str__(self):
         return '{left}{comparator}{right}'.format(
             comparator=self.comparator.value,
@@ -268,6 +292,11 @@ class BetweenCriterion(Criterion):
         self.start = start
         self.end = end
 
+    @immutable
+    def for_(self, table):
+        self.field = self.field.for_(table)
+        return self
+
     def __str__(self):
         # FIXME escape
         return "{field} BETWEEN {start} AND {end}".format(
@@ -284,6 +313,11 @@ class NullCriterion(Criterion):
     def __init__(self, field, isnull):
         self.field = field
         self.isnull = isnull
+
+    @immutable
+    def for_(self, table):
+        self.field = self.field.for_(table)
+        return self
 
     def __str__(self):
         return "{field} IS{isnot} NULL".format(
@@ -336,18 +370,26 @@ class ArithmeticFunction(Term):
         self.right = right
         self._alias = alias
 
+    @immutable
+    def for_(self, table):
+        self.left = self.left.for_(table)
+        self.right = self.right.for_(table)
+        return self
+
+    @immutable
+    def as_(self, alias):
+        self._alias = alias
+        return self
+
+    def fields(self):
+        return self.left.fields() + self.right.fields()
+
     def __str__(self):
         return '{left}{operator}{right}'.format(
             operator=self.operator.value,
             left=str(self.left),
             right=str(self.right),
         )
-
-    def as_(self, alias):
-        return ArithmeticFunction(self.operator, self.left, self.right, alias)
-
-    def fields(self):
-        return self.left.fields() + self.right.fields()
 
 
 class Case(Term):
@@ -402,6 +444,12 @@ class Function(Term):
         self.name = name
         self.params = params
         self._alias = kwargs.get('alias')
+
+    @immutable
+    def for_(self, table):
+        self.params = [param.for_(table) if hasattr(param, 'for_') else param
+                       for param in self.params]
+        return self
 
     def __str__(self):
         # FIXME escape
