@@ -392,18 +392,6 @@ class TableJoiner(Joiner):
         if criterion is None:
             raise JoinException("Parameter 'on' is required when joining a table but was not supplied.")
 
-        if Equality.eq != criterion.comparator or 2 > len(criterion.fields()):
-            # TODO write write a better message
-            raise JoinException('Equality Criterion of two fields is required for joining a table.  '
-                                '[%s] is invalid.' % str(criterion))
-
-        # FIXME need to be able to use joined tables too
-        mismatched_tables = {self.table, self.query._table} ^ {field.table for field in criterion.fields()}
-        if mismatched_tables:
-            # TODO write write a better message
-            raise JoinException('Join required a field from each query.  '
-                                '[%s] is invalid.' % str(criterion))
-
         self.query._tables[self.table._id] = self.table
         self.query._join.append(Join(self.table._id, criterion, self.how))
 

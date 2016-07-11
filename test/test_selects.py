@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, Field as F, Case, fn, GroupingException, Order, JoinType, JoinException
+from pypika import Query, Table, Tables, Field as F, Case, fn, Order, JoinType
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -154,16 +154,6 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT foo,bar FROM abc GROUP BY foo,bar', str(q))
 
-    @unittest.skip("Unsure if this will be added")
-    def test_groupby__invalid_select(self):
-        with self.assertRaises(GroupingException):
-            Query.from_(self.t).groupby(self.t.foo, self.t.bar).select(self.t.foo, self.t.bar, self.t.buz)
-
-    @unittest.skip("Unsure if this will be added")
-    def test_groupby__preexisting_invalid_select(self):
-        with self.assertRaises(GroupingException):
-            Query.from_(self.t).select(self.t.buz).groupby(self.t.foo, self.t.bar)
-
     def test_groupby__count_star(self):
         q = Query.from_(self.t).groupby(self.t.foo).select(self.t.foo, fn.Count('*'))
 
@@ -304,7 +294,6 @@ class AliasTests(unittest.TestCase):
         self.assertEqual('SELECT foo FROM abc ORDER BY foo', str(q))
 
     def test_ignored_in_criterion(self):
-        # FIXME
         c = self.t.foo.as_('bar') == 1
 
         self.assertEqual('foo=1', str(c))
@@ -350,14 +339,6 @@ class SubqueryTests(unittest.TestCase):
         self.assertEqual('SELECT t0.foo,t1.fiz FROM abc t0 '
                          'JOIN (SELECT fiz,buz FROM efg WHERE buz=0) t1 '
                          'ON t0.bar=t1.buz', str(q))
-
-    @unittest.skip('TODO')
-    def test_join_on_nonexistant_field(self):
-        with self.assertRaises(JoinException):
-            subquery = Query.from_('efg').select('fiz').where(F('buz') == 0)
-            Query.from_(self.t).join(subquery).on(
-                self.t.bar == subquery.buz
-            )
 
     def test_where__equality(self):
         t = Table('abc')

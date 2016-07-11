@@ -47,6 +47,13 @@ class JoinTypeTests(unittest.TestCase):
 
         self.assertEqual('SELECT t0.fiz-t0.buz,t1.* FROM abc t0 JOIN efg t1 ON t0.dt=t1.dt-INTERVAL 1 WEEK', str(q))
 
+    def test_join_on_complex_criteria(self):
+        q = Query.from_(self.t0).join(self.t1, how=JoinType.right).on(
+            (self.t0.foo == self.t1.fiz) & (self.t0.bar == self.t1.buz)
+        ).select('*')
+
+        self.assertEqual('SELECT * FROM abc t0 RIGHT JOIN efg t1 ON t0.foo=t1.fiz AND t0.bar=t1.buz', str(q))
+
 
 class JoinBehaviorTests(unittest.TestCase):
     t0, t1, t2, t3 = Tables('abc', 'efg', 'hij', 'klm')
@@ -113,16 +120,6 @@ class JoinBehaviorTests(unittest.TestCase):
 
         with self.assertRaises(JoinException):
             Query.from_(self.t0).join(self.t1).on(self.t2.foo == self.t3.bar)
-
-    def test_require_equality_condition(self):
-        with self.assertRaises(JoinException):
-            Query.from_(self.t0).join(self.t1).on(self.t0.foo > self.t1.bar)
-
-        with self.assertRaises(JoinException):
-            Query.from_(self.t0).join(self.t1).on(self.t0.foo < self.t1.bar)
-
-        with self.assertRaises(JoinException):
-            Query.from_(self.t0).join(self.t1).on((self.t0.foo == self.t1.bar) & (self.t0.fiz == self.t1.buz))
 
     def test_join_same_table(self):
         t1 = Table('abc')
