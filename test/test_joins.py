@@ -51,7 +51,7 @@ class JoinTypeTests(unittest.TestCase):
 class JoinBehaviorTests(unittest.TestCase):
     t0, t1, t2, t3 = Tables('abc', 'efg', 'hij', 'klm')
 
-    def test_select__ordered(self):
+    def test_select__ordered_select_clauses(self):
         q = Query.from_(self.t0).join(self.t1).on(self.t0.foo == self.t1.bar).select(
             self.t0.baz,
             self.t1.buz,
@@ -184,6 +184,24 @@ class JoinBehaviorTests(unittest.TestCase):
 
         with self.assertRaises(JoinException):
             Query.from_(self.t0).groupby(self.t0.foo).having(self.t1.bar)
+
+    def test_prefixes_added_to_groupby(self):
+        test_query = Query.from_(self.t0).join(self.t1).on(
+            self.t0.foo == self.t1.bar
+        ).select(self.t0.foo, fn.Sum(self.t1.buz)).groupby(self.t0.foo)
+
+        self.assertEqual('SELECT t0.foo,SUM(t1.buz) FROM abc t0 '
+                         'JOIN efg t1 ON t0.foo=t1.bar '
+                         'GROUP BY t0.foo', str(test_query))
+
+    def test_prefixes_added_to_orderby(self):
+        test_query = Query.from_(self.t0).join(self.t1).on(
+            self.t0.foo == self.t1.bar
+        ).select(self.t0.foo, self.t1.buz).orderby(self.t0.foo)
+
+        self.assertEqual('SELECT t0.foo,t1.buz FROM abc t0 '
+                         'JOIN efg t1 ON t0.foo=t1.bar '
+                         'ORDER BY t0.foo', str(test_query))
 
 
 class UnionTests(unittest.TestCase):

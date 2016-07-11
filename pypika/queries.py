@@ -250,6 +250,9 @@ class TableQuery(Query):
         for field in fields:
             if not isinstance(field, Field):
                 field = Field(field, table=self.table)
+            else:
+                field = self._replace_table_ref(field)
+
             self._orderby.append((field, kwargs.get('order')))
 
         return self
