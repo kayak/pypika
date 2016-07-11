@@ -130,6 +130,34 @@ class ArithmeticTests(unittest.TestCase):
         self.assertEqual('SELECT 2+1/a-5 FROM abc', str(q1))
         self.assertEqual('SELECT 2+1/a-5 FROM abc', str(q2))
 
+    def test__complex_op_add_parentheses(self):
+        q1 = Q.from_('abc').select((F('a') + 1) + (F('b') - 5))
+        q2 = Q.from_(self.t).select((self.t.a + 1) + (self.t.b - 5))
+
+        self.assertEqual('SELECT a+1+b-5 FROM abc', str(q1))
+        self.assertEqual('SELECT a+1+b-5 FROM abc', str(q2))
+
+    def test__complex_op_sub_parentheses(self):
+        q1 = Q.from_('abc').select((F('a') + 1) - (F('b') - 5))
+        q2 = Q.from_(self.t).select((self.t.a + 1) - (self.t.b - 5))
+
+        self.assertEqual('SELECT a+1-b-5 FROM abc', str(q1))
+        self.assertEqual('SELECT a+1-b-5 FROM abc', str(q2))
+
+    def test__complex_op_mul_parentheses(self):
+        q1 = Q.from_('abc').select((F('a') + 1) * (F('b') - 5))
+        q2 = Q.from_(self.t).select((self.t.a + 1) * (self.t.b - 5))
+
+        self.assertEqual('SELECT (a+1)*(b-5) FROM abc', str(q1))
+        self.assertEqual('SELECT (a+1)*(b-5) FROM abc', str(q2))
+
+    def test__complex_op_div_parentheses(self):
+        q1 = Q.from_('abc').select((F('a') + 1) / (F('b') - 5))
+        q2 = Q.from_(self.t).select((self.t.a + 1) / (self.t.b - 5))
+
+        self.assertEqual('SELECT (a+1)/(b-5) FROM abc', str(q1))
+        self.assertEqual('SELECT (a+1)/(b-5) FROM abc', str(q2))
+
     def test__arithmetic_equality(self):
         q1 = Q.from_('abc').select(F('a') / 2 == 2)
         q2 = Q.from_(self.t).select(self.t.a / 2 == 2)

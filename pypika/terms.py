@@ -79,20 +79,20 @@ class Term(object):
         return BasicCriterion(Matching.bin_regex, self, self._wrap(pattern))
 
     def __add__(self, other):
-        return ArithmeticFunction(Arithmetic.add, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.add, self, self._wrap(other))
 
     def __sub__(self, other):
-        return ArithmeticFunction(Arithmetic.sub, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.sub, self, self._wrap(other))
 
     def __mul__(self, other):
-        return ArithmeticFunction(Arithmetic.mul, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.mul, self, self._wrap(other))
 
     def __div__(self, other):
         # Required for Python2
         return self.__truediv__(other)
 
     def __truediv__(self, other):
-        return ArithmeticFunction(Arithmetic.div, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.div, self, self._wrap(other))
 
     def __pow__(self, other):
         return Functions.Pow(self, other)
@@ -101,20 +101,20 @@ class Term(object):
         return Functions.Mod(self, other)
 
     def __radd__(self, other):
-        return ArithmeticFunction(Arithmetic.add, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.add, self._wrap(other), self)
 
     def __rsub__(self, other):
-        return ArithmeticFunction(Arithmetic.sub, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.sub, self._wrap(other), self)
 
     def __rmul__(self, other):
-        return ArithmeticFunction(Arithmetic.mul, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.mul, self._wrap(other), self)
 
     def __rdiv__(self, other):
         # Required for Python2
         return self.__rtruediv__(other)
 
     def __rtruediv__(self, other):
-        return ArithmeticFunction(Arithmetic.div, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.div, self._wrap(other), self)
 
     def __eq__(self, other):
         return BasicCriterion(Equality.eq, self, self._wrap(other))
@@ -347,7 +347,15 @@ class ComplexCriterion(BasicCriterion):
         return str(value)
 
 
-class ArithmeticFunction(Term):
+class ArithmeticExpression(Term):
+    """
+    Wrapper for an arithmetic function.  Can be simple with two terms or complex with nested terms. Order of operations
+    are also preserved.
+    """
+
+    mul_order = [Arithmetic.mul, Arithmetic.div]
+    add_order = [Arithmetic.add, Arithmetic.sub]
+
     def __init__(self, operator, left, right, alias=None):
         """
         Wrapper for an arithmetic expression.
@@ -385,10 +393,14 @@ class ArithmeticFunction(Term):
         return self.left.fields() + self.right.fields()
 
     def __str__(self):
+        is_mul = self.operator in self.mul_order
+        is_left_add, is_right_add = [getattr(side, 'operator', None) in self.add_order
+                                     for side in [self.left, self.right]]
+
         return '{left}{operator}{right}'.format(
             operator=self.operator.value,
-            left=str(self.left),
-            right=str(self.right),
+            left=("({})" if is_mul and is_left_add else "{}").format(self.left),
+            right=("({})" if is_mul and is_right_add else "{}").format(self.right),
         )
 
 
