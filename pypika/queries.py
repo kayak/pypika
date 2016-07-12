@@ -14,18 +14,22 @@ __version__ = "0.0.1"
 class Selectable(object):
     def __init__(self, alias):
         self.item_id = id(self)
-        self._alias = alias
+        self.alias = alias
+        self.alias = alias
+
+    def field(self, name):
+        return Field(name, table=self)
+
+    @property
+    def star(self):
+        return Star(self)
 
     def __getattr__(self, name):
         # This prevents Fields being when deepcopy functions are called
         if name in ['__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
             raise AttributeError("'Table' object has no attribute '%s'" % name)
 
-        return Field(name, table=self)
-
-    @property
-    def star(self):
-        return Star(table=self)
+        return self.field(name)
 
     def __hash__(self):
         return self.item_id
@@ -34,19 +38,19 @@ class Selectable(object):
 class Table(Selectable):
     def __init__(self, name):
         super(Table, self).__init__(None)
-        self._name = name
+        self.table_name = name
 
     def __str__(self):
         # FIXME escape
-        if self._alias:
+        if self.alias:
             return "{name} {alias}".format(
-                name=self._name,
-                alias=self._alias
+                name=self.table_name,
+                alias=self.alias
             )
-        return self._name
+        return self.table_name
 
     def __eq__(self, other):
-        return isinstance(other, Table) and self._name == other._name
+        return isinstance(other, Table) and self.table_name == other.table_name
 
     def __hash__(self):
         return self.item_id
@@ -141,9 +145,9 @@ class Query(Selectable, Term):
 
     @staticmethod
     def _render_alias(term):
-        alias = getattr(term, '_alias', None)
+        alias = getattr(term, 'alias', None)
         if alias is not None:
-            return '{field} {alias}'.format(field=str(term), alias=term._alias)
+            return '{field} {alias}'.format(field=str(term), alias=term.alias)
 
         return str(term)
 
@@ -152,7 +156,7 @@ class TableQuery(Query):
     def __init__(self, table, select):
         super(TableQuery, self).__init__(select)
 
-        self._table = table
+        self.table = table
         self._tables = OrderedDict({table.item_id: table})
 
         self._where = None
@@ -160,7 +164,7 @@ class TableQuery(Query):
         self._having = None
         self._orderby = []
 
-        self._join = []
+        self._joins = []
         self._union = []
 
         self._nested = False
@@ -187,7 +191,7 @@ class TableQuery(Query):
             self._select = [Star()]
             return
 
-        self._select_field(Field(term, table=self._table))
+        self._select_field(Field(term, table=self.table))
 
     def _select_field(self, term):
         if self._select_star:
@@ -240,7 +244,7 @@ class TableQuery(Query):
     def groupby(self, *fields):
         for field in fields:
             if isinstance(field, str):
-                field = Field(field, table=self._table)
+                field = Field(field, table=self.table)
             self._groupby.append(self._replace_table_ref(field))
 
         return self
@@ -277,24 +281,24 @@ class TableQuery(Query):
         self._union.append((UnionType.all, other))
         return self
 
-    def __add__(self, other):
-        return self.union(other)
-
-    def __mul__(self, other):
-        return self.union_all(other)
-
     def fields(self):
         # Don't return anything here. Subqueries have their own fields.
         return []
 
+    def do_join(self, item, criterion, how):
+        self._tables[item.item_id] = item
+        self._joins.append(Join(item.item_id, criterion, how))
+
+        for field in criterion.fields():
+            self._replace_table_ref(field)
+
     def _replace_table_ref(self, item):
         for field in item.fields():
             if field.table is None:
-                field.table = self._table
+                field.table = self.table
                 continue
 
             if field.table.item_id not in self._tables:
-                # TODO write better exception message
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
                                     'its fields can be used' % field.table)
@@ -302,23 +306,29 @@ class TableQuery(Query):
             field.table = self._tables[field.table.item_id]
         return item
 
+    def __add__(self, other):
+        return self.union(other)
+
+    def __mul__(self, other):
+        return self.union_all(other)
+
     def __str__(self):
         if not self._select:
             return ''
 
-        if self._join:
+        if self._joins:
             for i, table in enumerate(self._tables.values()):
-                table._alias = table._alias or 't%d' % i
+                table.alias = table.alias or 't%d' % i
 
         querystring = 'SELECT {distinct}{select} FROM {table}'.format(
-            table=str(self._table),
+            table=str(self.table),
             distinct='distinct ' if self._distinct else '',
             select=','.join(self._render_alias(term)
                             for term in self._select),
         )
 
-        if self._join:
-            for join_item in self._join:
+        if self._joins:
+            for join_item in self._joins:
                 if join_item.how.value:
                     querystring += ' {type}'.format(type=join_item.how.value)
 
@@ -352,10 +362,10 @@ class TableQuery(Query):
         if self._nested:
             querystring = '({})'.format(querystring)
 
-        if self._alias is not None:
+        if self.alias is not None:
             return '{query} {alias}'.format(
                 query=querystring,
-                alias=self._alias
+                alias=self.alias
             )
 
         unionstring = ''
@@ -392,12 +402,7 @@ class TableJoiner(Joiner):
         if criterion is None:
             raise JoinException("Parameter 'on' is required when joining a table but was not supplied.")
 
-        self.query._tables[self.table.item_id] = self.table
-        self.query._join.append(Join(self.table.item_id, criterion, self.how))
-
-        for field in criterion.fields():
-            self.query._replace_table_ref(field)
-
+        self.query.do_join(self.table, criterion, self.how)
         return self.query
 
 
@@ -411,12 +416,7 @@ class SubqueryJoiner(Joiner):
             raise JoinException("Parameter 'on' is required when joining a subquery but was not supplied.")
 
         self.subquery._nested = True
-        self.query._tables[self.subquery.item_id] = self.subquery
-        self.query._join.append(Join(self.subquery.item_id, criterion, self.how))
-
-        for field in criterion.fields():
-            self.query._replace_table_ref(field)
-
+        self.query.do_join(self.subquery, criterion, self.how)
         return self.query
 
 

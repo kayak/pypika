@@ -87,7 +87,9 @@ class JoinBehaviorTests(unittest.TestCase):
             self.t0.buz == self.t2.bam
         ).select(
             self.t0.foo, self.t1.bar, self.t2.bam
-        ).select(self.t0.star).select(self.t1.star).select(self.t2.star)
+        ).select(
+            self.t0.star, self.t1.star, self.t2.star
+        )
 
         self.assertEqual('SELECT t0.*,t1.*,t2.* FROM abc t0 '
                          'JOIN efg t1 ON t0.foo=t1.bar '

@@ -11,6 +11,14 @@ __version__ = "0.0.1"
 
 
 class Term(object):
+    def __init__(self, alias=None):
+        self.alias = alias
+
+    @immutable
+    def as_(self, alias):
+        self.alias = alias
+        return self
+
     @staticmethod
     def _wrap(val):
         """
@@ -30,17 +38,6 @@ class Term(object):
             return val
 
         return ValueWrapper(val)
-
-    def for_(self, table):
-        """
-        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
-
-        :param table:
-            The table to replace with.
-        :return:
-            A copy of the field with it's table value replaced.
-        """
-        raise NotImplementedError()
 
     def fields(self):
         return [self]
@@ -155,9 +152,9 @@ class ValueWrapper(Term):
 
 class Field(Term):
     def __init__(self, name, alias=None, table=None):
+        super(Field, self).__init__(alias)
         self.name = name
         self.table = table
-        self._alias = alias
 
     def between(self, lower, upper):
         return BetweenCriterion(self, self._wrap(lower), self._wrap(upper))
@@ -168,20 +165,23 @@ class Field(Term):
         return ContainsCriterion(self, arg)
 
     @immutable
-    def as_(self, alias):
-        self._alias = alias
-        return self
-
-    @immutable
     def for_(self, table):
+        """
+        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
+
+        :param table:
+            The table to replace with.
+        :return:
+            A copy of the field with it's table value replaced.
+        """
         self.table = table
         return self
 
     def __str__(self):
         # FIXME escape
-        namespace = ('%s.' % self.table._alias
+        namespace = ('%s.' % self.table.alias
                      if self.table is not None
-                        and self.table._alias is not None
+                        and self.table.alias is not None
                      else '')
         return "{namespace}{name}".format(
             namespace=namespace,
@@ -196,7 +196,7 @@ class Field(Term):
 
 class Star(Field):
     def __init__(self, table=None):
-        super(Star, self).__init__('*', alias=None, table=table)
+        super(Star, self).__init__('*', table=table)
 
 
 class ListField(object):
@@ -372,21 +372,23 @@ class ArithmeticExpression(Term):
             (Optional) an alias for the term which can be used inside a select statement.
         :return:
         """
-
+        super(ArithmeticExpression, self).__init__(alias)
         self.operator = operator
         self.left = left
         self.right = right
-        self._alias = alias
 
     @immutable
     def for_(self, table):
+        """
+        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
+
+        :param table:
+            The table to replace with.
+        :return:
+            A copy of the field with it's table value replaced.
+        """
         self.left = self.left.for_(table)
         self.right = self.right.for_(table)
-        return self
-
-    @immutable
-    def as_(self, alias):
-        self._alias = alias
         return self
 
     def fields(self):
@@ -408,7 +410,7 @@ class Case(Term):
     def __init__(self, alias=None):
         self._cases = []
         self._else = None
-        self._alias = alias
+        self.alias = alias
 
     @immutable
     def when(self, criterion, term):
@@ -422,7 +424,7 @@ class Case(Term):
 
     @immutable
     def as_(self, alias):
-        self._alias = alias
+        self.alias = alias
         return self
 
     def __str__(self):
@@ -455,10 +457,18 @@ class Function(Term):
     def __init__(self, name, *params, **kwargs):
         self.name = name
         self.params = params
-        self._alias = kwargs.get('alias')
+        self.alias = kwargs.get('alias')
 
     @immutable
     def for_(self, table):
+        """
+        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
+
+        :param table:
+            The table to replace with.
+        :return:
+            A copy of the field with it's table value replaced.
+        """
         self.params = [param.for_(table) if hasattr(param, 'for_') else param
                        for param in self.params]
         return self
@@ -478,7 +488,7 @@ class Function(Term):
 
     @immutable
     def as_(self, alias):
-        self._alias = alias
+        self.alias = alias
         return self
 
 

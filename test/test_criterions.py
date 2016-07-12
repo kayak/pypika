@@ -11,7 +11,7 @@ __version__ = "0.0.1"
 
 class CriterionTests(unittest.TestCase):
     t = Table('test')
-    t._alias = 't0'
+    t.alias = 't0'
 
     def test__criterion_eq_number(self):
         c1 = Field('foo') == 1
@@ -242,7 +242,7 @@ class CriterionTests(unittest.TestCase):
 
 class BetweenTests(unittest.TestCase):
     t = Table('abc')
-    t._alias = 't0'
+    t.alias = 't0'
 
     def test__between_number(self):
         c1 = Field('foo').between(0, 1)
@@ -288,7 +288,7 @@ class BetweenTests(unittest.TestCase):
 
 class IsInTests(unittest.TestCase):
     t = Table('abc')
-    t._alias = 't0'
+    t.alias = 't0'
 
     def test__between_number(self):
         c1 = Field('foo').isin([0, 1])
@@ -314,7 +314,7 @@ class IsInTests(unittest.TestCase):
 
 class ComplexCriterionTests(unittest.TestCase):
     t0, t1 = Table('abc'), Table('efg')
-    t0._alias, t1._alias = 't0', 't1'
+    t0.alias, t1.alias = 't0', 't1'
 
     def test__and(self):
         c1 = (Field('foo') == 1) & (Field('bar') == 2)
@@ -360,7 +360,7 @@ class ComplexCriterionTests(unittest.TestCase):
 
 class CriterionOperationsTests(unittest.TestCase):
     t0, t1 = Table('abc'), Table('efg')
-    t0._alias, t1._alias = 't0', 't1'
+    t0.alias, t1.alias = 't0', 't1'
 
     def test_field_for_table(self):
         f = self.t0.foo.for_(self.t1)
