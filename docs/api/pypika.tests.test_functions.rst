@@ -1,7 +1,7 @@
-pypika.test.test_criterions module
+pypika.tests.test_functions module
 ==================================
 
-.. automodule:: pypika.test.test_criterions
+.. automodule:: pypika.tests.test_functions
     :members:
     :undoc-members:
     :show-inheritance:

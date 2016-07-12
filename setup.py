@@ -60,5 +60,5 @@ setup(
     install_requires=[
         'aenum'
     ],
-    test_suite="test",
+    test_suite="pypika.tests",
 )
