@@ -5,15 +5,28 @@ pypika - Python Query Builder
 
 |BuildStatus| |CoverageStatus| |Docs| |PyPi|
 
-**PyPika** is a Python API for for building queries.  The motivation behind **PyPika** is to provide a simple syntax for
-building queries but does not limit the flexibility of handwritten SQL.  Most other querybuilders were built with ORM in
-mind and are limited to selecting columns and provide only limited join functionality.  **PyPika** was designed around
-data analysis and provides syntax for building queries with arithmetic, complex expressions, nested functions,
-subqueries and joins.  It is also easily extended to take full advantage of specific features of SQL database vendors.
+*PyPika* is a Python API for building SQL queries. The motivation behind *PyPika* is to provide a simple interface for
+building SQL queries without limiting the flexibility of handwritten SQL. Designed with data analysis in mind, *PyPika*
+leverages the builder pattern design to construct queries to avoid messy string formatting and concatenation. It is also
+easily extended to take full advantage of specific features of SQL database vendors.
 
 .. _intro_end:
 
+.. _installation_start:
 
+Installation
+------------
+
+*PyPika* supports python ``2.7`` and ``3.3+``.  It may also work on pypy, cython, and jython, but is not being tested for these versions.
+
+To install *PyPika* run the following command:
+
+.. code-block:: bash
+
+    pip install pypika
+
+
+.. _installation_end:
 
 .. _available_badges_start:
 

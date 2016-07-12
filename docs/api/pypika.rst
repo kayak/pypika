@@ -1,6 +1,13 @@
 pypika package
 ==============
 
+Subpackages
+-----------
+
+.. toctree::
+
+    pypika.test
+
 Submodules
 ----------
 

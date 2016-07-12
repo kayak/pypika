@@ -42,8 +42,8 @@ Both of the above examples result in the following SQL:
 Arithmetic
 ----------
 
-Arithmetic expressions can also be constructed using pypika.  Operators such as `+`, `-`, `*`, and `/` are implemented by
-:class:`pypika.Field` which can be used simply with a :class:`pypika.Table` or directly.
+Arithmetic expressions can also be constructed using pypika.  Operators such as `+`, `-`, `*`, and `/` are implemented
+by :class:`pypika.Field` which can be used simply with a :class:`pypika.Table` or directly.
 
 .. code-block:: python
 
@@ -118,8 +118,8 @@ Queries can be filtered with :class:`pypika.Criterion` by using equality or ineq
 
     SELECT id,fname,lname,phone FROM customers WHERE lname='Mustermann'
 
-Query methods such as select, where, groupby, and orderby can be called multiple times.  Multiple calls to the
-where method will add additional conditions as
+Query methods such as select, where, groupby, and orderby can be called multiple times.  Multiple calls to the where
+method will add additional conditions as
 
 .. code-block:: python
 
@@ -221,8 +221,8 @@ Grouping allows for aggregated results and works similar to ``SELECT`` clauses.
 
     SELECT id,SUM(revenue) FROM customers WHERE age>=18 GROUP BY id ORDER BY id ASC
 
-After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes available.  The method :class:`Query.having()` 
-takes a :class:`Criterion` parameter similar to the method :class:`Query.where()`.
+After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes available.  The method
+:class:`Query.having()` takes a :class:`Criterion` parameter similar to the method :class:`Query.where()`.
 
 .. code-block:: python
 
@@ -275,8 +275,8 @@ calling :class:`Joiner.on()` the original query builder is returned and addition
 Unions
 ------
 
-Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and the **pypika** does
-not provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
+Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and the **pypika**
+does not provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
 trying to cast a unioned query to string with through a :class:`UnionException` if the column sizes are mismatched.
 
 To create a union query, use either the :class:`Query.union()` method or `+` operator with two query instances. For a
@@ -299,8 +299,8 @@ union all, use :class:`Query.union_all()` or the `*` operator.
 Date, Time, and Intervals
 -------------------------
 
-Using :class:`pypika.Interval`, queries can be constructed with date arithmetic.  Any combination of intervals can be used
-except for weeks and quarters, which must be used individually.  However, expressions can be chained.
+Using :class:`pypika.Interval`, queries can be constructed with date arithmetic.  Any combination of intervals can be
+used except for weeks and quarters, which must be used individually.  However, expressions can be chained.
 
 .. code-block:: python
 
@@ -317,7 +317,13 @@ except for weeks and quarters, which must be used individually.  However, expres
     SELECT id,name FROM fruits WHERE harvest_date+INTERVAL 1 MONTH<NOW()
 
 
-Manipulating Strings
---------------------
+Strings Functions
+-----------------
+
+WRITEME
+
+
+Extending PyPika
+----------------
 
 WRITEME
