@@ -3,7 +3,7 @@ pypika - Python Query Builder
 
 .. _intro_start:
 
-|BuildStatus| |CoverageStatus| |Docs| |PyPi|
+|BuildStatus|  |CoverageStatus|  |Codacy|  |Docs|  |PyPi|
 
 *PyPika* is a Python API for building SQL queries. The motivation behind *PyPika* is to provide a simple interface for
 building SQL queries without limiting the flexibility of handwritten SQL. Designed with data analysis in mind, *PyPika*
@@ -34,6 +34,8 @@ To install *PyPika* run the following command:
    :target: https://travis-ci.org/kayak/pypika
 .. |CoverageStatus| image:: https://coveralls.io/repos/kayak/pypika/badge.svg?branch=master&service=github
    :target: https://coveralls.io/github/kayak/pypika?branch=master
+.. |Codacy| image:: https://api.codacy.com/project/badge/Grade/6d7e44e5628b4839a23da0bd82eaafcf
+   :target: https://www.codacy.com/app/twheys/pypika
 .. |Docs| image:: https://readthedocs.org/projects/pypika/badge/?version=latest
    :target: http://pypika.readthedocs.io/en/latest/
 .. |PyPi| image:: https://img.shields.io/pypi/v/pypika.svg?style=flat
