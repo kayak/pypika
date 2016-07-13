@@ -4,7 +4,7 @@ from setuptools import setup
 
 __major_version__ = 0
 __minor_version__ = 0
-__patch_version__ = 12
+__patch_version__ = 13
 
 
 def readme():
@@ -25,6 +25,9 @@ setup(
     author="Timothy Heys",
     author_email="theys@kayak.com",
 
+    # License
+    license='Apache License Version 2.0',
+
     # Packages
     packages=["pypika"],
 
@@ -34,12 +37,11 @@ setup(
     # Details
     url="https://github.com/kayak/pypika",
 
-    # License
-    # license="LICENSE.txt",
     description="A query builder API for Python",
     long_description=readme(),
 
     classifiers=[
+        'License :: OSI Approved :: Apache Software License',
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 2',

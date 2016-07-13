@@ -102,6 +102,10 @@ class Query(Selectable, Term):
         """
         return Query(fields)
 
+    @staticmethod
+    def _list_aliases(field_set):
+        return [field.alias or str(field) for field in field_set]
+
     def __init__(self, select):
         super(Query, self).__init__(None)
 
@@ -293,7 +297,7 @@ class TableQuery(Query):
         :return:
             A list[str] of aliases.
         """
-        return [field.alias or str(field) for field in self._select]
+        return self._list_aliases(self._select)
 
     def groupby_aliases(self):
         """
@@ -303,7 +307,7 @@ class TableQuery(Query):
         :return:
             A list[str] of aliases.
         """
-        return [field.alias or str(field) for field in self._groupby]
+        return self._list_aliases(self._groupby)
 
     def do_join(self, item, criterion, how):
         self._tables[item.item_id] = item

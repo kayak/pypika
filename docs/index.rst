@@ -25,5 +25,11 @@ Indices and tables
 
 
 .. include:: ../README.rst
+   :start-after: _license_start:
+   :end-before:  _license_end:
+
+
+
+.. include:: ../README.rst
    :start-after: _available_badges_start:
    :end-before:  _available_badges_end:
