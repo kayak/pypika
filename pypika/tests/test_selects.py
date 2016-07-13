@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, Field as F, Case, fn, Order, JoinType
+from pypika import Query, Table, Tables, Field as F, Case, functions as fn, Order, JoinType
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -318,6 +318,50 @@ class AliasTests(unittest.TestCase):
 
         self.assertEqual("SELECT CASE WHEN foo=1 THEN 'a' ELSE 'b' END bar FROM abc", str(q))
 
+    def test_select_aliases(self):
+        test_query = Query.from_(self.t).select(
+            self.t.foo.as_('fiz1'), self.t.bar.as_('buz1')
+        ).groupby(
+            self.t.foo.as_('fiz2'), self.t.bar.as_('buz2')
+        )
+
+        self.assertListEqual(['fiz1', 'buz1'], test_query.select_aliases())
+
+    def test_select_aliases_mixed_with_fields(self):
+        test_query = Query.from_(self.t).select(
+            self.t.foo.as_('fiz1'), self.t.bar
+        ).groupby(
+            self.t.foo, self.t.bar.as_('buz2')
+        )
+
+        self.assertListEqual(['fiz1', 'bar'], test_query.select_aliases())
+
+    def test_select_aliases_mixed_with_complex_fields(self):
+        test_query = Query.from_(self.t).select(
+            self.t.foo.as_('foobar'), fn.Count(self.t.fiz + self.t.buz)
+        ).groupby(
+            self.t.foo
+        )
+
+        self.assertListEqual(['foobar', 'COUNT(fiz+buz)'], test_query.select_aliases())
+
+    def test_groupby_aliases(self):
+        test_query = Query.from_(self.t).select(
+            self.t.foo.as_('fiz1'), self.t.bar.as_('buz1')
+        ).groupby(
+            self.t.foo.as_('fiz2'), self.t.bar.as_('buz2')
+        )
+
+        self.assertListEqual(['fiz2', 'buz2'], test_query.groupby_aliases())
+
+    def test_groupby_aliases_mixed_with_fields(self):
+        test_query = Query.from_(self.t).select(
+            self.t.foo.as_('fiz1'), self.t.bar
+        ).groupby(
+            self.t.foo, self.t.bar.as_('buz2')
+        )
+
+        self.assertListEqual(['foo', 'buz2'], test_query.groupby_aliases())
 
 
 class SubqueryTests(unittest.TestCase):

@@ -14,7 +14,8 @@ Contents
 
     1_installation
     2_getting_started
-    3_reference
+    3_extending_pypika
+    4_reference
 
 Indices and tables
 ------------------

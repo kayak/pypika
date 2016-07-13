@@ -2,7 +2,8 @@
 import unittest
 from datetime import date, datetime
 
-from pypika import Field, Table, fn
+from pypika import Field, Table, functions as fn
+from pypika.terms import Mod
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -388,7 +389,7 @@ class CriterionOperationsTests(unittest.TestCase):
         self.assertEqual('SUM(t1.foo)', str(f))
 
     def test_function_with_values_and_fields_for_table(self):
-        f = fn.Mod(self.t0.foo, 2).for_(self.t1)
+        f = Mod(self.t0.foo, 2).for_(self.t1)
 
         self.assertEqual('MOD(t1.foo,2)', str(f))
 

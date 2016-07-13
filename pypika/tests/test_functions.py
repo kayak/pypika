@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query as Q, Table as T, Field as F, fn, CaseException, Case, Interval, DatePart
+from pypika import Query as Q, Table as T, Field as F, functions as fn, CaseException, Case, Interval, DatePart
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

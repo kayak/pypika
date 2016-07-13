@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, JoinException, fn, JoinType, UnionException, Interval
+from pypika import Query, Table, Tables, JoinException, functions as fn, JoinType, UnionException, Interval
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

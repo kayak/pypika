@@ -2,7 +2,7 @@
 
 from .enums import Order, JoinType, DatePart
 from .queries import Query, Table, make_tables as Tables
-from .terms import Field, Case, Interval, Functions as fn
+from .terms import Field, Case, Interval
 from .utils import JoinException, GroupingException, CaseException, UnionException
 
 __author__ = "Timothy Heys"

@@ -206,7 +206,7 @@ Grouping allows for aggregated results and works similar to ``SELECT`` clauses.
 
 .. code-block:: python
 
-    from pypika import fn
+    from pypika import functions as fn
 
     customers = Table('customers')
     q = Query.from_(customers).where(
@@ -226,7 +226,7 @@ After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes ava
 
 .. code-block:: python
 
-    from pypika import fn
+    from pypika import functions as fn
 
     payments = Table('payments')
     q = Query.from_(payments).where(
@@ -300,9 +300,11 @@ Date, Time, and Intervals
 -------------------------
 
 Using :class:`pypika.Interval`, queries can be constructed with date arithmetic.  Any combination of intervals can be
-used except for weeks and quarters, which must be used individually.  However, expressions can be chained.
+used except for weeks and quarters, which must be used separately and will ignore any other values if selected.
 
 .. code-block:: python
+
+    from pypika import functions as fn
 
     fruits = Tables('fruits')
     q = Query.from_(fruits).select(
@@ -320,10 +322,55 @@ used except for weeks and quarters, which must be used individually.  However, e
 Strings Functions
 -----------------
 
-WRITEME
+There are several string operations and function wrappers included in *PyPika*.  Function wrappers can be found in the
+:class:`pypika.functions` package.  In addition, `LIKE` and `REGEX` queries are supported as well.
+
+.. code-block:: python
+
+    from pypika import functions as fn
+
+    customers = Tables('customers')
+    q = Query.from_(customers).select(
+        customers.id,
+        customers.fname,
+        customers.lname,
+    ).where(
+        customers.lname.like('Mc%')
+    )
+
+.. code-block:: sql
+
+    SELECT id,fname,lname FROM customers WHERE lname LIKE 'Mc%'
+
+.. code-block:: python
+
+    from pypika import functions as fn
+
+    customers = Tables('customers')
+    q = Query.from_(customers).select(
+        customers.id,
+        customers.fname,
+        customers.lname,
+    ).where(
+        customers.lname.regex(r'^[abc][a-zA-Z]+&')
+    )
+
+.. code-block:: sql
+
+    SELECT id,fname,lname FROM customers WHERE lname REGEX '^[abc][a-zA-Z]+&';
 
 
-Extending PyPika
-----------------
+.. code-block:: python
 
-WRITEME
+    from pypika import functions as fn
+
+    customers = Tables('customers')
+    q = Query.from_(customers).select(
+        customers.id,
+        fn.Concat(customers.fname, ' ', customers.lname).as_('full_name'),
+    )
+
+.. code-block:: sql
+
+    SELECT id,CONCAT(fname, ' ', lname) full_name FROM customers
+

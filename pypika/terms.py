@@ -92,10 +92,10 @@ class Term(object):
         return ArithmeticExpression(Arithmetic.div, self, self._wrap(other))
 
     def __pow__(self, other):
-        return Functions.Pow(self, other)
+        return Pow(self, other)
 
     def __mod__(self, other):
-        return Functions.Mod(self, other)
+        return Mod(self, other)
 
     def __radd__(self, other):
         return ArithmeticExpression(Arithmetic.add, self._wrap(other), self)
@@ -551,153 +551,11 @@ class Interval(object):
         )
 
 
-class Functions(object):
-    """
-    Package for SQL functions wrappers
-    """
+class Pow(Function):
+    def __init__(self, term, exponent, alias=None):
+        super(Pow, self).__init__('POW', term, exponent, alias=alias)
 
-    class Count(Function):
-        def __init__(self, param, alias=None):
-            super(Functions.Count, self).__init__('COUNT', param, alias=alias)
-            self.__distinct__ = False
 
-        def __str__(self):
-            s = super(Functions.Count, self).__str__()
-            if self.__distinct__:
-                return s[:6] + 'DISTINCT ' + s[6:]
-
-            return s
-
-        @immutable
-        def distinct(self):
-            self.__distinct__ = True
-            return self
-
-    # Arithmetic Functions
-    class Sum(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Sum, self).__init__('SUM', term, alias=alias)
-
-    class Avg(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Avg, self).__init__('AVG', term, alias=alias)
-
-    class Min(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Min, self).__init__('MIN', term, alias=alias)
-
-    class Max(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Max, self).__init__('MAX', term, alias=alias)
-
-    class Std(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Std, self).__init__('STD', term, alias=alias)
-
-    class StdDev(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.StdDev, self).__init__('STDDEV', term, alias=alias)
-
-    class Coalesce(Function):
-        def __init__(self, term, default_value, alias=None):
-            super(Functions.Coalesce, self).__init__('COALESCE', term, self._wrap(default_value), alias=alias)
-
-    class Pow(Function):
-        def __init__(self, term, exponent, alias=None):
-            super(Functions.Pow, self).__init__('POW', term, exponent, alias=alias)
-
-    class Mod(Function):
-        def __init__(self, term, modulus, alias=None):
-            super(Functions.Mod, self).__init__('MOD', term, modulus, alias=alias)
-
-    # Type Functions
-    class Cast(Function):
-        def __init__(self, term, as_type, alias=None):
-            super(Functions.Cast, self).__init__('CAST', term, as_type, alias=alias)
-
-        def __str__(self):
-            # FIXME escape
-            return '{name}({field} AS {type})'.format(
-                name=self.name,
-                field=self.params[0],
-                type=self.params[1],
-            )
-
-    class Convert(Function):
-        def __init__(self, term, encoding, alias=None):
-            super(Functions.Convert, self).__init__('CONVERT', term, encoding, alias=alias)
-
-        def __str__(self):
-            # FIXME escape
-            return '{name}({field} USING {type})'.format(
-                name=self.name,
-                field=self.params[0],
-                type=self.params[1],
-            )
-
-    class Signed(Cast):
-        def __init__(self, term, alias=None):
-            super(Functions.Signed, self).__init__(self._wrap(term), 'SIGNED', alias=alias)
-
-    class Unsigned(Cast):
-        def __init__(self, term, alias=None):
-            super(Functions.Unsigned, self).__init__(self._wrap(term), 'UNSIGNED', alias=alias)
-
-    class Date(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Date, self).__init__('DATE', self._wrap(term), alias=alias)
-
-    class Timestamp(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Timestamp, self).__init__('TIMESTAMP', self._wrap(term), alias=alias)
-
-    # String Functions
-    class Ascii(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Ascii, self).__init__('ASCII', self._wrap(term), alias=alias)
-
-    class Bin(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Bin, self).__init__('BIN', self._wrap(term), alias=alias)
-
-    class Concat(Function):
-        def __init__(self, *terms, **kwargs):
-            super(Functions.Concat, self).__init__('CONCAT', *[self._wrap(term) for term in terms], **kwargs)
-
-    class Insert(Function):
-        def __init__(self, term, start, stop, subterm, alias=None):
-            term, start, stop, subterm = [self._wrap(term) for term in [term, start, stop, subterm]]
-            super(Functions.Insert, self).__init__('INSERT', term, start, stop, subterm, alias=alias)
-
-    class Length(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Length, self).__init__('LENGTH', self._wrap(term), alias=alias)
-
-    class Lower(Function):
-        def __init__(self, term, alias=None):
-            super(Functions.Lower, self).__init__('LOWER', self._wrap(term), alias=alias)
-
-    # Date Functions
-    class Now(Function):
-        def __init__(self, alias=None):
-            super(Functions.Now, self).__init__('NOW', alias=alias)
-
-    class CurDate(Function):
-        def __init__(self, alias=None):
-            super(Functions.CurDate, self).__init__('CURDATE', alias=alias)
-
-    class CurTime(Function):
-        def __init__(self, alias=None):
-            super(Functions.CurTime, self).__init__('CURTIME', alias=alias)
-
-    class Extract(Function):
-        def __init__(self, date_part, field, alias=None):
-            super(Functions.Extract, self).__init__('EXTRACT', date_part.value, self._wrap(field), alias=alias)
-
-        def __str__(self):
-            # FIXME escape
-            return '{name}({part} FROM {field})'.format(
-                name=self.name,
-                part=self.params[0],
-                field=self.params[1],
-            )
+class Mod(Function):
+    def __init__(self, term, modulus, alias=None):
+        super(Mod, self).__init__('MOD', term, modulus, alias=alias)

@@ -285,6 +285,26 @@ class TableQuery(Query):
         # Don't return anything here. Subqueries have their own fields.
         return []
 
+    def select_aliases(self):
+        """
+        Gets a list of aliases for the columns in this query's SELECT clause.  If a field does not have an alias, the
+        field name is returned instead.
+
+        :return:
+            A list[str] of aliases.
+        """
+        return [field.alias or str(field) for field in self._select]
+
+    def groupby_aliases(self):
+        """
+        Gets a list of aliases for the columns in this query's GROUP BY clause.  If a field does not have an alias, the
+        field name is returned instead.
+
+        :return:
+            A list[str] of aliases.
+        """
+        return [field.alias or str(field) for field in self._groupby]
+
     def do_join(self, item, criterion, how):
         self._tables[item.item_id] = item
         self._joins.append(Join(item.item_id, criterion, how))
