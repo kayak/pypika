@@ -7,7 +7,7 @@ pypika - Python Query Builder
 
 *PyPika* is a Python API for building SQL queries. The motivation behind *PyPika* is to provide a simple interface for
 building SQL queries without limiting the flexibility of handwritten SQL. Designed with data analysis in mind, *PyPika*
-leverages the builder pattern design to construct queries to avoid messy string formatting and concatenation. It is also
+leverages the builder design pattern to construct queries to avoid messy string formatting and concatenation. It is also
 easily extended to take full advantage of specific features of SQL database vendors.
 
 .. _intro_end:
