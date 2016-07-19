@@ -19,7 +19,10 @@ class SelectTests(unittest.TestCase):
     def test_select__star(self):
         q = Query.from_('abc').select('*')
 
-        self.assertEqual('SELECT * FROM `abc`', str(q))
+    def test_select__table_schema(self):
+        q = Query.from_(Table('abc', 'schema1')).select('*')
+
+        self.assertEqual('SELECT * FROM `schema1`.`abc`', str(q))
 
     def test_select__star__replacement(self):
         q = Query.from_('abc').select('foo').select('*')

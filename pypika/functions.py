@@ -17,9 +17,6 @@ class Count(Function):
         super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)
         self._distinct = False
 
-    def __str__(self):
-        return self.get_sql()
-
     def get_sql(self, **kwargs):
         s = super(Count, self).get_sql(**kwargs)
         if self._distinct:

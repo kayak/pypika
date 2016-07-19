@@ -36,23 +36,32 @@ class Selectable(object):
 
 
 class Table(Selectable):
-    def __init__(self, name):
+    def __init__(self, name, schema=None):
         super(Table, self).__init__(None)
         self.table_name = name
-
-    def __str__(self):
-        return self.get_sql()
+        self.schema = schema
 
     def get_sql(self, **kwargs):
         # FIXME escape
-        if self.alias:
-            return "`{name}` `{alias}`".format(
+
+        if self.schema:
+            name = "`{schema}`.`{name}`".format(
+                schema=self.schema,
                 name=self.table_name,
+            )
+
+        else:
+            name = "`{name}`".format(
+                name=self.table_name
+            )
+
+        if self.alias:
+            return "{name} `{alias}`".format(
+                name=name,
                 alias=self.alias
             )
-        return "`{name}`".format(
-            name=self.table_name
-        )
+
+        return name
 
     def __eq__(self, other):
         return isinstance(other, Table) and self.table_name == other.table_name
@@ -61,8 +70,8 @@ class Table(Selectable):
         return self.item_id
 
 
-def make_tables(*names):
-    return [Table(name) for name in names]
+def make_tables(*names, **kwargs):
+    return [Table(name, schema=kwargs.get('schema')) for name in names]
 
 
 class Query(Selectable, Term):
@@ -257,8 +266,6 @@ class TableQuery(Query):
 
         self.join_parts = []
         self.union_parts = []
-
-        self._nested = False
 
     @immutable
     def _instance_from_(self, table):
@@ -455,7 +462,6 @@ class SubqueryJoiner(Joiner):
         if criterion is None:
             raise JoinException("Parameter 'on' is required when joining a subquery but was not supplied.")
 
-        self.subquery._nested = True
         self.query.do_join(self.subquery, criterion, self.how)
         return self.query
 
