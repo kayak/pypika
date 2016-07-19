@@ -4,7 +4,7 @@ from collections import OrderedDict
 from pypika.enums import JoinType, UnionType
 from pypika.utils import JoinException, UnionException
 from pypika.utils import immutable
-from .terms import Field, Star, Term
+from .terms import Field, Star, Term, Function, ArithmeticExpression
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -97,8 +97,9 @@ class Query(Selectable, Term):
         :returns TableQuery
         """
         if isinstance(table, Table):
-            return TableQuery(table, [])
-        return TableQuery(Table(table), [])
+            return Query(table)
+
+        return Query(Table(table))
 
     @staticmethod
     def select(*fields):
@@ -114,179 +115,68 @@ class Query(Selectable, Term):
 
         :returns TableQuery
         """
-        return Query(fields)
+        return Query().select(*fields)
 
     @staticmethod
     def _list_aliases(field_set):
         return [field.alias or field.get_sql(with_quotes=False)
                 for field in field_set]
 
-    def __init__(self, select):
+    def __init__(self, table=None):
         super(Query, self).__init__(None)
 
-        self.select_parts = [self._wrap(field) for field in select]
+        self.table = table
+        self.tables = OrderedDict()
+
+        self.select = self._instance_select
+        self.from_ = self._instance_from_
+
+        if table is not None:
+            self.tables[table.item_id] = table
+
+        self._selects = []
         self._distinct = False
+
+        self._wheres = None
+        self._groupbys = []
+        self._havings = None
+        self._orderbys = []
+        self._joins = []
+        self._unions = []
 
         self._select_star = False
         self._select_star_tables = set()
 
-        # After instantiating, replace these functions with instance versions so the names can be reused.
-        self.from_ = self._instance_from_
-        self.select = self._instance_select
-
-        self.table = None
-        self.tables = OrderedDict()
-
-        self.where_parts = None
-        self.groupby_parts = None
-        self.having_parts = None
-        self.orderby_parts = None
-
-        self.join_parts = None
-        self.union_parts = None
-
     @immutable
     def _instance_from_(self, table):
-        """
-        Add a table to the query.  This is an alternative path for when the static select function is called first which
-        allows a table to be added to the query second.
+        if self.table is not None:
+            raise AttributeError("'TableQuery' object has no attribute 'from_'")
 
-
-        :param table:
-        :return:
-        """
         if isinstance(table, Table):
-            return TableQuery(table, self.select_parts)
-        return TableQuery(Table(table), self.select_parts)
-
-    @immutable
-    def _instance_select(self, *fields):
-        for field in fields:
-            self.select_parts.append(self._wrap(field))
+            self.table = table
+        else:
+            self.table = Table(table)
 
         return self
-
-    def __str__(self):
-        querystring = self.get_sql()
-
-        unionstring = ''
-        if self.union_parts:
-            for (union_type, other) in self.union_parts:
-                if len(self.select_parts) != len(other.select_parts):
-                    raise UnionException("Queries must have an equal number of select statements in a union."
-                                         "\n\nMain Query:\n{query1}"
-                                         "\n\nUnion Query:\n{query2}".format(query1=querystring,
-                                                                             query2=other.get_sql()))
-
-                unionstring += ' UNION{type} {query}'.format(
-                    type=union_type.value,
-                    query=other.get_sql()
-                )
-
-        return querystring + unionstring
-
-    def get_sql(self, with_alias=False, subquery=False, **kwargs):
-        if not self.select_parts:
-            return ''
-
-        if self.join_parts:
-            for i, table in enumerate(self.tables.values()):
-                table.alias = table.alias or 't%d' % i
-
-        querystring = 'SELECT {distinct}{select}'.format(
-            distinct='distinct ' if self._distinct else '',
-            select=','.join(term.get_sql(with_quotes=True, with_alias=True)
-                            for term in self.select_parts),
-        )
-
-        if self.table:
-            querystring += ' FROM {table}'.format(
-                table=self.table.get_sql(with_quotes=True),
-            )
-
-        if self.join_parts:
-            for join_item in self.join_parts:
-                if join_item.how.value:
-                    querystring += ' {type}'.format(type=join_item.how.value)
-
-                querystring += ' JOIN {table} ON {criterion}'.format(
-                    table=self.tables[join_item.table_id].get_sql(with_quotes=True, with_alias=True, subquery=True),
-                    criterion=join_item.criteria.get_sql(with_quotes=True),
-                )
-
-        if self.where_parts:
-            querystring += ' WHERE {where}'.format(where=self.where_parts.get_sql(with_quotes=True, subquery=True))
-
-        if self.groupby_parts:
-            querystring += ' GROUP BY {groupby}'.format(
-                groupby=','.join(term.get_sql(with_quotes=True)
-                                 for term in self.groupby_parts)
-            )
-
-        if self.having_parts:
-            querystring += ' HAVING {having}'.format(having=self.having_parts.get_sql(with_quotes=True))
-
-        if self.orderby_parts:
-            querystring += ' ORDER BY {orderby}'.format(
-                orderby=','.join(
-                    '{field} {orient}'.format(
-                        field=field.get_sql(with_quotes=True),
-                        orient=orient.value,
-                    ) if orient is not None else
-                    field.get_sql(with_quotes=True)
-                    for field, orient in self.orderby_parts
-                )
-            )
-
-        if subquery:
-            querystring = '({query})'.format(
-                query=querystring,
-            )
-
-        if with_alias:
-            return '{query} \"{alias}\"'.format(
-                query=querystring,
-                alias=self.alias,
-            )
-
-        return querystring
-
-
-class TableQuery(Query):
-    def __init__(self, table, select):
-        super(TableQuery, self).__init__(select)
-
-        self.table = table
-        self.tables = OrderedDict({table.item_id: table})
-
-        self.where_parts = None
-        self.groupby_parts = []
-        self.having_parts = None
-        self.orderby_parts = []
-
-        self.join_parts = []
-        self.union_parts = []
-
-    @immutable
-    def _instance_from_(self, table):
-        raise AttributeError("'TableQuery' object has no attribute 'from_'")
 
     @immutable
     def _instance_select(self, *terms):
         for term in terms:
-            if isinstance(term, str):
-                self._select_field_str(term)
-            elif isinstance(term, Field):
+            if isinstance(term, Field):
                 self._select_field(self._replace_table_ref(term))
+            elif isinstance(term, str):
+                self._select_field_str(term)
+            elif isinstance(term, (Function, ArithmeticExpression)):
+                self._select_other(self._replace_table_ref(term))
             else:
-                self._select_function(self._replace_table_ref(term))
+                self._select_other(self._wrap(term))
 
         return self
 
     def _select_field_str(self, term):
         if term == '*':
             self._select_star = True
-            self.select_parts = [Star()]
+            self._selects = [Star()]
             return
 
         self._select_field(Field(term, table=self.table))
@@ -301,15 +191,15 @@ class TableQuery(Query):
             return
 
         if isinstance(term, Star):
-            self.select_parts = [select
-                                 for select in self.select_parts
-                                 if not hasattr(select, 'table') or term.table != select.table]
+            self._selects = [select
+                             for select in self._selects
+                             if not hasattr(select, 'table') or term.table != select.table]
             self._select_star_tables.add(term.table)
 
-        self.select_parts.append(term)
+        self._selects.append(term)
 
-    def _select_function(self, function):
-        self.select_parts.append(function)
+    def _select_other(self, function):
+        self._selects.append(function)
 
     @immutable
     def distinct(self):
@@ -320,10 +210,10 @@ class TableQuery(Query):
     def where(self, criterion):
         self._replace_table_ref(criterion)
 
-        if self.where_parts:
-            self.where_parts &= criterion
+        if self._wheres:
+            self._wheres &= criterion
         else:
-            self.where_parts = criterion
+            self._wheres = criterion
 
         return self
 
@@ -331,10 +221,10 @@ class TableQuery(Query):
         for field in criteria.fields():
             self._replace_table_ref(field)
 
-        if self.having_parts:
-            self.having_parts &= criteria
+        if self._havings:
+            self._havings &= criteria
         else:
-            self.having_parts = criteria
+            self._havings = criteria
 
         return self
 
@@ -343,7 +233,7 @@ class TableQuery(Query):
         for field in fields:
             if isinstance(field, str):
                 field = Field(field, table=self.table)
-            self.groupby_parts.append(self._replace_table_ref(field))
+            self._groupbys.append(self._replace_table_ref(field))
 
         return self
 
@@ -355,7 +245,7 @@ class TableQuery(Query):
             else:
                 field = self._replace_table_ref(self._wrap(field))
 
-            self.orderby_parts.append((field, kwargs.get('order')))
+            self._orderbys.append((field, kwargs.get('order')))
 
         return self
 
@@ -371,12 +261,12 @@ class TableQuery(Query):
 
     @immutable
     def union(self, other):
-        self.union_parts.append((UnionType.distinct, other))
+        self._unions.append((UnionType.distinct, other))
         return self
 
     @immutable
     def union_all(self, other):
-        self.union_parts.append((UnionType.all, other))
+        self._unions.append((UnionType.all, other))
         return self
 
     def fields(self):
@@ -391,7 +281,7 @@ class TableQuery(Query):
         :return:
             A list[str] of aliases.
         """
-        return self._list_aliases(self.select_parts)
+        return self._list_aliases(self._selects)
 
     def groupby_aliases(self):
         """
@@ -401,11 +291,11 @@ class TableQuery(Query):
         :return:
             A list[str] of aliases.
         """
-        return self._list_aliases(self.groupby_parts)
+        return self._list_aliases(self._groupbys)
 
     def do_join(self, item, criterion, how):
         self.tables[item.item_id] = item
-        self.join_parts.append(Join(item.item_id, criterion, how))
+        self._joins.append(Join(item.item_id, criterion, how))
 
         for field in criterion.fields():
             self._replace_table_ref(field)
@@ -429,6 +319,91 @@ class TableQuery(Query):
 
     def __mul__(self, other):
         return self.union_all(other)
+
+    def __str__(self):
+        querystring = self.get_sql()
+
+        unionstring = ''
+        if self._unions:
+            for (union_type, other) in self._unions:
+                if len(self._selects) != len(other._selects):
+                    raise UnionException("Queries must have an equal number of select statements in a union."
+                                         "\n\nMain Query:\n{query1}"
+                                         "\n\nUnion Query:\n{query2}".format(query1=querystring,
+                                                                             query2=other.get_sql()))
+
+                unionstring += ' UNION{type} {query}'.format(
+                    type=union_type.value,
+                    query=other.get_sql()
+                )
+
+        return querystring + unionstring
+
+    def get_sql(self, with_alias=False, subquery=False, **kwargs):
+        if not self._selects:
+            return ''
+
+        if self._joins:
+            for i, table in enumerate(self.tables.values()):
+                table.alias = table.alias or 't%d' % i
+
+        querystring = 'SELECT {distinct}{select}'.format(
+            distinct='distinct ' if self._distinct else '',
+            select=','.join(term.get_sql(with_quotes=True, with_alias=True)
+                            for term in self._selects),
+        )
+
+        if self.table:
+            querystring += ' FROM {table}'.format(
+                table=self.table.get_sql(with_quotes=True),
+            )
+
+        if self._joins:
+            for join_item in self._joins:
+                if join_item.how.value:
+                    querystring += ' {type}'.format(type=join_item.how.value)
+
+                querystring += ' JOIN {table} ON {criterion}'.format(
+                    table=self.tables[join_item.table_id].get_sql(with_quotes=True, with_alias=True, subquery=True),
+                    criterion=join_item.criteria.get_sql(with_quotes=True),
+                )
+
+        if self._wheres:
+            querystring += ' WHERE {where}'.format(where=self._wheres.get_sql(with_quotes=True, subquery=True))
+
+        if self._groupbys:
+            querystring += ' GROUP BY {groupby}'.format(
+                groupby=','.join(term.get_sql(with_quotes=True)
+                                 for term in self._groupbys)
+            )
+
+        if self._havings:
+            querystring += ' HAVING {having}'.format(having=self._havings.get_sql(with_quotes=True))
+
+        if self._orderbys:
+            querystring += ' ORDER BY {orderby}'.format(
+                orderby=','.join(
+                    '{field} {orient}'.format(
+                        field=field.get_sql(with_quotes=True),
+                        orient=orient.value,
+                    ) if orient is not None else
+                    field.get_sql(with_quotes=True)
+                    for field, orient in self._orderbys
+                )
+            )
+
+        if subquery:
+            querystring = '({query})'.format(
+                query=querystring,
+            )
+
+        if with_alias:
+            return '{query} \"{alias}\"'.format(
+                query=querystring,
+                alias=self.alias,
+            )
+
+        return querystring
 
 
 class Joiner(object):
