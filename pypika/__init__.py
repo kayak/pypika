@@ -2,8 +2,8 @@
 
 from .enums import Order, JoinType, DatePart
 from .queries import Query, Table, make_tables as Tables
-from .terms import Field, Case, Interval
-from .utils import JoinException, GroupingException, CaseException, UnionException
+from .terms import Field, Case, Interval, Rollup
+from .utils import JoinException, GroupingException, CaseException, UnionException, RollupException
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

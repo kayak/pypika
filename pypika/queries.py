@@ -2,9 +2,9 @@
 from collections import OrderedDict
 
 from pypika.enums import JoinType, UnionType
-from pypika.utils import JoinException, UnionException
+from pypika.utils import JoinException, UnionException, RollupException
 from pypika.utils import immutable
-from .terms import Field, Star, Term, Function, ArithmeticExpression
+from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -145,11 +145,12 @@ class Query(Selectable, Term):
 
         self._select_star = False
         self._select_star_tables = set()
+        self._mysql_rollup = False
 
     @immutable
     def _instance_from_(self, table):
         if self.table is not None:
-            raise AttributeError("'TableQuery' object has no attribute 'from_'")
+            raise AttributeError("'TableQuery' object has no attribute '%s'" % 'from_')
 
         if isinstance(table, Table):
             self.table = table
@@ -233,6 +234,26 @@ class Query(Selectable, Term):
             if isinstance(field, str):
                 field = Field(field, table=self.table)
             self._groupbys.append(self._replace_table_ref(field))
+
+        return self
+
+    @immutable
+    def rollup(self, *fields, **kwargs):
+        for_mysql = 'mysql' == kwargs.get('vendor')
+
+        if self._mysql_rollup:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'rollup')
+
+        if for_mysql:
+            if not fields and not self._groupbys:
+                raise RollupException('At least one group is required. Call Query.groupby(term) or pass'
+                                      'as parameter to rollup.')
+
+            self._mysql_rollup = True
+            self._groupbys += fields
+
+        else:
+            self._groupbys.append(Rollup(*fields))
 
         return self
 
@@ -375,6 +396,8 @@ class Query(Selectable, Term):
                 groupby=','.join(term.get_sql(with_quotes=True)
                                  for term in self._groupbys)
             )
+            if self._mysql_rollup:
+                querystring += ' WITH ROLLUP'
 
         if self._havings:
             querystring += ' HAVING {having}'.format(having=self._havings.get_sql(with_quotes=True))

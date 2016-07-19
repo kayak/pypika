@@ -611,3 +611,8 @@ class Pow(Function):
 class Mod(Function):
     def __init__(self, term, modulus, alias=None):
         super(Mod, self).__init__('MOD', term, modulus, alias=alias)
+
+
+class Rollup(Function):
+    def __init__(self, *terms):
+        super(Rollup, self).__init__('ROLLUP', *terms)

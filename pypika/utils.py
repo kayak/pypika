@@ -24,6 +24,10 @@ class UnionException(Exception):
     pass
 
 
+class RollupException(Exception):
+    pass
+
+
 def immutable(func):
     import copy
 

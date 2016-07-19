@@ -14,8 +14,9 @@ Contents
 
     1_installation
     2_getting_started
-    3_extending
-    4_reference
+    3_advanced
+    4_extending
+    5_reference
 
 Indices and tables
 ------------------
