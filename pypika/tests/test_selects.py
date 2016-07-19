@@ -5,7 +5,6 @@ from pypika import Query, Table, Tables, Field as F, Case, functions as fn, Orde
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.0.1"
 
 
 class SelectTests(unittest.TestCase):

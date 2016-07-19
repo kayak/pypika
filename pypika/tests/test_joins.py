@@ -5,7 +5,6 @@ from pypika import Query, Table, Tables, JoinException, functions as fn, JoinTyp
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.0.1"
 
 
 class JoinTypeTests(unittest.TestCase):

@@ -8,7 +8,6 @@ from .terms import Field, Star, Term, Function, ArithmeticExpression
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.0.1"
 
 
 class Selectable(object):

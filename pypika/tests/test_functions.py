@@ -6,7 +6,6 @@ from pypika.enums import SqlTypes
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.0.1"
 
 
 class ArithmeticTests(unittest.TestCase):
