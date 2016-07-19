@@ -45,18 +45,18 @@ class Table(Selectable):
         # FIXME escape
 
         if self.schema:
-            name = "`{schema}`.`{name}`".format(
+            name = "\"{schema}\".\"{name}\"".format(
                 schema=self.schema,
                 name=self.table_name,
             )
 
         else:
-            name = "`{name}`".format(
+            name = "\"{name}\"".format(
                 name=self.table_name
             )
 
         if self.alias:
-            return "{name} `{alias}`".format(
+            return "{name} \"{alias}\"".format(
                 name=name,
                 alias=self.alias
             )
@@ -244,7 +244,7 @@ class Query(Selectable, Term):
             )
 
         if with_alias:
-            return '{query} `{alias}`'.format(
+            return '{query} \"{alias}\"'.format(
                 query=querystring,
                 alias=self.alias,
             )

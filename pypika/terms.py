@@ -194,7 +194,7 @@ class Field(Term):
         return self.between(item.start, item.stop)
 
     def get_sql(self, with_alias=False, with_quotes=True, **kwargs):
-        quote_char = '`' if with_quotes else ''
+        quote_char = '\"' if with_quotes else ''
 
         if getattr(self, 'table', None) and getattr(self.table, 'alias', None):
             name = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
@@ -224,7 +224,7 @@ class Star(Field):
 
     def get_sql(self, with_alias=False, **kwargs):
         if self.table is not None and self.table.alias is not None:
-            return "`{namespace}`.*".format(
+            return "\"{namespace}\".*".format(
                 namespace=self.table.alias,
             )
 
@@ -274,7 +274,7 @@ class BasicCriterion(Criterion):
 
         :param comparator:
             Type: Comparator
-            This defines the type of comparison, such as `=` or `>`.
+            This defines the type of comparison, such as \"=\" or \">\".
         :param left:
             The term on the left side of the expression.
         :param right:
@@ -407,7 +407,7 @@ class ArithmeticExpression(Term):
 
         :param operator:
             Type: Arithmetic
-            An operator for the expression such as `+` or `/`
+            An operator for the expression such as \"+\" or \"/\"
 
         :param left:
             The term on the left side of the expression.
@@ -447,7 +447,7 @@ class ArithmeticExpression(Term):
             operator=self.operator.value,
             left=("({})" if is_mul and is_left_add else "{}").format(self.left.get_sql(**kwargs)),
             right=("({})" if is_mul and is_right_add else "{}").format(self.right.get_sql(**kwargs)),
-            alias=' `{}`'.format(self.alias) if with_alias and self.alias is not None else ''
+            alias=' \"{}\"'.format(self.alias) if with_alias and self.alias is not None else ''
         )
 
 
@@ -484,7 +484,7 @@ class Case(Term):
                 then=field.get_sql(**kwargs)
             ) for criterion, field in self._cases),
             else_clause=self._else.get_sql(**kwargs),
-            alias=' `{}`'.format(self.alias) if self.alias is not None and with_alias else ''
+            alias=' \"{}\"'.format(self.alias) if self.alias is not None and with_alias else ''
         )
 
     def fields(self):
@@ -528,7 +528,7 @@ class Function(Term):
             params=','.join(p.get_sql(with_quotes=True, with_alias=False) if hasattr(p, 'get_sql')
                             else str(p)
                             for p in self.params),
-            alias=' `{}`'.format(self.alias) if self.alias is not None and with_alias else ''
+            alias=' \"{}\"'.format(self.alias) if self.alias is not None and with_alias else ''
         )
 
     def fields(self):
