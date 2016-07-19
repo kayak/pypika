@@ -65,3 +65,11 @@ class DatePart(Enum):
     minute = 'MINUTE'
     second = 'SECOND'
     microsecond = 'MICROSECOND'
+
+
+class SqlTypes(Enum):
+    SIGNED = 'SIGNED'
+    UNSIGNED = 'UNSIGNED'
+    utf8 = 'utf8'
+    DATE = 'DATE'
+    TIMESTAMP = 'TIMESTAMP'

@@ -2,7 +2,8 @@
 """
 Package for SQL functions wrappers
 """
-from pypika.terms import Function
+from pypika.enums import SqlTypes
+from pypika.terms import Function, Star
 from pypika.utils import immutable
 
 __author__ = "Timothy Heys"
@@ -12,19 +13,22 @@ __version__ = "0.0.1"
 
 class Count(Function):
     def __init__(self, param, alias=None):
-        super(Count, self).__init__('COUNT', param, alias=alias)
-        self.__distinct__ = False
+        is_star = isinstance(param, str) and '*' == param
+        super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)
+        self._distinct = False
 
     def __str__(self):
-        s = super(Count, self).__str__()
-        if self.__distinct__:
-            return s[:6] + 'DISTINCT ' + s[6:]
+        return self.get_sql()
 
+    def get_sql(self, **kwargs):
+        s = super(Count, self).get_sql(**kwargs)
+        if self._distinct:
+            return s[:6] + 'DISTINCT ' + s[6:]
         return s
 
     @immutable
     def distinct(self):
-        self.__distinct__ = True
+        self._distinct = True
         return self
 
 
@@ -61,8 +65,7 @@ class StdDev(Function):
 
 class Coalesce(Function):
     def __init__(self, term, default_value, alias=None):
-        super(Coalesce, self).__init__('COALESCE', term, self._wrap(default_value), alias=alias)
-
+        super(Coalesce, self).__init__('COALESCE', term, default_value, alias=alias)
 
 
 # Type Functions
@@ -70,7 +73,7 @@ class Cast(Function):
     def __init__(self, term, as_type, alias=None):
         super(Cast, self).__init__('CAST', term, as_type, alias=alias)
 
-    def __str__(self):
+    def get_sql(self, **kwargs):
         # FIXME escape
         return '{name}({field} AS {type})'.format(
             name=self.name,
@@ -83,7 +86,7 @@ class Convert(Function):
     def __init__(self, term, encoding, alias=None):
         super(Convert, self).__init__('CONVERT', term, encoding, alias=alias)
 
-    def __str__(self):
+    def get_sql(self, **kwargs):
         # FIXME escape
         return '{name}({field} USING {type})'.format(
             name=self.name,
@@ -94,54 +97,54 @@ class Convert(Function):
 
 class Signed(Cast):
     def __init__(self, term, alias=None):
-        super(Signed, self).__init__(self._wrap(term), 'SIGNED', alias=alias)
+        super(Signed, self).__init__(term, SqlTypes.SIGNED, alias=alias)
 
 
 class Unsigned(Cast):
     def __init__(self, term, alias=None):
-        super(Unsigned, self).__init__(self._wrap(term), 'UNSIGNED', alias=alias)
+        super(Unsigned, self).__init__(term, SqlTypes.UNSIGNED, alias=alias)
 
 
 class Date(Function):
     def __init__(self, term, alias=None):
-        super(Date, self).__init__('DATE', self._wrap(term), alias=alias)
+        super(Date, self).__init__('DATE', term, alias=alias)
 
 
 class Timestamp(Function):
     def __init__(self, term, alias=None):
-        super(Timestamp, self).__init__('TIMESTAMP', self._wrap(term), alias=alias)
+        super(Timestamp, self).__init__('TIMESTAMP', term, alias=alias)
 
 
 # String Functions
 class Ascii(Function):
     def __init__(self, term, alias=None):
-        super(Ascii, self).__init__('ASCII', self._wrap(term), alias=alias)
+        super(Ascii, self).__init__('ASCII', term, alias=alias)
 
 
 class Bin(Function):
     def __init__(self, term, alias=None):
-        super(Bin, self).__init__('BIN', self._wrap(term), alias=alias)
+        super(Bin, self).__init__('BIN', term, alias=alias)
 
 
 class Concat(Function):
     def __init__(self, *terms, **kwargs):
-        super(Concat, self).__init__('CONCAT', *[self._wrap(term) for term in terms], **kwargs)
+        super(Concat, self).__init__('CONCAT', *terms, **kwargs)
 
 
 class Insert(Function):
     def __init__(self, term, start, stop, subterm, alias=None):
-        term, start, stop, subterm = [self._wrap(term) for term in [term, start, stop, subterm]]
+        term, start, stop, subterm = [term for term in [term, start, stop, subterm]]
         super(Insert, self).__init__('INSERT', term, start, stop, subterm, alias=alias)
 
 
 class Length(Function):
     def __init__(self, term, alias=None):
-        super(Length, self).__init__('LENGTH', self._wrap(term), alias=alias)
+        super(Length, self).__init__('LENGTH', term, alias=alias)
 
 
 class Lower(Function):
     def __init__(self, term, alias=None):
-        super(Lower, self).__init__('LOWER', self._wrap(term), alias=alias)
+        super(Lower, self).__init__('LOWER', term, alias=alias)
 
 
 # Date Functions
@@ -162,10 +165,9 @@ class CurTime(Function):
 
 class Extract(Function):
     def __init__(self, date_part, field, alias=None):
-        super(Extract, self).__init__('EXTRACT', date_part.value, self._wrap(field), alias=alias)
+        super(Extract, self).__init__('EXTRACT', date_part, field, alias=alias)
 
-    def __str__(self):
-        # FIXME escape
+    def get_sql(self, **kwargs):
         return '{name}({part} FROM {field})'.format(
             name=self.name,
             part=self.params[0],

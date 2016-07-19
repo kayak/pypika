@@ -2,6 +2,8 @@
 import re
 from datetime import date
 
+from aenum import Enum
+
 from pypika.enums import Boolean, Equality, Arithmetic, Matching
 from pypika.utils import CaseException, immutable
 
@@ -136,18 +138,24 @@ class ValueWrapper(Term):
     def __init__(self, value):
         self.value = value
 
-    def __str__(self):
-        # FIXME escape values
-        if isinstance(self.value, date):
-            return "'%s'" % self.value.isoformat()
-        elif isinstance(self.value, str):
-            return "'%s'" % self.value
-        elif isinstance(self.value, bool):
-            return str.lower(str(self.value))
-        return str(self.value)
-
     def fields(self):
         return []
+
+    def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self, **kwargs):
+        # FIXME escape values
+        if isinstance(self.value, Enum):
+            return self.value.value
+        if isinstance(self.value, date):
+            return "'%s'" % self.value.isoformat()
+        if isinstance(self.value, str):
+            return "'%s'" % self.value
+        if isinstance(self.value, bool):
+            return str.lower(str(self.value))
+
+        return str(self.value)
 
 
 class Field(Term):
@@ -177,26 +185,53 @@ class Field(Term):
         self.table = table
         return self
 
-    def __str__(self):
-        # FIXME escape
-        namespace = ('%s.' % self.table.alias
-                     if self.table is not None
-                        and self.table.alias is not None
-                     else '')
-        return "{namespace}{name}".format(
-            namespace=namespace,
-            name=self.name,
-        )
-
     def __getitem__(self, item):
         if not isinstance(item, slice):
             raise TypeError("Field' object is not subscriptable")
         return self.between(item.start, item.stop)
 
+    def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self, with_alias=False, with_quotes=True, **kwargs):
+        quote_char = '`' if with_quotes else ''
+
+        if getattr(self, 'table', None) and getattr(self.table, 'alias', None):
+            name = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
+                namespace=self.table.alias,
+                name=self.name,
+                quote=quote_char,
+            )
+        else:
+            name = "{quote}{name}{quote}".format(
+                name=self.name,
+                quote=quote_char,
+            )
+
+        alias = getattr(self, 'alias', None)
+        if with_alias and alias:
+            return name + ' {quote}{alias}{quote}'.format(
+                alias=alias,
+                quote=quote_char,
+            )
+
+        return name
+
 
 class Star(Field):
     def __init__(self, table=None):
         super(Star, self).__init__('*', table=table)
+
+    def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self, with_alias=False, **kwargs):
+        if self.table is not None and self.table.alias is not None:
+            return "`{namespace}`.*".format(
+                namespace=self.table.alias,
+            )
+
+        return '*'
 
 
 class ListField(object):
@@ -204,7 +239,13 @@ class ListField(object):
         self.values = values
 
     def __str__(self):
-        return ','.join(map(str, self.values))
+        return self.get_sql()
+
+    def get_sql(self, **kwargs):
+        return '({})'.format(
+            ','.join(field.get_sql()
+                     for field in self.values)
+        )
 
 
 class Criterion(object):
@@ -219,6 +260,12 @@ class Criterion(object):
 
     def fields(self):
         raise NotImplementedError()
+
+    def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self):
+        return ''
 
 
 class BasicCriterion(Criterion):
@@ -249,15 +296,18 @@ class BasicCriterion(Criterion):
         self.right = self.right.for_(table)
         return self
 
-    def __str__(self):
-        return '{left}{comparator}{right}'.format(
-            comparator=self.comparator.value,
-            left=str(self.left),
-            right=str(self.right),
-        )
-
     def fields(self):
         return self.left.fields() + self.right.fields()
+
+    def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self, **kwargs):
+        return '{left}{comparator}{right}'.format(
+            comparator=self.comparator.value,
+            left=self.left.get_sql(**kwargs),
+            right=self.right.get_sql(**kwargs),
+        )
 
 
 class ContainsCriterion(Criterion):
@@ -275,15 +325,18 @@ class ContainsCriterion(Criterion):
         self.field = field
         self.container = container
 
-    def __str__(self):
-        # FIXME escape
-        return "{field} IN ({nested})".format(
-            field=str(self.field),
-            nested=str(self.container)
-        )
-
     def fields(self):
         return [self.field] + self.field.fields() if self.field.fields else []
+
+    def __str__(self):
+        # FIXME escape
+        return self.get_sql()
+
+    def get_sql(self, **kwargs):
+        return "{field} IN {container}".format(
+            field=self.field.get_sql(**kwargs),
+            container=self.container.get_sql(**kwargs)
+        )
 
 
 class BetweenCriterion(Criterion):
@@ -299,8 +352,11 @@ class BetweenCriterion(Criterion):
 
     def __str__(self):
         # FIXME escape
+        return self.get_sql()
+
+    def get_sql(self, **kwargs):
         return "{field} BETWEEN {start} AND {end}".format(
-            field=self.field,
+            field=self.field.get_sql(**kwargs),
             start=self.start,
             end=self.end,
         )
@@ -320,9 +376,12 @@ class NullCriterion(Criterion):
         return self
 
     def __str__(self):
-        return "{field} IS{isnot} NULL".format(
-            field=self.field,
-            isnot='' if self.isnull else ' NOT'
+        return self.get_sql()
+
+    def get_sql(self, **kwargs):
+        return "{field} IS{not_} NULL".format(
+            field=self.field.get_sql(**kwargs),
+            not_='' if self.isnull else ' NOT'
         )
 
     def fields(self):
@@ -330,21 +389,28 @@ class NullCriterion(Criterion):
 
 
 class ComplexCriterion(BasicCriterion):
-    def __str__(self):
-        return '{left} {comparator} {right}'.format(
-            comparator=self.comparator.value,
-            left=self._wrap(self.left),
-            right=self._wrap(self.right),
-        )
-
     def fields(self):
         return self.left.fields() + self.right.fields()
 
-    def _wrap(self, value):
-        if isinstance(value, ComplexCriterion) and not value.comparator == self.comparator:
-            return '(%s)' % str(value)
+    def __str__(self):
+        return self.get_sql()
 
-        return str(value)
+    def get_sql(self, subcriterion=False, **kwargs):
+        sql = '{left} {comparator} {right}'.format(
+            comparator=self.comparator.value,
+            left=self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs),
+            right=self.right.get_sql(subcriterion=self.needs_brackets(self.right), **kwargs),
+        )
+
+        if subcriterion:
+            return '({criterion})'.format(
+                criterion=sql
+            )
+
+        return sql
+
+    def needs_brackets(self, term):
+        return isinstance(term, ComplexCriterion) and not term.comparator == self.comparator
 
 
 class ArithmeticExpression(Term):
@@ -395,14 +461,17 @@ class ArithmeticExpression(Term):
         return self.left.fields() + self.right.fields()
 
     def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self, with_alias=False, **kwargs):
         is_mul = self.operator in self.mul_order
         is_left_add, is_right_add = [getattr(side, 'operator', None) in self.add_order
                                      for side in [self.left, self.right]]
-
-        return '{left}{operator}{right}'.format(
+        return '{left}{operator}{right}{alias}'.format(
             operator=self.operator.value,
-            left=("({})" if is_mul and is_left_add else "{}").format(self.left),
-            right=("({})" if is_mul and is_right_add else "{}").format(self.right),
+            left=("({})" if is_mul and is_left_add else "{}").format(self.left.get_sql(**kwargs)),
+            right=("({})" if is_mul and is_right_add else "{}").format(self.right.get_sql(**kwargs)),
+            alias=' `{}`'.format(self.alias) if with_alias and self.alias is not None else ''
         )
 
 
@@ -428,17 +497,21 @@ class Case(Term):
         return self
 
     def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self, with_alias=False, **kwargs):
         if not self._cases:
             raise CaseException("At least one 'when' case is required for a CASE statement.")
         if self._else is None:
             raise CaseException("'Else' clause is requred for a CASE statement.")
 
-        return 'CASE {cases} ELSE {else_clause} END'.format(
+        return 'CASE {cases} ELSE {else_clause} END{alias}'.format(
             cases=" ".join('WHEN {when} THEN {then}'.format(
-                when=criterion,
-                then=field
+                when=criterion.get_sql(**kwargs),
+                then=field.get_sql(**kwargs)
             ) for criterion, field in self._cases),
-            else_clause=str(self._else),
+            else_clause=self._else.get_sql(**kwargs),
+            alias=' `{}`'.format(self.alias) if self.alias is not None and with_alias else ''
         )
 
     def fields(self):
@@ -456,7 +529,8 @@ class Case(Term):
 class Function(Term):
     def __init__(self, name, *params, **kwargs):
         self.name = name
-        self.params = params
+        self.params = [self._wrap(param)
+                       for param in params]
         self.alias = kwargs.get('alias')
 
     @immutable
@@ -469,15 +543,22 @@ class Function(Term):
         :return:
             A copy of the field with it's table value replaced.
         """
-        self.params = [param.for_(table) if hasattr(param, 'for_') else param
+        self.params = [param.for_(table) if hasattr(param, 'for_')
+                       else param
                        for param in self.params]
         return self
 
     def __str__(self):
         # FIXME escape
-        return '{name}({params})'.format(
+        return self.get_sql()
+
+    def get_sql(self, with_alias=False, **kwargs):
+        return '{name}({params}){alias}'.format(
             name=self.name,
-            params=','.join(map(str, self.params)),
+            params=','.join(p.get_sql(with_quotes=True, with_alias=False) if hasattr(p, 'get_sql')
+                            else str(p)
+                            for p in self.params),
+            alias=' `{}`'.format(self.alias) if self.alias is not None and with_alias else ''
         )
 
     def fields(self):
@@ -518,6 +599,9 @@ class Interval(object):
                 self.smallest = label
 
     def __str__(self):
+        return self.get_sql()
+
+    def get_sql(self, **kwargs):
         if hasattr(self, 'quarters'):
             expr = getattr(self, 'quarters')
             unit = 'QUARTER'
@@ -544,7 +628,6 @@ class Interval(object):
                 largest=self.largest,
                 smallest=self.smallest,
             ) if self.largest != self.smallest else self.largest
-
         return 'INTERVAL {expr} {unit}'.format(
             expr=expr,
             unit=unit,

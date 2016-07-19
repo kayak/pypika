@@ -4,7 +4,7 @@ from setuptools import setup
 
 __major_version__ = 0
 __minor_version__ = 0
-__patch_version__ = 13
+__patch_version__ = 14
 
 
 def readme():
@@ -16,7 +16,7 @@ setup(
     # Application name:
     name="PyPika",
 
-    # Version number (initial):
+    # Version number:
     version='{major}.{minor}.{patch}'.format(major=__major_version__,
                                              minor=__minor_version__,
                                              patch=__patch_version__),
