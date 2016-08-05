@@ -28,11 +28,11 @@ class RollupException(Exception):
     pass
 
 
-def immutable(func):
+def builder(func):
     import copy
 
     def _decorator(self, *args, **kwargs):
         self_copy = copy.deepcopy(self)
-        return func(self_copy, *args, **kwargs)
+        return func(self_copy, *args, **kwargs) or self_copy
 
     return _decorator

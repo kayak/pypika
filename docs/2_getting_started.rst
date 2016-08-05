@@ -374,3 +374,8 @@ There are several string operations and function wrappers included in *PyPika*. 
 
     SELECT id,CONCAT(fname, ' ', lname) full_name FROM customers
 
+
+Inserting Data
+--------------
+
+WRITEME

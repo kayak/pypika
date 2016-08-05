@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from pypika.enums import JoinType, UnionType
 from pypika.utils import JoinException, UnionException, RollupException
-from pypika.utils import immutable
+from pypika.utils import builder
 from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup
 
 __author__ = "Timothy Heys"
@@ -68,12 +68,15 @@ class Table(Selectable):
     def __hash__(self):
         return self.item_id
 
+    def __str__(self):
+        return self.get_sql()
+
 
 def make_tables(*names, **kwargs):
     return [Table(name, schema=kwargs.get('schema')) for name in names]
 
 
-class Query(Selectable, Term):
+class Query(object):
     """
     Query is the primary class and entry point in pypika. It is used to build queries iteratively using the builder design
     pattern.
@@ -84,56 +87,67 @@ class Query(Selectable, Term):
     @staticmethod
     def from_(table):
         """
-        Primary entry point for building queries that select from a table.
-
-        This function creates a new instance of a TableQuery for the parameter table.
-
-        :param table:
-            Type: Table or str
-
-            An instance of a Table object or a string.
-
-        :returns TableQuery
-        """
-        if isinstance(table, Table):
-            return Query(table)
-
-        return Query(Table(table))
-
-    @staticmethod
-    def select(*fields):
-        """
-        Secondary entry point for building queries that select without a table.  It is also possible to convert a Query
-        to a TableQuery after calling this function by calling the from_ function.  This function is perhaps useful for
-        testing SQL syntax.
+        Query builder entry point.  Initializes query building and sets the table to select from.  When using this
+        function, the query becomes a SELECT query.
 
         :param table:
             Type: Table or str
 
-            An instance of a Table object or a string.
+            An instance of a Table object or a string table name.
 
-        :returns TableQuery
+        :returns QueryBuilder
         """
-        return Query().select(*fields)
+        return QueryBuilder().from_(table)
 
     @staticmethod
-    def _list_aliases(field_set):
-        return [field.alias or field.get_sql(with_quotes=False)
-                for field in field_set]
+    def into(table):
+        """
+        Query builder entry point.  Initializes query building and sets the table to insert into.  When using this
+        function, the query becomes an INSERT query.
 
-    def __init__(self, table=None):
-        super(Query, self).__init__(None)
+        :param table:
+            Type: Table or str
 
-        self.table = table
-        self.tables = OrderedDict()
+            An instance of a Table object or a string table name.
 
-        self.select = self._instance_select
-        self.from_ = self._instance_from_
+        :returns QueryBuilder
+        """
+        return QueryBuilder().into(table)
 
-        if table is not None:
-            self.tables[table.item_id] = table
+    @staticmethod
+    def select(*terms):
+        """
+        Query builder entry point.  Initializes query building without a table and selects fields.  Useful when testing
+        SQL functions.
+
+        :param terms:
+            Type: list[expression]
+
+            A list of terms to select.  These can be any type of int, float, str, bool, or Term.  They cannot be a Field
+            unless the function ``Query.from_`` is called first.
+
+        :returns QueryBuilder
+        """
+        return QueryBuilder().select(*terms)
+
+
+class QueryBuilder(Selectable, Term):
+    """
+    Query Builder is the main class in pypika which stores the state of a query and offers functions which allow the
+    state to be branched immutably.
+    """
+
+    def __init__(self):
+        super(QueryBuilder, self).__init__(None)
+
+        self._tables = OrderedDict()
+
+        self._select_table = None
+        self._insert_table = None
 
         self._selects = []
+        self._columns = []
+        self._values = []
         self._distinct = False
 
         self._wheres = None
@@ -146,21 +160,39 @@ class Query(Selectable, Term):
         self._select_star = False
         self._select_star_tables = set()
         self._mysql_rollup = False
+        self._select_into = False
 
-    @immutable
-    def _instance_from_(self, table):
-        if self.table is not None:
-            raise AttributeError("'TableQuery' object has no attribute '%s'" % 'from_')
+    @builder
+    def from_(self, table):
+        """
+        Adds a table to the query.  This function can only be called once and will raise an AttributeError if called a
+        second time.
 
-        if isinstance(table, Table):
-            self.table = table
-        else:
-            self.table = Table(table)
+        :param table:
+            Type: Table or str
 
-        return self
+            An instance of a Table object or a string.
 
-    @immutable
-    def _instance_select(self, *terms):
+        :returns A copy of the query with the table added.
+        """
+        if self._select_table is not None:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'from_')
+
+        self._select_table = table if isinstance(table, Table) else Table(table)
+        self._tables[self._select_table.item_id] = table
+
+    @builder
+    def into(self, table):
+        if self._insert_table is not None:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'into')
+
+        if self._selects:
+            self._select_into = True
+
+        self._insert_table = table if isinstance(table, Table) else Table(table)
+
+    @builder
+    def select(self, *terms):
         for term in terms:
             if isinstance(term, Field):
                 self._select_field(self._replace_table_ref(term))
@@ -171,7 +203,119 @@ class Query(Selectable, Term):
             else:
                 self._select_other(self._wrap(term))
 
-        return self
+    @builder
+    def columns(self, *terms):
+        if self._insert_table is None:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'insert')
+
+        for term in terms:
+            if isinstance(term, str):
+                term = Field(term, table=self._insert_table)
+            self._columns.append(term)
+
+    @builder
+    def insert(self, *terms):
+        if self._insert_table is None:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'insert')
+
+        if not terms:
+            return
+
+        if not isinstance(terms[0], (list, tuple, set)):
+            terms = [terms]
+
+        for values in terms:
+            self._values.append([value
+                                 if isinstance(value, Term)
+                                 else self._wrap(value)
+                                 for value in values])
+
+    @builder
+    def distinct(self):
+        self._distinct = True
+
+    @builder
+    def where(self, criterion):
+        self._replace_table_ref(criterion)
+
+        if self._wheres:
+            self._wheres &= criterion
+        else:
+            self._wheres = criterion
+
+    @builder
+    def having(self, criteria):
+        for field in criteria.fields():
+            self._replace_table_ref(field)
+
+        if self._havings:
+            self._havings &= criteria
+        else:
+            self._havings = criteria
+
+    @builder
+    def groupby(self, *fields):
+        for field in fields:
+            if isinstance(field, str):
+                field = Field(field, table=self._select_table)
+            self._groupbys.append(self._replace_table_ref(field))
+
+    @builder
+    def rollup(self, *fields, **kwargs):
+        for_mysql = 'mysql' == kwargs.get('vendor')
+
+        if self._mysql_rollup:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'rollup')
+
+        if for_mysql:
+            if not fields and not self._groupbys:
+                raise RollupException('At least one group is required. Call Query.groupby(term) or pass'
+                                      'as parameter to rollup.')
+
+            self._mysql_rollup = True
+            self._groupbys += fields
+
+        else:
+            self._groupbys.append(Rollup(*fields))
+
+    @builder
+    def orderby(self, *fields, **kwargs):
+        for field in fields:
+            if isinstance(field, str):
+                field = Field(field, table=self._select_table)
+            else:
+                field = self._replace_table_ref(self._wrap(field))
+
+            self._orderbys.append((field, kwargs.get('order')))
+
+    @builder
+    def join(self, item, how=JoinType.left):
+        if isinstance(item, Table):
+            return TableJoiner(self, item, how)
+
+        elif isinstance(item, QueryBuilder):
+            return SubqueryJoiner(self, item, how)
+
+        raise ValueError("Cannot join on type '%s'" % type(item))
+
+    @builder
+    def union(self, other):
+        self._unions.append((UnionType.distinct, other))
+
+    @builder
+    def union_all(self, other):
+        self._unions.append((UnionType.all, other))
+
+    def __add__(self, other):
+        return self.union(other)
+
+    def __mul__(self, other):
+        return self.union_all(other)
+
+    @staticmethod
+    def _list_aliases(field_set):
+        return [field.alias or field.get_sql(with_quotes=False)
+                for field in field_set]
 
     def _select_field_str(self, term):
         if term == '*':
@@ -179,7 +323,7 @@ class Query(Selectable, Term):
             self._selects = [Star()]
             return
 
-        self._select_field(Field(term, table=self.table))
+        self._select_field(Field(term, table=self._select_table))
 
     def _select_field(self, term):
         if self._select_star:
@@ -200,94 +344,6 @@ class Query(Selectable, Term):
 
     def _select_other(self, function):
         self._selects.append(function)
-
-    @immutable
-    def distinct(self):
-        self._distinct = True
-        return self
-
-    @immutable
-    def where(self, criterion):
-        self._replace_table_ref(criterion)
-
-        if self._wheres:
-            self._wheres &= criterion
-        else:
-            self._wheres = criterion
-
-        return self
-
-    def having(self, criteria):
-        for field in criteria.fields():
-            self._replace_table_ref(field)
-
-        if self._havings:
-            self._havings &= criteria
-        else:
-            self._havings = criteria
-
-        return self
-
-    @immutable
-    def groupby(self, *fields):
-        for field in fields:
-            if isinstance(field, str):
-                field = Field(field, table=self.table)
-            self._groupbys.append(self._replace_table_ref(field))
-
-        return self
-
-    @immutable
-    def rollup(self, *fields, **kwargs):
-        for_mysql = 'mysql' == kwargs.get('vendor')
-
-        if self._mysql_rollup:
-            raise AttributeError("'Query' object has no attribute '%s'" % 'rollup')
-
-        if for_mysql:
-            if not fields and not self._groupbys:
-                raise RollupException('At least one group is required. Call Query.groupby(term) or pass'
-                                      'as parameter to rollup.')
-
-            self._mysql_rollup = True
-            self._groupbys += fields
-
-        else:
-            self._groupbys.append(Rollup(*fields))
-
-        return self
-
-    @immutable
-    def orderby(self, *fields, **kwargs):
-        for field in fields:
-            if isinstance(field, str):
-                field = Field(field, table=self.table)
-            else:
-                field = self._replace_table_ref(self._wrap(field))
-
-            self._orderbys.append((field, kwargs.get('order')))
-
-        return self
-
-    @immutable
-    def join(self, item, how=JoinType.left):
-        if isinstance(item, Table):
-            return TableJoiner(self, item, how)
-
-        elif isinstance(item, Query):
-            return SubqueryJoiner(self, item, how)
-
-        raise ValueError("Cannot join on type '%s'" % type(item))
-
-    @immutable
-    def union(self, other):
-        self._unions.append((UnionType.distinct, other))
-        return self
-
-    @immutable
-    def union_all(self, other):
-        self._unions.append((UnionType.all, other))
-        return self
 
     def fields(self):
         # Don't return anything here. Subqueries have their own fields.
@@ -314,7 +370,7 @@ class Query(Selectable, Term):
         return self._list_aliases(self._groupbys)
 
     def do_join(self, item, criterion, how):
-        self.tables[item.item_id] = item
+        self._tables[item.item_id] = item
         self._joins.append(Join(item.item_id, criterion, how))
 
         for field in criterion.fields():
@@ -323,26 +379,163 @@ class Query(Selectable, Term):
     def _replace_table_ref(self, term):
         for field in term.fields():
             if field.table is None:
-                field.table = self.table
+                field.table = self._select_table
                 continue
 
-            if field.table.item_id not in self.tables:
+            if field.table.item_id not in self._tables:
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
                                     'its fields can be used' % field.table)
 
-            field.table = self.tables[field.table.item_id]
+            field.table = self._tables[field.table.item_id]
         return term
 
-    def __add__(self, other):
-        return self.union(other)
-
-    def __mul__(self, other):
-        return self.union_all(other)
-
     def __str__(self):
-        querystring = self.get_sql()
+        return self.get_sql(with_unions=True)
 
+    def get_sql(self, with_alias=False, subquery=False, with_unions=False, **kwargs):
+        if not (self._selects or self._insert_table):
+            return ''
+        if self._insert_table and not (self._selects or self._values):
+            return ''
+
+        if self._joins:
+            for i, table in enumerate(self._tables.values()):
+                table.alias = table.alias or 't%d' % i
+
+        if not self._select_into and self._insert_table:
+            querystring = self._insert_sql()
+
+            if self._columns:
+                querystring += self._columns_sql()
+
+            if self._values:
+                return querystring + self._values_sql()
+            else:
+                querystring += ' ' + self._select_sql()
+
+        else:
+            querystring = self._select_sql()
+
+            if self._insert_table:
+                querystring += self._into_sql()
+
+        if self._select_table:
+            querystring += self._from_sql()
+
+        if self._joins:
+            for join_item in self._joins:
+                if join_item.how.value:
+                    querystring += self._jointype_sql(join_item)
+                querystring += self._join_sql(join_item)
+
+        if self._wheres:
+            querystring += self._where_sql()
+
+        if self._groupbys:
+            querystring += self._group_sql()
+            if self._mysql_rollup:
+                querystring += self._rollup_sql()
+
+        if self._havings:
+            querystring += self._having_sql()
+
+        if self._orderbys:
+            querystring += self._orderby_sql()
+
+        if subquery:
+            querystring = '({query})'.format(
+                query=querystring,
+            )
+
+        if with_alias:
+            return self._queryalias_sql(querystring)
+
+        if with_unions:
+            querystring += self._union_sql(querystring)
+
+        return querystring
+
+    def _select_sql(self):
+        return 'SELECT {distinct}{select}'.format(
+            distinct='distinct ' if self._distinct else '',
+            select=','.join(term.get_sql(with_quotes=True, with_alias=True)
+                            for term in self._selects),
+        )
+
+    def _insert_sql(self):
+        return 'INSERT INTO {table}'.format(
+            table=self._insert_table
+        )
+
+    def _columns_sql(self):
+        return ' ({columns})'.format(
+            columns=','.join(term.get_sql(with_quotes=True, with_alias=True)
+                             for term in self._columns)
+        )
+
+    def _values_sql(self):
+        return ' VALUES ({values})'.format(
+            values='),('.join(','.join
+                              (term.get_sql(with_quotes=True, with_alias=True)
+                               for term in row)
+                              for row in self._values)
+
+        )
+
+    def _into_sql(self):
+        return ' INTO {table}'.format(
+            table=self._insert_table.get_sql(with_quotes=True, with_alias=False),
+        )
+
+    def _from_sql(self):
+        return ' FROM {table}'.format(
+            table=self._select_table.get_sql(with_quotes=True),
+        )
+
+    def _jointype_sql(self, join_item):
+        return ' {type}'.format(type=join_item.how.value)
+
+    def _join_sql(self, join_item):
+        return ' JOIN {table} ON {criterion}'.format(
+            table=self._tables[join_item.table_id].get_sql(with_quotes=True, with_alias=True, subquery=True),
+            criterion=join_item.criteria.get_sql(with_quotes=True),
+        )
+
+    def _where_sql(self):
+        return ' WHERE {where}'.format(where=self._wheres.get_sql(with_quotes=True, subquery=True))
+
+    def _group_sql(self):
+        return ' GROUP BY {groupby}'.format(
+            groupby=','.join(term.get_sql(with_quotes=True)
+                             for term in self._groupbys)
+        )
+
+    def _rollup_sql(self):
+        return ' WITH ROLLUP'
+
+    def _having_sql(self):
+        return ' HAVING {having}'.format(having=self._havings.get_sql(with_quotes=True))
+
+    def _orderby_sql(self):
+        return ' ORDER BY {orderby}'.format(
+            orderby=','.join(
+                '{field} {orient}'.format(
+                    field=field.get_sql(with_quotes=True),
+                    orient=orient.value,
+                ) if orient is not None else
+                field.get_sql(with_quotes=True)
+                for field, orient in self._orderbys
+            )
+        )
+
+    def _queryalias_sql(self, querystring):
+        return '{query} \"{alias}\"'.format(
+            query=querystring,
+            alias=self.alias,
+        )
+
+    def _union_sql(self, querystring):
         unionstring = ''
         if self._unions:
             for (union_type, other) in self._unions:
@@ -356,76 +549,7 @@ class Query(Selectable, Term):
                     type=union_type.value,
                     query=other.get_sql()
                 )
-
-        return querystring + unionstring
-
-    def get_sql(self, with_alias=False, subquery=False, **kwargs):
-        if not self._selects:
-            return ''
-
-        if self._joins:
-            for i, table in enumerate(self.tables.values()):
-                table.alias = table.alias or 't%d' % i
-
-        querystring = 'SELECT {distinct}{select}'.format(
-            distinct='distinct ' if self._distinct else '',
-            select=','.join(term.get_sql(with_quotes=True, with_alias=True)
-                            for term in self._selects),
-        )
-
-        if self.table:
-            querystring += ' FROM {table}'.format(
-                table=self.table.get_sql(with_quotes=True),
-            )
-
-        if self._joins:
-            for join_item in self._joins:
-                if join_item.how.value:
-                    querystring += ' {type}'.format(type=join_item.how.value)
-
-                querystring += ' JOIN {table} ON {criterion}'.format(
-                    table=self.tables[join_item.table_id].get_sql(with_quotes=True, with_alias=True, subquery=True),
-                    criterion=join_item.criteria.get_sql(with_quotes=True),
-                )
-
-        if self._wheres:
-            querystring += ' WHERE {where}'.format(where=self._wheres.get_sql(with_quotes=True, subquery=True))
-
-        if self._groupbys:
-            querystring += ' GROUP BY {groupby}'.format(
-                groupby=','.join(term.get_sql(with_quotes=True)
-                                 for term in self._groupbys)
-            )
-            if self._mysql_rollup:
-                querystring += ' WITH ROLLUP'
-
-        if self._havings:
-            querystring += ' HAVING {having}'.format(having=self._havings.get_sql(with_quotes=True))
-
-        if self._orderbys:
-            querystring += ' ORDER BY {orderby}'.format(
-                orderby=','.join(
-                    '{field} {orient}'.format(
-                        field=field.get_sql(with_quotes=True),
-                        orient=orient.value,
-                    ) if orient is not None else
-                    field.get_sql(with_quotes=True)
-                    for field, orient in self._orderbys
-                )
-            )
-
-        if subquery:
-            querystring = '({query})'.format(
-                query=querystring,
-            )
-
-        if with_alias:
-            return '{query} \"{alias}\"'.format(
-                query=querystring,
-                alias=self.alias,
-            )
-
-        return querystring
+        return unionstring
 
 
 class Joiner(object):

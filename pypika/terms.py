@@ -5,7 +5,7 @@ from datetime import date
 from aenum import Enum
 
 from pypika.enums import Boolean, Equality, Arithmetic, Matching
-from pypika.utils import CaseException, immutable
+from pypika.utils import CaseException, builder
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -15,7 +15,7 @@ class Term(object):
     def __init__(self, alias=None):
         self.alias = alias
 
-    @immutable
+    @builder
     def as_(self, alias):
         self.alias = alias
         return self
@@ -34,8 +34,8 @@ class Term(object):
             querybuilder will be returned as inputted.
 
         """
-        from .queries import Query
-        if isinstance(val, Term) or isinstance(val, Query):
+        from .queries import QueryBuilder
+        if isinstance(val, Term) or isinstance(val, QueryBuilder):
             return val
 
         return ValueWrapper(val)
@@ -174,7 +174,7 @@ class Field(Term):
             return ContainsCriterion(self, ListField([self._wrap(value) for value in arg]))
         return ContainsCriterion(self, arg)
 
-    @immutable
+    @builder
     def for_(self, table):
         """
         Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
@@ -283,7 +283,7 @@ class BasicCriterion(Criterion):
         self.left = left
         self.right = right
 
-    @immutable
+    @builder
     def for_(self, table):
         self.left = self.left.for_(table)
         self.right = self.right.for_(table)
@@ -332,7 +332,7 @@ class BetweenCriterion(Criterion):
         self.start = start
         self.end = end
 
-    @immutable
+    @builder
     def for_(self, table):
         self.field = self.field.for_(table)
         return self
@@ -354,7 +354,7 @@ class NullCriterion(Criterion):
         self.field = field
         self.isnull = isnull
 
-    @immutable
+    @builder
     def for_(self, table):
         self.field = self.field.for_(table)
         return self
@@ -421,7 +421,7 @@ class ArithmeticExpression(Term):
         self.left = left
         self.right = right
 
-    @immutable
+    @builder
     def for_(self, table):
         """
         Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
@@ -456,17 +456,17 @@ class Case(Term):
         self._else = None
         self.alias = alias
 
-    @immutable
+    @builder
     def when(self, criterion, term):
         self._cases.append((criterion, self._wrap(term)))
         return self
 
-    @immutable
+    @builder
     def else_(self, field):
         self._else = self._wrap(field)
         return self
 
-    @immutable
+    @builder
     def as_(self, alias):
         self.alias = alias
         return self
@@ -505,7 +505,7 @@ class Function(Term):
                        for param in params]
         self.alias = kwargs.get('alias')
 
-    @immutable
+    @builder
     def for_(self, table):
         """
         Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
@@ -536,7 +536,7 @@ class Function(Term):
                 if hasattr(param, 'fields')
                 for field in param.fields()]
 
-    @immutable
+    @builder
     def as_(self, alias):
         self.alias = alias
         return self

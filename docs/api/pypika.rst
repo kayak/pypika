@@ -6,7 +6,7 @@ Subpackages
 
 .. toctree::
 
-    pypika.test
+    pypika.tests
 
 Submodules
 ----------
@@ -14,6 +14,7 @@ Submodules
 .. toctree::
 
    pypika.enums
+   pypika.functions
    pypika.queries
    pypika.terms
    pypika.utils

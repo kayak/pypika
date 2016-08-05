@@ -4,7 +4,7 @@ Package for SQL functions wrappers
 """
 from pypika.enums import SqlTypes
 from pypika.terms import Function, Star
-from pypika.utils import immutable
+from pypika.utils import builder
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -22,7 +22,7 @@ class Count(Function):
             return s[:6] + 'DISTINCT ' + s[6:]
         return s
 
-    @immutable
+    @builder
     def distinct(self):
         self._distinct = True
         return self
