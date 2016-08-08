@@ -8,13 +8,12 @@ pypika - Python Query Builder
 Abstract
 ========
 
-What is *PyPika*?
+What is |Brand|?
 
-*PyPika* is a Python API for building SQL queries. The motivation behind *PyPika* is to provide a simple interface for
-building SQL queries without limiting the flexibility of handwritten SQL. Designed with data analysis in mind, *PyPika*
+|Brand| is a Python API for building SQL queries. The motivation behind |Brand| is to provide a simple interface for
+building SQL queries without limiting the flexibility of handwritten SQL. Designed with data analysis in mind, |Brand|
 leverages the builder design pattern to construct queries to avoid messy string formatting and concatenation. It is also
 easily extended to take full advantage of specific features of SQL database vendors.
-
 
 
 .. _intro_end:
@@ -25,9 +24,9 @@ easily extended to take full advantage of specific features of SQL database vend
 Installation
 ------------
 
-*PyPika* supports python ``2.7`` and ``3.3+``.  It may also work on pypy, cython, and jython, but is not being tested for these versions.
+|Brand| supports python ``2.7`` and ``3.3+``.  It may also work on pypy, cython, and jython, but is not being tested for these versions.
 
-To install *PyPika* run the following command:
+To install |Brand| run the following command:
 
 .. code-block:: bash
 
@@ -57,6 +56,13 @@ limitations under the License.
 
 .. _license_end:
 
+
+.. _appendix_start:
+
+.. |Brand| replace:: *PyPika*
+
+.. _appendix_end:
+
 .. _available_badges_start:
 
 .. |BuildStatus| image:: https://travis-ci.org/kayak/pypika.svg?branch=master
@@ -71,6 +77,5 @@ limitations under the License.
    :target: https://pypi.python.org/pypi/pypika
 .. |License| image:: https://img.shields.io/hexpm/l/plug.svg?maxAge=2592000
    :target: http://www.apache.org/licenses/LICENSE-2.0
-
 
 .. _available_badges_end:

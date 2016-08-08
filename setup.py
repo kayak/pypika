@@ -4,7 +4,7 @@ from setuptools import setup
 
 __major_version__ = 0
 __minor_version__ = 0
-__patch_version__ = 17
+__patch_version__ = 18
 
 
 def readme():
@@ -54,7 +54,7 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
     ],
-    keywords=('pypika python query builder querybuild sql mysql postgres psql oracle vertica aggregated '
+    keywords=('pypika python query builder querybuilder sql mysql postgres psql oracle vertica aggregated '
               'relational database rdbms business analytics bi data science analysis pandas '
               'orm object mapper'),
 

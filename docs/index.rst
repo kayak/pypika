@@ -13,7 +13,7 @@ Contents
     :maxdepth: 2
 
     1_installation
-    2_getting_started
+    2_handbook
     3_advanced
     4_extending
     5_reference

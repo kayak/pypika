@@ -1,5 +1,9 @@
-Getting Started
-===============
+Handbook
+========
+
+.. include:: ../README.rst
+    :start-after: _appendix_start:
+    :end-before:  _appendix_end:
 
 The main classes in pypika are :class:`pypika.Query`, :class:`pypika.Table`, and :class:`pypika.Field`.
 
@@ -8,8 +12,8 @@ The main classes in pypika are :class:`pypika.Query`, :class:`pypika.Table`, and
     from pypika import Query, Table, Field
 
 
-Building Queries
-----------------
+Selecting Data
+--------------
 
 The entry point for building queries is :class:`pypika.Query`.  In order to select columns from a table, the table must
 first be added to the query.  For simple queries with only one table, tables and and columns can be references using
@@ -40,7 +44,7 @@ Both of the above examples result in the following SQL:
 
 
 Arithmetic
-----------
+""""""""""
 
 Arithmetic expressions can also be constructed using pypika.  Operators such as `+`, `-`, `*`, and `/` are implemented
 by :class:`pypika.Field` which can be used simply with a :class:`pypika.Table` or directly.
@@ -101,7 +105,7 @@ More arithmetic examples
 
 
 Filtering
----------
+"""""""""
 
 Queries can be filtered with :class:`pypika.Criterion` by using equality or inequality operators
 
@@ -200,7 +204,7 @@ XOR
 
 
 Grouping and Aggregating
-------------------------
+""""""""""""""""""""""""
 
 Grouping allows for aggregated results and works similar to ``SELECT`` clauses.
 
@@ -247,7 +251,7 @@ After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes ava
 
 
 Joining Tables and Subqueries
------------------------------
+"""""""""""""""""""""""""""""
 
 Tables and subqueries can be joined to any query using the :class:`Query.join()` method.  When joining tables and
 subqueries, a criterion must provided containing an equality between a field from the primary table or joined tables and
@@ -273,10 +277,10 @@ calling :class:`Joiner.on()` the original query builder is returned and addition
     SELECT t0.* FROM history t0 JOIN customers t1 ON t0.customer_id=t1.id WHERE t1.id=5
 
 Unions
-------
+""""""
 
-Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and the **pypika**
-does not provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
+Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and |Brand| does not
+provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
 trying to cast a unioned query to string with through a :class:`UnionException` if the column sizes are mismatched.
 
 To create a union query, use either the :class:`Query.union()` method or `+` operator with two query instances. For a
@@ -297,7 +301,7 @@ union all, use :class:`Query.union_all()` or the `*` operator.
 
 
 Date, Time, and Intervals
--------------------------
+"""""""""""""""""""""""""
 
 Using :class:`pypika.Interval`, queries can be constructed with date arithmetic.  Any combination of intervals can be
 used except for weeks and quarters, which must be used separately and will ignore any other values if selected.
@@ -320,9 +324,9 @@ used except for weeks and quarters, which must be used separately and will ignor
 
 
 Strings Functions
------------------
+"""""""""""""""""
 
-There are several string operations and function wrappers included in *PyPika*.  Function wrappers can be found in the
+There are several string operations and function wrappers included in |Brand|.  Function wrappers can be found in the
 :class:`pypika.functions` package.  In addition, `LIKE` and `REGEX` queries are supported as well.
 
 .. code-block:: python
@@ -378,4 +382,66 @@ There are several string operations and function wrappers included in *PyPika*. 
 Inserting Data
 --------------
 
-WRITEME
+Data can be inserted into tables either by providing the values in the query or by selecting them through another query.
+
+By default, data can be inserted by providing values for all columns in the order that they are defined in the table.
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers).insert(1, 'Jane', 'Doe', 'jane@example.com')
+
+.. code-block:: sql
+
+    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com')
+
+Multiple rows of data can be inserted either by chaining the ``insert`` function or passing multiple tuples as args.
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers).insert(1, 'Jane', 'Doe', 'jane@example.com').insert(2, 'John', 'Doe', 'john@example.com')
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers).insert((1, 'Jane', 'Doe', 'jane@example.com'),
+                                     (2, 'John', 'Doe', 'john@example.com'))
+
+.. code-block:: sql
+
+    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com'),(2,'John','Doe','john@example.com')
+
+
+To specify the columns and the order, use the ``columns`` function.
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers).columns('id', 'fname', 'lname').insert(1, 'Jane', 'Doe')
+
+.. code-block:: sql
+
+    INSERT INTO customers (id,fname,lname) VALUES (1,'Jane','Doe','jane@example.com')
+
+
+Inserting data with a query works the same as querying data with the additional call to the ``into`` method in the
+builder chain.
+
+.. code-block:: python
+
+    customers, customers_backup = Tables('customers', 'customers_backup')
+
+    q = Query.into(customers_backup).from_(customers).select('*')
+
+.. code-block:: sql
+
+    INSERT INTO customers_backup SELECT * FROM customers
+
+
+
+
