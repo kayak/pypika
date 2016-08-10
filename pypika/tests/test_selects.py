@@ -370,11 +370,11 @@ class AliasTests(unittest.TestCase):
 
 
 class SubqueryTests(unittest.TestCase):
-    mock_abc, mock_efg = Tables('abc', 'efg')
+    table_abc, table_efg, table_hij = Tables('abc', 'efg', 'hij')
 
     def test_where__in(self):
-        q = Query.from_(self.mock_abc).select('*').where(self.mock_abc.foo.isin(
-            Query.from_(self.mock_efg).select(self.mock_efg.foo).where(self.mock_efg.bar == 0)
+        q = Query.from_(self.table_abc).select('*').where(self.table_abc.foo.isin(
+            Query.from_(self.table_efg).select(self.table_efg.foo).where(self.table_efg.bar == 0)
         ))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" IN (SELECT "foo" FROM "efg" WHERE "bar"=0)', str(q))
@@ -382,9 +382,9 @@ class SubqueryTests(unittest.TestCase):
     def test_join(self):
         subquery = Query.from_('efg').select('fiz', 'buz').where(F('buz') == 0)
 
-        q = Query.from_(self.mock_abc).join(subquery).on(
-            self.mock_abc.bar == subquery.buz
-        ).select(self.mock_abc.foo, subquery.fiz)
+        q = Query.from_(self.table_abc).join(subquery).on(
+            self.table_abc.bar == subquery.buz
+        ).select(self.table_abc.foo, subquery.fiz)
 
         self.assertEqual('SELECT "t0"."foo","t1"."fiz" FROM "abc" "t0" '
                          'JOIN (SELECT "fiz","buz" FROM "efg" WHERE "buz"=0) "t1" '
@@ -392,19 +392,19 @@ class SubqueryTests(unittest.TestCase):
 
     def test_where__equality(self):
         subquery = Query.from_('efg').select('fiz').where(F('buz') == 0)
-        query = Query.from_(self.mock_abc).select(
-            self.mock_abc.foo,
-            self.mock_abc.bar
-        ).where(self.mock_abc.bar == subquery)
+        query = Query.from_(self.table_abc).select(
+            self.table_abc.foo,
+            self.table_abc.bar
+        ).where(self.table_abc.bar == subquery)
 
         self.assertEqual('SELECT "foo","bar" FROM "abc" '
                          'WHERE "bar"=(SELECT "fiz" FROM "efg" WHERE "buz"=0)', str(query))
 
     def test_select_from_nested_query(self):
-        subquery = Query.from_(self.mock_abc).select(
-            self.mock_abc.foo,
-            self.mock_abc.bar,
-            (self.mock_abc.fizz + self.mock_abc.buzz).as_('fizzbuzz'),
+        subquery = Query.from_(self.table_abc).select(
+            self.table_abc.foo,
+            self.table_abc.bar,
+            (self.table_abc.fizz + self.table_abc.buzz).as_('fizzbuzz'),
         )
 
         query = Query.from_(subquery).select(subquery.foo, subquery.bar, subquery.fizzbuzz)
@@ -414,3 +414,36 @@ class SubqueryTests(unittest.TestCase):
                          'SELECT "foo","bar","fizz"+"buzz" "fizzbuzz" '
                          'FROM "abc"'
                          ')', str(query))
+
+    def test_select_from_nested_query_with_join(self):
+        subquery1 = Query.from_(self.table_abc).select(
+            self.table_abc.foo,
+            fn.Sum(self.table_abc.fizz + self.table_abc.buzz).as_('fizzbuzz'),
+        ).groupby(
+            self.table_abc.foo
+        )
+
+        subquery2 = Query.from_(self.table_efg).select(
+            self.table_efg.foo.as_('foo_two'),
+            self.table_efg.bar,
+        )
+
+        query = Query.from_(subquery1).select(
+            subquery1.foo, subquery1.fizzbuzz
+        ).join(subquery2).on(subquery1.foo == subquery2.foo_two).select(
+            subquery2.foo_two, subquery2.bar
+        )
+
+        self.assertEqual('SELECT '
+                         '"t0"."foo","t0"."fizzbuzz",'
+                         '"t1"."foo_two","t1"."bar" '
+                         'FROM ('
+                         'SELECT '
+                         '"foo",SUM("fizz"+"buzz") "fizzbuzz" '
+                         'FROM "abc" '
+                         'GROUP BY "foo"'
+                         ') "t0" JOIN ('
+                         'SELECT '
+                         '"foo" "foo_two","bar" '
+                         'FROM "efg"'
+                         ') "t1" ON "t0"."foo"="t1"."foo_two"', str(query))

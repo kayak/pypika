@@ -491,7 +491,7 @@ class QueryBuilder(Selectable, Term):
 
     def _from_sql(self):
         return ' FROM {selectable}'.format(
-            selectable=self._from.get_sql(with_quotes=True, subquery=True),
+            selectable=self._from.get_sql(with_quotes=True, subquery=True, with_alias=bool(self._joins)),
         )
 
     def _jointype_sql(self, join_item):
@@ -499,7 +499,7 @@ class QueryBuilder(Selectable, Term):
 
     def _join_sql(self, join_item):
         return ' JOIN {table} ON {criterion}'.format(
-            table=self._tables[join_item.table_id].get_sql(with_quotes=True, with_alias=True, subquery=True),
+            table=self._tables[join_item.table_id].get_sql(with_quotes=True, subquery=True, with_alias=True),
             criterion=join_item.criteria.get_sql(with_quotes=True),
         )
 
