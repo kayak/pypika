@@ -139,7 +139,7 @@ class QueryBuilder(Selectable, Term):
     def __init__(self):
         super(QueryBuilder, self).__init__(None)
 
-        self._tables = OrderedDict()
+        self._selectables = OrderedDict()
 
         self._from = None
         self._insert_table = None
@@ -179,7 +179,7 @@ class QueryBuilder(Selectable, Term):
             raise AttributeError("'Query' object has no attribute '%s'" % 'from_')
 
         self._from = Table(selectable) if isinstance(selectable, str) else selectable
-        self._tables[self._from.item_id] = selectable
+        self._selectables[self._from.item_id] = self._from
 
     @builder
     def into(self, table):
@@ -370,7 +370,7 @@ class QueryBuilder(Selectable, Term):
         return self._list_aliases(self._groupbys)
 
     def do_join(self, item, criterion, how):
-        self._tables[item.item_id] = item
+        self._selectables[item.item_id] = item
         self._joins.append(Join(item.item_id, criterion, how))
 
         for field in criterion.fields():
@@ -382,12 +382,12 @@ class QueryBuilder(Selectable, Term):
                 field.table = self._from
                 continue
 
-            if field.table.item_id not in self._tables:
+            if field.table.item_id not in self._selectables:
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
                                     'its fields can be used' % field.table)
 
-            field.table = self._tables[field.table.item_id]
+            field.table = self._selectables[field.table.item_id]
         return term
 
     def __str__(self):
@@ -400,7 +400,7 @@ class QueryBuilder(Selectable, Term):
             return ''
 
         if self._joins:
-            for i, table in enumerate(self._tables.values()):
+            for i, table in enumerate(self._selectables.values()):
                 table.alias = table.alias or 't%d' % i
 
         if not self._select_into and self._insert_table:
@@ -498,7 +498,7 @@ class QueryBuilder(Selectable, Term):
 
     def _join_sql(self, join_item):
         return ' JOIN {table} ON {criterion}'.format(
-            table=self._tables[join_item.table_id].get_sql(with_quotes=True, subquery=True, with_alias=True),
+            table=self._selectables[join_item.table_id].get_sql(with_quotes=True, subquery=True, with_alias=True),
             criterion=join_item.criteria.get_sql(with_quotes=True),
         )
 

@@ -370,6 +370,8 @@ class AliasTests(unittest.TestCase):
 
 
 class SubqueryTests(unittest.TestCase):
+    maxDiff = None
+
     table_abc, table_efg, table_hij = Tables('abc', 'efg', 'hij')
 
     def test_where__in(self):
