@@ -370,30 +370,47 @@ class AliasTests(unittest.TestCase):
 
 
 class SubqueryTests(unittest.TestCase):
-    t = Table('abc')
+    mock_abc, mock_efg = Tables('abc', 'efg')
 
     def test_where__in(self):
-        main, nested = Tables('abc', 'efg')
-        q = Query.from_(main).select('*').where(main.foo.isin(
-            Query.from_(nested).select(nested.foo).where(nested.bar == 0)
+        q = Query.from_(self.mock_abc).select('*').where(self.mock_abc.foo.isin(
+            Query.from_(self.mock_efg).select(self.mock_efg.foo).where(self.mock_efg.bar == 0)
         ))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" IN (SELECT "foo" FROM "efg" WHERE "bar"=0)', str(q))
 
     def test_join(self):
         subquery = Query.from_('efg').select('fiz', 'buz').where(F('buz') == 0)
-        q = Query.from_(self.t).join(subquery).on(
-            self.t.bar == subquery.buz
-        ).select(self.t.foo, subquery.fiz)
+
+        q = Query.from_(self.mock_abc).join(subquery).on(
+            self.mock_abc.bar == subquery.buz
+        ).select(self.mock_abc.foo, subquery.fiz)
 
         self.assertEqual('SELECT "t0"."foo","t1"."fiz" FROM "abc" "t0" '
                          'JOIN (SELECT "fiz","buz" FROM "efg" WHERE "buz"=0) "t1" '
                          'ON "t0"."bar"="t1"."buz"', str(q))
 
     def test_where__equality(self):
-        t = Table('abc')
         subquery = Query.from_('efg').select('fiz').where(F('buz') == 0)
-        q = Query.from_(t).select(t.foo, t.bar).where(t.bar == subquery)
+        query = Query.from_(self.mock_abc).select(
+            self.mock_abc.foo,
+            self.mock_abc.bar
+        ).where(self.mock_abc.bar == subquery)
 
-        self.assertEqual('SELECT "foo","bar" FROM "abc" WHERE "bar"=(SELECT "fiz" FROM "efg" WHERE "buz"=0)',
-                         str(q))
+        self.assertEqual('SELECT "foo","bar" FROM "abc" '
+                         'WHERE "bar"=(SELECT "fiz" FROM "efg" WHERE "buz"=0)', str(query))
+
+    def test_select_from_nested_query(self):
+        subquery = Query.from_(self.mock_abc).select(
+            self.mock_abc.foo,
+            self.mock_abc.bar,
+            (self.mock_abc.fizz + self.mock_abc.buzz).as_('fizzbuzz'),
+        )
+
+        query = Query.from_(subquery).select(subquery.foo, subquery.bar, subquery.fizzbuzz)
+
+        self.assertEqual('SELECT "foo","bar","fizzbuzz" '
+                         'FROM ('
+                         'SELECT "foo","bar","fizz"+"buzz" "fizzbuzz" '
+                         'FROM "abc"'
+                         ')', str(query))

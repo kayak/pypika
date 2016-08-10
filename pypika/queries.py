@@ -142,7 +142,7 @@ class QueryBuilder(Selectable, Term):
 
         self._tables = OrderedDict()
 
-        self._select_table = None
+        self._from = None
         self._insert_table = None
 
         self._selects = []
@@ -163,23 +163,24 @@ class QueryBuilder(Selectable, Term):
         self._select_into = False
 
     @builder
-    def from_(self, table):
+    def from_(self, selectable):
         """
         Adds a table to the query.  This function can only be called once and will raise an AttributeError if called a
         second time.
 
-        :param table:
-            Type: Table or str
+        :param selectable:
+            Type: ``Table``, ``Query``, or ``str``
 
-            An instance of a Table object or a string.
+            When a ``str`` is passed, a table with the name matching the ``str`` value is used.
 
-        :returns A copy of the query with the table added.
+        :returns
+            A copy of the query with the table added.
         """
-        if self._select_table is not None:
+        if self._from is not None:
             raise AttributeError("'Query' object has no attribute '%s'" % 'from_')
 
-        self._select_table = table if isinstance(table, Table) else Table(table)
-        self._tables[self._select_table.item_id] = table
+        self._from = Table(selectable) if isinstance(selectable, str) else selectable
+        self._tables[self._from.item_id] = selectable
 
     @builder
     def into(self, table):
@@ -257,7 +258,7 @@ class QueryBuilder(Selectable, Term):
     def groupby(self, *fields):
         for field in fields:
             if isinstance(field, str):
-                field = Field(field, table=self._select_table)
+                field = Field(field, table=self._from)
             self._groupbys.append(self._replace_table_ref(field))
 
     @builder
@@ -282,7 +283,7 @@ class QueryBuilder(Selectable, Term):
     def orderby(self, *fields, **kwargs):
         for field in fields:
             if isinstance(field, str):
-                field = Field(field, table=self._select_table)
+                field = Field(field, table=self._from)
             else:
                 field = self._replace_table_ref(self._wrap(field))
 
@@ -323,7 +324,7 @@ class QueryBuilder(Selectable, Term):
             self._selects = [Star()]
             return
 
-        self._select_field(Field(term, table=self._select_table))
+        self._select_field(Field(term, table=self._from))
 
     def _select_field(self, term):
         if self._select_star:
@@ -379,7 +380,7 @@ class QueryBuilder(Selectable, Term):
     def _replace_table_ref(self, term):
         for field in term.fields():
             if field.table is None:
-                field.table = self._select_table
+                field.table = self._from
                 continue
 
             if field.table.item_id not in self._tables:
@@ -420,7 +421,7 @@ class QueryBuilder(Selectable, Term):
             if self._insert_table:
                 querystring += self._into_sql()
 
-        if self._select_table:
+        if self._from:
             querystring += self._from_sql()
 
         if self._joins:
@@ -489,8 +490,8 @@ class QueryBuilder(Selectable, Term):
         )
 
     def _from_sql(self):
-        return ' FROM {table}'.format(
-            table=self._select_table.get_sql(with_quotes=True),
+        return ' FROM {selectable}'.format(
+            selectable=self._from.get_sql(with_quotes=True, subquery=True),
         )
 
     def _jointype_sql(self, join_item):
