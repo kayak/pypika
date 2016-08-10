@@ -5,4 +5,3 @@ API Reference
    :maxdepth: 4
 
    api/pypika
-   api/test

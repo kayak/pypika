@@ -1,17 +1,8 @@
 pypika package
 ==============
 
-Subpackages
------------
-
 .. toctree::
 
-    pypika.tests
-
-Submodules
-----------
-
-.. toctree::
 
    pypika.enums
    pypika.functions

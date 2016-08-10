@@ -9,11 +9,8 @@ This section covers the range of functions that are not widely standardized acro
 needs.  |Brand| intends to support as many features across different platforms as possible.  If there are any features
 specific to a certain platform that PyPika does not support, please create a github issue requesting that it be added.
 
-Using GROUP BY Modifiers
-========================
-
-ROLLUP
-------
+GROUP BY Modifiers
+------------------
 
 The `ROLLUP` modifier allows for aggregating to higher levels that the given groups, called super-aggregates.
 
@@ -37,7 +34,4 @@ The `ROLLUP` modifier allows for aggregating to higher levels that the given gro
 .. code-block:: sql
 
     SELECT "id","category",SUM("price") FROM "products" GROUP BY ROLLUP("id","category")
-
-
-
 
