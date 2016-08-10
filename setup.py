@@ -37,7 +37,7 @@ setup(
     # Details
     url="https://github.com/kayak/pypika",
 
-    description="A query builder API for Python",
+    description="A SQL query builder API for Python",
     long_description=readme(),
 
     classifiers=[
