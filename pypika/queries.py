@@ -14,7 +14,6 @@ class Selectable(object):
     def __init__(self, alias):
         self.item_id = id(self)
         self.alias = alias
-        self.alias = alias
 
     def field(self, name):
         return Field(name, table=self)
