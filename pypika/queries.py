@@ -1,4 +1,5 @@
 # coding: utf8
+import uuid
 from collections import OrderedDict
 
 from pypika.enums import JoinType, UnionType
@@ -12,7 +13,7 @@ __email__ = "theys@kayak.com"
 
 class Selectable(object):
     def __init__(self, alias):
-        self.item_id = id(self)
+        self.item_id = uuid.uuid1().int
         self.alias = alias
 
     def field(self, name):
