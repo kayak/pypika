@@ -4,7 +4,7 @@ from setuptools import setup
 
 __major_version__ = 0
 __minor_version__ = 0
-__patch_version__ = 18
+__patch_version__ = 19
 
 
 def readme():

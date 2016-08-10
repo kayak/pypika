@@ -597,7 +597,7 @@ class Interval(object):
                 largest=self.largest,
                 smallest=self.smallest,
             ) if self.largest != self.smallest else self.largest
-        return 'INTERVAL {expr} {unit}'.format(
+        return 'INTERVAL \'{expr} {unit}\''.format(
             expr=expr,
             unit=unit,
         )

@@ -42,7 +42,7 @@ class JoinTypeTests(unittest.TestCase):
             self.table0.dt == (self.table1.dt - Interval(weeks=1))).select('*')
 
         self.assertEqual('SELECT * FROM "abc" "t0" '
-                         'JOIN "efg" "t1" ON "t0"."dt"="t1"."dt"-INTERVAL 1 WEEK', str(q))
+                         'JOIN "efg" "t1" ON "t0"."dt"="t1"."dt"-INTERVAL \'1 WEEK\'', str(q))
 
     def test_join_with_arithmetic_function_in_select(self):
         q = Query.from_(
@@ -52,7 +52,7 @@ class JoinTypeTests(unittest.TestCase):
         ).select(self.table0.fiz - self.table0.buz, self.table1.star)
 
         self.assertEqual('SELECT "t0"."fiz"-"t0"."buz","t1".* FROM "abc" "t0" '
-                         'JOIN "efg" "t1" ON "t0"."dt"="t1"."dt"-INTERVAL 1 WEEK', str(q))
+                         'JOIN "efg" "t1" ON "t0"."dt"="t1"."dt"-INTERVAL \'1 WEEK\'', str(q))
 
     def test_join_on_complex_criteria(self):
         q = Query.from_(self.table0).join(self.table1, how=JoinType.right).on(
