@@ -11,13 +11,10 @@ class JoinTypeTests(unittest.TestCase):
     table0, table1, t2 = Tables('abc', 'efg', 'hij')
 
     def test_left_join(self):
-        query2 = Query.from_(self.table0).join(self.table1).on(
-            self.table0.foo == self.table1.bar).select('*')
-        q2 = Query.from_(self.table0).join(self.table1, how=JoinType.left).on(
+        query = Query.from_(self.table0).join(self.table1, how=JoinType.left).on(
             self.table0.foo == self.table1.bar).select('*')
 
-        self.assertEqual('SELECT * FROM "abc" "t0" JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(query2))
-        self.assertEqual('SELECT * FROM "abc" "t0" JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(q2))
+        self.assertEqual('SELECT * FROM "abc" "t0" LEFT JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(query))
 
     def test_right_join(self):
         q = Query.from_(self.table0).join(self.table1, how=JoinType.right).on(
@@ -26,16 +23,19 @@ class JoinTypeTests(unittest.TestCase):
         self.assertEqual('SELECT * FROM "abc" "t0" RIGHT JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(q))
 
     def test_inner_join(self):
-        q = Query.from_(self.table0).join(self.table1, how=JoinType.inner).on(
+        query = Query.from_(self.table0).join(self.table1).on(
+            self.table0.foo == self.table1.bar).select('*')
+        query_explicit = Query.from_(self.table0).join(self.table1, how=JoinType.inner).on(
             self.table0.foo == self.table1.bar).select('*')
 
-        self.assertEqual('SELECT * FROM "abc" "t0" INNER JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(q))
+        self.assertEqual('SELECT * FROM "abc" "t0" JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(query))
+        self.assertEqual('SELECT * FROM "abc" "t0" JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(query_explicit))
 
     def test_outer_join(self):
-        q = Query.from_(self.table0).join(self.table1, how=JoinType.outer).on(
+        query = Query.from_(self.table0).join(self.table1, how=JoinType.outer).on(
             self.table0.foo == self.table1.bar).select('*')
 
-        self.assertEqual('SELECT * FROM "abc" "t0" OUTER JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(q))
+        self.assertEqual('SELECT * FROM "abc" "t0" OUTER JOIN "efg" "t1" ON "t0"."foo"="t1"."bar"', str(query))
 
     def test_join_arithmetic_field(self):
         q = Query.from_(self.table0).join(self.table1).on(

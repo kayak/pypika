@@ -43,9 +43,9 @@ class Order(Enum):
 
 
 class JoinType(Enum):
-    left = ''
+    inner = ''
+    left = 'LEFT'
     right = 'RIGHT'
-    inner = 'INNER'
     outer = 'OUTER'
 
 

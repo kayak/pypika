@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, Field as F, Case, functions as fn, Order, JoinType
+from pypika import Query, Table, Tables, Field as F, Case, functions as fn, Order
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -207,7 +207,7 @@ class HavingTests(unittest.TestCase):
 
     def test_having_join_and_equality(self):
         q = Query.from_(self.t0).join(
-            self.t1, how=JoinType.inner
+            self.t1
         ).on(
             self.t0.foo == self.t1.foo
         ).select(
@@ -221,7 +221,7 @@ class HavingTests(unittest.TestCase):
         )
 
         self.assertEqual('SELECT "t0"."foo",SUM("t1"."bar"),"t0"."buz" FROM "abc" "t0" '
-                         'INNER JOIN "efg" "t1" ON "t0"."foo"="t1"."foo" '
+                         'JOIN "efg" "t1" ON "t0"."foo"="t1"."foo" '
                          'GROUP BY "t0"."foo" '
                          "HAVING \"t0\".\"buz\"='fiz' AND SUM(\"t1\".\"bar\")>100", str(q))
 

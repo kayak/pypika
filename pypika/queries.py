@@ -290,7 +290,7 @@ class QueryBuilder(Selectable, Term):
             self._orderbys.append((field, kwargs.get('order')))
 
     @builder
-    def join(self, item, how=JoinType.left):
+    def join(self, item, how=JoinType.inner):
         if isinstance(item, Table):
             return TableJoiner(self, item, how)
 
