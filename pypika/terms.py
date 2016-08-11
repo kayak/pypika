@@ -239,8 +239,8 @@ class ListField(object):
 
     def get_sql(self, **kwargs):
         return '({})'.format(
-            ','.join(field.get_sql()
-                     for field in self.values)
+            ','.join(term.get_sql()
+                     for term in self.values)
         )
 
 
@@ -301,18 +301,18 @@ class BasicCriterion(Criterion):
 
 
 class ContainsCriterion(Criterion):
-    def __init__(self, field, container):
+    def __init__(self, term, container):
         """
-        A wrapper for a "IN" criterion.  This wraps two parts, a field and a container.  The field is the part of the
+        A wrapper for a "IN" criterion.  This wraps two parts, a term and a container.  The term is the part of the
         expression that is checked for membership in the container.  The container can either be a list or a subquery.
 
 
-        :param field:
-            The field to assert membership for within the container.
+        :param term:
+            The term to assert membership for within the container.
         :param container:
             A list or subquery.
         """
-        self.term = field
+        self.term = term
         self.container = container
 
     def fields(self):
@@ -320,15 +320,15 @@ class ContainsCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         # FIXME escape
-        return "{field} IN {container}".format(
-            field=self.term.get_sql(**kwargs),
+        return "{term} IN {container}".format(
+            term=self.term.get_sql(**kwargs),
             container=self.container.get_sql(**kwargs)
         )
 
 
 class BetweenCriterion(Criterion):
-    def __init__(self, field, start, end):
-        self.term = field
+    def __init__(self, term, start, end):
+        self.term = term
         self.start = start
         self.end = end
 
@@ -339,8 +339,8 @@ class BetweenCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         # FIXME escape
-        return "{field} BETWEEN {start} AND {end}".format(
-            field=self.term.get_sql(**kwargs),
+        return "{term} BETWEEN {start} AND {end}".format(
+            term=self.term.get_sql(**kwargs),
             start=self.start,
             end=self.end,
         )
@@ -351,22 +351,22 @@ class BetweenCriterion(Criterion):
 
 class NullCriterion(Criterion):
     def __init__(self, term, isnull):
-        self.field = term
+        self.term = term
         self.isnull = isnull
 
     @builder
     def for_(self, table):
-        self.field = self.field.for_(table)
+        self.term = self.term.for_(table)
         return self
 
     def get_sql(self, **kwargs):
-        return "{field} IS{not_} NULL".format(
-            field=self.field.get_sql(**kwargs),
+        return "{term} IS{not_} NULL".format(
+            term=self.term.get_sql(**kwargs),
             not_='' if self.isnull else ' NOT'
         )
 
     def fields(self):
-        return [self.field] + self.field.fields() if self.field.fields else []
+        return self.term.fields() if self.term.fields else []
 
 
 class ComplexCriterion(BasicCriterion):
@@ -424,12 +424,12 @@ class ArithmeticExpression(Term):
     @builder
     def for_(self, table):
         """
-        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
+        Replaces the tables of this term for the table parameter provided.  Useful when reusing terms across queries.
 
         :param table:
             The table to replace with.
         :return:
-            A copy of the field with it's table value replaced.
+            A copy of the term with it's table value replaced.
         """
         self.left = self.left.for_(table)
         self.right = self.right.for_(table)
@@ -462,8 +462,8 @@ class Case(Term):
         return self
 
     @builder
-    def else_(self, field):
-        self._else = self._wrap(field)
+    def else_(self, term):
+        self._else = self._wrap(term)
         return self
 
     @builder
@@ -480,8 +480,8 @@ class Case(Term):
         return 'CASE {cases} ELSE {else_clause} END{alias}'.format(
             cases=" ".join('WHEN {when} THEN {then}'.format(
                 when=criterion.get_sql(**kwargs),
-                then=field.get_sql(**kwargs)
-            ) for criterion, field in self._cases),
+                then=term.get_sql(**kwargs)
+            ) for criterion, term in self._cases),
             else_clause=self._else.get_sql(**kwargs),
             alias=' \"{}\"'.format(self.alias) if self.alias is not None and with_alias else ''
         )
