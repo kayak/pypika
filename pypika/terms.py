@@ -312,46 +312,46 @@ class ContainsCriterion(Criterion):
         :param container:
             A list or subquery.
         """
-        self.field = field
+        self.term = field
         self.container = container
 
     def fields(self):
-        return [self.field] + self.field.fields() if self.field.fields else []
+        return self.term.fields() if self.term.fields else []
 
     def get_sql(self, **kwargs):
         # FIXME escape
         return "{field} IN {container}".format(
-            field=self.field.get_sql(**kwargs),
+            field=self.term.get_sql(**kwargs),
             container=self.container.get_sql(**kwargs)
         )
 
 
 class BetweenCriterion(Criterion):
     def __init__(self, field, start, end):
-        self.field = field
+        self.term = field
         self.start = start
         self.end = end
 
     @builder
     def for_(self, table):
-        self.field = self.field.for_(table)
+        self.term = self.term.for_(table)
         return self
 
     def get_sql(self, **kwargs):
         # FIXME escape
         return "{field} BETWEEN {start} AND {end}".format(
-            field=self.field.get_sql(**kwargs),
+            field=self.term.get_sql(**kwargs),
             start=self.start,
             end=self.end,
         )
 
     def fields(self):
-        return [self.field] + self.field.fields() if self.field.fields else []
+        return self.term.fields() if self.term.fields else []
 
 
 class NullCriterion(Criterion):
-    def __init__(self, field, isnull):
-        self.field = field
+    def __init__(self, term, isnull):
+        self.field = term
         self.isnull = isnull
 
     @builder
