@@ -73,6 +73,14 @@ class Term(object):
     def regex(self, pattern):
         return BasicCriterion(Matching.regex, self, self._wrap(pattern))
 
+    def between(self, lower, upper):
+        return BetweenCriterion(self, self._wrap(lower), self._wrap(upper))
+
+    def isin(self, arg):
+        if isinstance(arg, (list, tuple, set)):
+            return ContainsCriterion(self, ListField([self._wrap(value) for value in arg]))
+        return ContainsCriterion(self, arg)
+
     def bin_regex(self, pattern):
         return BasicCriterion(Matching.bin_regex, self, self._wrap(pattern))
 
@@ -132,6 +140,11 @@ class Term(object):
     def __le__(self, other):
         return BasicCriterion(Equality.lte, self, self._wrap(other))
 
+    def __getitem__(self, item):
+        if not isinstance(item, slice):
+            raise TypeError("Field' object is not subscriptable")
+        return self.between(item.start, item.stop)
+
     def __str__(self):
         return self.get_sql()
 
@@ -166,14 +179,6 @@ class Field(Term):
         self.name = name
         self.table = table
 
-    def between(self, lower, upper):
-        return BetweenCriterion(self, self._wrap(lower), self._wrap(upper))
-
-    def isin(self, arg):
-        if isinstance(arg, (list, tuple, set)):
-            return ContainsCriterion(self, ListField([self._wrap(value) for value in arg]))
-        return ContainsCriterion(self, arg)
-
     @builder
     def for_(self, table):
         """
@@ -186,11 +191,6 @@ class Field(Term):
         """
         self.table = table
         return self
-
-    def __getitem__(self, item):
-        if not isinstance(item, slice):
-            raise TypeError("Field' object is not subscriptable")
-        return self.between(item.start, item.stop)
 
     def get_sql(self, with_alias=False, with_quotes=True, **kwargs):
         quote_char = '\"' if with_quotes else ''
