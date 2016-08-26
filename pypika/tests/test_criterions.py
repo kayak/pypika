@@ -10,8 +10,7 @@ __email__ = "theys@kayak.com"
 
 
 class CriterionTests(unittest.TestCase):
-    t = Table('test')
-    t.alias = 't0'
+    t = Table('test', alias = 'crit')
 
     def test__criterion_eq_number(self):
         c1 = Field('foo') == 1
@@ -19,15 +18,15 @@ class CriterionTests(unittest.TestCase):
         c3 = Field('foo', table=self.t) == -1
 
         self.assertEqual('"foo"=1', str(c1))
-        self.assertEqual('"t0"."foo"=0', str(c2))
-        self.assertEqual('"t0"."foo"=-1', str(c3))
+        self.assertEqual('"crit"."foo"=0', str(c2))
+        self.assertEqual('"crit"."foo"=-1', str(c3))
 
     def test__criterion_eq_decimal(self):
         c1 = Field('foo') == 1.0
         c2 = Field('foo', table=self.t).eq(0.5)
 
         self.assertEqual('"foo"=1.0', str(c1))
-        self.assertEqual('"t0"."foo"=0.5', str(c2))
+        self.assertEqual('"crit"."foo"=0.5', str(c2))
 
     def test__criterion_eq_bool(self):
         c1 = Field('foo') == True
@@ -36,51 +35,51 @@ class CriterionTests(unittest.TestCase):
         c4 = Field('foo', table=self.t).eq(False)
 
         self.assertEqual('"foo"=true', str(c1))
-        self.assertEqual('"t0"."foo"=true', str(c2))
+        self.assertEqual('"crit"."foo"=true', str(c2))
         self.assertEqual('"foo"=false', str(c3))
-        self.assertEqual('"t0"."foo"=false', str(c4))
+        self.assertEqual('"crit"."foo"=false', str(c4))
 
     def test__criterion_eq_str(self):
         c1 = Field('foo') == 'abc'
         c2 = Field('foo', table=self.t).eq('abc')
 
         self.assertEqual('"foo"=\'abc\'', str(c1))
-        self.assertEqual('"t0"."foo"=\'abc\'', str(c2))
+        self.assertEqual('"crit"."foo"=\'abc\'', str(c2))
 
     def test__criterion_eq_date(self):
         c1 = Field('foo') == date(2000, 1, 1)
         c2 = Field('foo', table=self.t).eq(date(2000, 1, 1))
 
         self.assertEqual('"foo"=\'2000-01-01\'', str(c1))
-        self.assertEqual('"t0"."foo"=\'2000-01-01\'', str(c2))
+        self.assertEqual('"crit"."foo"=\'2000-01-01\'', str(c2))
 
     def test__criterion_eq_datetime(self):
         c1 = Field('foo') == datetime(2000, 1, 1, 12, 30, 55)
         c2 = Field('foo', table=self.t).eq(datetime(2000, 1, 1, 12, 30, 55))
 
         self.assertEqual('"foo"=\'2000-01-01T12:30:55\'', str(c1))
-        self.assertEqual('"t0"."foo"=\'2000-01-01T12:30:55\'', str(c2))
+        self.assertEqual('"crit"."foo"=\'2000-01-01T12:30:55\'', str(c2))
 
     def test__criterion_eq_right(self):
         c1 = 1 == Field('foo')
         c2 = -1 == Field('foo', table=self.t)
 
         self.assertEqual('"foo"=1', str(c1))
-        self.assertEqual('"t0"."foo"=-1', str(c2))
+        self.assertEqual('"crit"."foo"=-1', str(c2))
 
     def test__criterion_is_null(self):
         c1 = Field('foo').isnull()
         c2 = Field('foo', table=self.t).isnull()
 
         self.assertEqual('"foo" IS NULL', str(c1))
-        self.assertEqual('"t0"."foo" IS NULL', str(c2))
+        self.assertEqual('"crit"."foo" IS NULL', str(c2))
 
     def test__criterion_is_not_null(self):
         c1 = Field('foo').notnull()
         c2 = Field('foo', table=self.t).notnull()
 
         self.assertEqual('"foo" IS NOT NULL', str(c1))
-        self.assertEqual('"t0"."foo" IS NOT NULL', str(c2))
+        self.assertEqual('"crit"."foo" IS NOT NULL', str(c2))
 
     def test__criterion_ne_number(self):
         c1 = Field('foo') != 1
@@ -88,7 +87,7 @@ class CriterionTests(unittest.TestCase):
         c3 = Field('foo') != -1
 
         self.assertEqual('"foo"<>1', str(c1))
-        self.assertEqual('"t0"."foo"<>0', str(c2))
+        self.assertEqual('"crit"."foo"<>0', str(c2))
         self.assertEqual('"foo"<>-1', str(c3))
 
     def test__criterion_ne_str(self):
@@ -96,28 +95,28 @@ class CriterionTests(unittest.TestCase):
         c2 = Field('foo', table=self.t).ne('abc')
 
         self.assertEqual('"foo"<>\'abc\'', str(c1))
-        self.assertEqual('"t0"."foo"<>\'abc\'', str(c2))
+        self.assertEqual('"crit"."foo"<>\'abc\'', str(c2))
 
     def test__criterion_ne_date(self):
         c1 = Field('foo') != date(2000, 1, 1)
         c2 = Field('foo', table=self.t).ne(date(2000, 1, 1))
 
         self.assertEqual('"foo"<>\'2000-01-01\'', str(c1))
-        self.assertEqual('"t0"."foo"<>\'2000-01-01\'', str(c2))
+        self.assertEqual('"crit"."foo"<>\'2000-01-01\'', str(c2))
 
     def test__criterion_ne_datetime(self):
         c1 = Field('foo') != datetime(2000, 1, 1, 12, 30, 55)
         c2 = Field('foo', table=self.t).ne(datetime(2000, 1, 1, 12, 30, 55))
 
         self.assertEqual('"foo"<>\'2000-01-01T12:30:55\'', str(c1))
-        self.assertEqual('"t0"."foo"<>\'2000-01-01T12:30:55\'', str(c2))
+        self.assertEqual('"crit"."foo"<>\'2000-01-01T12:30:55\'', str(c2))
 
     def test__criterion_ne_right(self):
         c1 = 1 != Field('foo')
         c2 = -1 != Field('foo', table=self.t)
 
         self.assertEqual('"foo"<>1', str(c1))
-        self.assertEqual('"t0"."foo"<>-1', str(c2))
+        self.assertEqual('"crit"."foo"<>-1', str(c2))
 
     def test__criterion_lt_number(self):
         c1 = Field('foo') < 1
@@ -125,7 +124,7 @@ class CriterionTests(unittest.TestCase):
         c3 = Field('foo') < -1
 
         self.assertEqual('"foo"<1', str(c1))
-        self.assertEqual('"t0"."foo"<0', str(c2))
+        self.assertEqual('"crit"."foo"<0', str(c2))
         self.assertEqual('"foo"<-1', str(c3))
 
     def test__criterion_lt_date(self):
@@ -133,21 +132,21 @@ class CriterionTests(unittest.TestCase):
         c2 = Field('foo', table=self.t).lt(date(2000, 1, 1))
 
         self.assertEqual('"foo"<\'2000-01-01\'', str(c1))
-        self.assertEqual('"t0"."foo"<\'2000-01-01\'', str(c2))
+        self.assertEqual('"crit"."foo"<\'2000-01-01\'', str(c2))
 
     def test__criterion_lt_datetime(self):
         c1 = Field('foo') < datetime(2000, 1, 1, 12, 30, 55)
         c2 = Field('foo', table=self.t).lt(datetime(2000, 1, 1, 12, 30, 55))
 
         self.assertEqual('"foo"<\'2000-01-01T12:30:55\'', str(c1))
-        self.assertEqual('"t0"."foo"<\'2000-01-01T12:30:55\'', str(c2))
+        self.assertEqual('"crit"."foo"<\'2000-01-01T12:30:55\'', str(c2))
 
     def test__criterion_lt_right(self):
         c1 = 1 > Field('foo')
         c2 = -1 > Field('foo', table=self.t)
 
         self.assertEqual('"foo"<1', str(c1))
-        self.assertEqual('"t0"."foo"<-1', str(c2))
+        self.assertEqual('"crit"."foo"<-1', str(c2))
 
     def test__criterion_gt_number(self):
         c1 = Field('foo') > 1
@@ -155,7 +154,7 @@ class CriterionTests(unittest.TestCase):
         c3 = Field('foo') > -1
 
         self.assertEqual('"foo">1', str(c1))
-        self.assertEqual('"t0"."foo">0', str(c2))
+        self.assertEqual('"crit"."foo">0', str(c2))
         self.assertEqual('"foo">-1', str(c3))
 
     def test__criterion_gt_date(self):
@@ -163,21 +162,21 @@ class CriterionTests(unittest.TestCase):
         c2 = Field('foo', table=self.t).gt(date(2000, 1, 1))
 
         self.assertEqual('"foo">\'2000-01-01\'', str(c1))
-        self.assertEqual('"t0"."foo">\'2000-01-01\'', str(c2))
+        self.assertEqual('"crit"."foo">\'2000-01-01\'', str(c2))
 
     def test__criterion_gt_datetime(self):
         c1 = Field('foo') > datetime(2000, 1, 1, 12, 30, 55)
         c2 = Field('foo', table=self.t).gt(datetime(2000, 1, 1, 12, 30, 55))
 
         self.assertEqual('"foo">\'2000-01-01T12:30:55\'', str(c1))
-        self.assertEqual('"t0"."foo">\'2000-01-01T12:30:55\'', str(c2))
+        self.assertEqual('"crit"."foo">\'2000-01-01T12:30:55\'', str(c2))
 
     def test__criterion_gt_right(self):
         c1 = 1 < Field('foo')
         c2 = -1 < Field('foo', table=self.t)
 
         self.assertEqual('"foo">1', str(c1))
-        self.assertEqual('"t0"."foo">-1', str(c2))
+        self.assertEqual('"crit"."foo">-1', str(c2))
 
     def test__criterion_lte_number(self):
         c1 = Field('foo') <= 1
@@ -185,7 +184,7 @@ class CriterionTests(unittest.TestCase):
         c3 = Field('foo') <= -1
 
         self.assertEqual('"foo"<=1', str(c1))
-        self.assertEqual('"t0"."foo"<=0', str(c2))
+        self.assertEqual('"crit"."foo"<=0', str(c2))
         self.assertEqual('"foo"<=-1', str(c3))
 
     def test__criterion_lte_date(self):
@@ -193,21 +192,21 @@ class CriterionTests(unittest.TestCase):
         c2 = Field('foo', table=self.t).lte(date(2000, 1, 1))
 
         self.assertEqual('"foo"<=\'2000-01-01\'', str(c1))
-        self.assertEqual('"t0"."foo"<=\'2000-01-01\'', str(c2))
+        self.assertEqual('"crit"."foo"<=\'2000-01-01\'', str(c2))
 
     def test__criterion_lte_datetime(self):
         c1 = Field('foo') <= datetime(2000, 1, 1, 12, 30, 55)
         c2 = Field('foo', table=self.t).lte(datetime(2000, 1, 1, 12, 30, 55))
 
         self.assertEqual('"foo"<=\'2000-01-01T12:30:55\'', str(c1))
-        self.assertEqual('"t0"."foo"<=\'2000-01-01T12:30:55\'', str(c2))
+        self.assertEqual('"crit"."foo"<=\'2000-01-01T12:30:55\'', str(c2))
 
     def test__criterion_lte_right(self):
         c1 = 1 >= Field('foo')
         c2 = -1 >= Field('foo', table=self.t)
 
         self.assertEqual('"foo"<=1', str(c1))
-        self.assertEqual('"t0"."foo"<=-1', str(c2))
+        self.assertEqual('"crit"."foo"<=-1', str(c2))
 
     def test__criterion_gte_number(self):
         c1 = Field('foo') >= 1
@@ -215,7 +214,7 @@ class CriterionTests(unittest.TestCase):
         c3 = Field('foo') >= -1
 
         self.assertEqual('"foo">=1', str(c1))
-        self.assertEqual('"t0"."foo">=0', str(c2))
+        self.assertEqual('"crit"."foo">=0', str(c2))
         self.assertEqual('"foo">=-1', str(c3))
 
     def test__criterion_gte_date(self):
@@ -223,26 +222,25 @@ class CriterionTests(unittest.TestCase):
         c2 = Field('foo', table=self.t).gte(date(2000, 1, 1))
 
         self.assertEqual('"foo">=\'2000-01-01\'', str(c1))
-        self.assertEqual('"t0"."foo">=\'2000-01-01\'', str(c2))
+        self.assertEqual('"crit"."foo">=\'2000-01-01\'', str(c2))
 
     def test__criterion_gte_datetime(self):
         c1 = Field('foo') >= datetime(2000, 1, 1, 12, 30, 55)
         c2 = Field('foo', table=self.t).gte(datetime(2000, 1, 1, 12, 30, 55))
 
         self.assertEqual('"foo">=\'2000-01-01T12:30:55\'', str(c1))
-        self.assertEqual('"t0"."foo">=\'2000-01-01T12:30:55\'', str(c2))
+        self.assertEqual('"crit"."foo">=\'2000-01-01T12:30:55\'', str(c2))
 
     def test__criterion_gte_right(self):
         c1 = 1 <= Field('foo')
         c2 = -1 <= Field('foo', table=self.t)
 
         self.assertEqual('"foo">=1', str(c1))
-        self.assertEqual('"t0"."foo">=-1', str(c2))
+        self.assertEqual('"crit"."foo">=-1', str(c2))
 
 
 class BetweenTests(unittest.TestCase):
-    t = Table('abc')
-    t.alias = 't0'
+    t = Table('abc', alias = 'btw')
 
     def test__between_number(self):
         c1 = Field('foo').between(0, 1)
@@ -250,7 +248,7 @@ class BetweenTests(unittest.TestCase):
         c3 = Field('foo')[0:1]
 
         self.assertEqual('"foo" BETWEEN 0 AND 1', str(c1))
-        self.assertEqual('"t0"."foo" BETWEEN 0 AND 1', str(c2))
+        self.assertEqual('"btw"."foo" BETWEEN 0 AND 1', str(c2))
         self.assertEqual('"foo" BETWEEN 0 AND 1', str(c3))
 
     def test__between_date(self):
@@ -259,7 +257,7 @@ class BetweenTests(unittest.TestCase):
         c3 = Field('foo')[date(2000, 1, 1):date(2000, 12, 31)]
 
         self.assertEqual('"foo" BETWEEN \'2000-01-01\' AND \'2000-12-31\'', str(c1))
-        self.assertEqual('"t0"."foo" BETWEEN \'2000-01-01\' AND \'2000-12-31\'', str(c2))
+        self.assertEqual('"btw"."foo" BETWEEN \'2000-01-01\' AND \'2000-12-31\'', str(c2))
         self.assertEqual('"foo" BETWEEN \'2000-01-01\' AND \'2000-12-31\'', str(c3))
 
     def test__between_datetime(self):
@@ -268,7 +266,7 @@ class BetweenTests(unittest.TestCase):
         c3 = Field('foo')[datetime(2000, 1, 1, 0, 0, 0):datetime(2000, 12, 31, 23, 59, 59)]
 
         self.assertEqual('"foo" BETWEEN \'2000-01-01T00:00:00\' AND \'2000-12-31T23:59:59\'', str(c1))
-        self.assertEqual('"t0"."foo" BETWEEN \'2000-01-01T00:00:00\' AND \'2000-12-31T23:59:59\'', str(c2))
+        self.assertEqual('"btw"."foo" BETWEEN \'2000-01-01T00:00:00\' AND \'2000-12-31T23:59:59\'', str(c2))
         self.assertEqual('"foo" BETWEEN \'2000-01-01T00:00:00\' AND \'2000-12-31T23:59:59\'', str(c3))
 
     def test__function_between(self):
@@ -277,7 +275,7 @@ class BetweenTests(unittest.TestCase):
         c3 = fn.Coalesce(Field('foo', table=self.t), 0).between(0, 1)
 
         self.assertEqual('COALESCE("foo",0) BETWEEN 0 AND 1', str(c1))
-        self.assertEqual('COALESCE("t0"."foo",0) BETWEEN 0 AND 1', str(c2))
+        self.assertEqual('COALESCE("btw"."foo",0) BETWEEN 0 AND 1', str(c2))
 
     def test_get_item_only_works_with_slice(self):
         with self.assertRaises(TypeError):
@@ -291,69 +289,67 @@ class BetweenTests(unittest.TestCase):
 
 
 class IsInTests(unittest.TestCase):
-    t = Table('abc')
-    t.alias = 't0'
+    t = Table('abc',alias = 'isin')
 
     def test__in_number(self):
         c1 = Field('foo').isin([0, 1])
         c2 = Field('foo', table=self.t).isin([0, 1])
 
         self.assertEqual('"foo" IN (0,1)', str(c1))
-        self.assertEqual('"t0"."foo" IN (0,1)', str(c2))
+        self.assertEqual('"isin"."foo" IN (0,1)', str(c2))
 
     def test__in_character(self):
         c1 = Field('foo').isin(['a', 'b'])
         c2 = Field('foo', table=self.t).isin(['a', 'b'])
 
         self.assertEqual('"foo" IN (\'a\',\'b\')', str(c1))
-        self.assertEqual('"t0"."foo" IN (\'a\',\'b\')', str(c2))
+        self.assertEqual('"isin"."foo" IN (\'a\',\'b\')', str(c2))
 
     def test__in_date(self):
         c1 = Field('foo').isin([date(2000, 1, 1), date(2000, 12, 31)])
         c2 = Field('foo', table=self.t).isin([date(2000, 1, 1), date(2000, 12, 31)])
 
         self.assertEqual('"foo" IN (\'2000-01-01\',\'2000-12-31\')', str(c1))
-        self.assertEqual('"t0"."foo" IN (\'2000-01-01\',\'2000-12-31\')', str(c2))
+        self.assertEqual('"isin"."foo" IN (\'2000-01-01\',\'2000-12-31\')', str(c2))
 
     def test__in_datetime(self):
         c1 = Field('foo').isin([datetime(2000, 1, 1, 0, 0, 0), datetime(2000, 12, 31, 23, 59, 59)])
         c2 = Field('foo', table=self.t).isin([datetime(2000, 1, 1, 0, 0, 0), datetime(2000, 12, 31, 23, 59, 59)])
 
         self.assertEqual('"foo" IN (\'2000-01-01T00:00:00\',\'2000-12-31T23:59:59\')', str(c1))
-        self.assertEqual('"t0"."foo" IN (\'2000-01-01T00:00:00\',\'2000-12-31T23:59:59\')', str(c2))
+        self.assertEqual('"isin"."foo" IN (\'2000-01-01T00:00:00\',\'2000-12-31T23:59:59\')', str(c2))
 
     def test__function_isin(self):
         c1 = fn.Coalesce(Field('foo'), 0).isin([0, 1])
         c2 = fn.Coalesce(Field('foo', table=self.t), 0).isin([0, 1])
 
         self.assertEqual('COALESCE("foo",0) IN (0,1)', str(c1))
-        self.assertEqual('COALESCE("t0"."foo",0) IN (0,1)', str(c2))
+        self.assertEqual('COALESCE("isin"."foo",0) IN (0,1)', str(c2))
 
 
 class ComplexCriterionTests(unittest.TestCase):
-    t0, t1 = Table('abc'), Table('efg')
-    t0.alias, t1.alias = 't0', 't1'
+    table_abc, table_efg = Table('abc', alias='cx0'), Table('efg', alias='cx1')
 
     def test__and(self):
         c1 = (Field('foo') == 1) & (Field('bar') == 2)
-        c2 = (Field('foo', table=self.t0) == 1) & (Field('bar', table=self.t1) == 2)
+        c2 = (Field('foo', table=self.table_abc) == 1) & (Field('bar', table=self.table_efg) == 2)
 
         self.assertEqual('"foo"=1 AND "bar"=2', str(c1))
-        self.assertEqual('"t0"."foo"=1 AND "t1"."bar"=2', str(c2))
+        self.assertEqual('"cx0"."foo"=1 AND "cx1"."bar"=2', str(c2))
 
     def test__or(self):
         c1 = (Field('foo') == 1) | (Field('bar') == 2)
-        c2 = (Field('foo', table=self.t0) == 1) | (Field('bar', table=self.t1) == 2)
+        c2 = (Field('foo', table=self.table_abc) == 1) | (Field('bar', table=self.table_efg) == 2)
 
         self.assertEqual('"foo"=1 OR "bar"=2', str(c1))
-        self.assertEqual('"t0"."foo"=1 OR "t1"."bar"=2', str(c2))
+        self.assertEqual('"cx0"."foo"=1 OR "cx1"."bar"=2', str(c2))
 
     def test__xor(self):
         c1 = (Field('foo') == 1) ^ (Field('bar') == 2)
-        c2 = (Field('foo', table=self.t0) == 1) ^ (Field('bar', table=self.t1) == 2)
+        c2 = (Field('foo', table=self.table_abc) == 1) ^ (Field('bar', table=self.table_efg) == 2)
 
         self.assertEqual('"foo"=1 XOR "bar"=2', str(c1))
-        self.assertEqual('"t0"."foo"=1 XOR "t1"."bar"=2', str(c2))
+        self.assertEqual('"cx0"."foo"=1 XOR "cx1"."bar"=2', str(c2))
 
     def test__nested__and(self):
         c = (Field('foo') == 1) & (Field('bar') == 2) & (Field('buz') == 3)
@@ -377,51 +373,50 @@ class ComplexCriterionTests(unittest.TestCase):
 
 
 class CriterionOperationsTests(unittest.TestCase):
-    t0, t1 = Table('abc'), Table('efg')
-    t0.alias, t1.alias = 't0', 't1'
+    table_abc, table_efg = Table('abc', alias='cx0'), Table('efg', alias='cx1')
 
     def test_field_for_table(self):
-        f = self.t0.foo.for_(self.t1)
+        f = self.table_abc.foo.for_(self.table_efg)
 
-        self.assertEqual('"t1"."foo"', str(f))
+        self.assertEqual('"cx1"."foo"', str(f))
 
     def test_arithmeticfunction_for_table(self):
-        f = (self.t0.foo + self.t0.bar).for_(self.t1)
+        f = (self.table_abc.foo + self.table_abc.bar).for_(self.table_efg)
 
-        self.assertEqual('"t1"."foo"+"t1"."bar"', str(f))
+        self.assertEqual('"cx1"."foo"+"cx1"."bar"', str(f))
 
     def test_criterion_for_table(self):
-        f = (self.t0.foo < self.t0.bar).for_(self.t1)
+        f = (self.table_abc.foo < self.table_abc.bar).for_(self.table_efg)
 
-        self.assertEqual('"t1"."foo"<"t1"."bar"', str(f))
+        self.assertEqual('"cx1"."foo"<"cx1"."bar"', str(f))
 
     def test_complexcriterion_for_table(self):
-        f = ((self.t0.foo < self.t0.bar) & (self.t0.fiz > self.t0.buz)).for_(self.t1)
+        f = ((self.table_abc.foo < self.table_abc.bar) & (self.table_abc.fiz > self.table_abc.buz)).for_(self.table_efg)
 
-        self.assertEqual('"t1"."foo"<"t1"."bar" AND "t1"."fiz">"t1"."buz"', str(f))
+        self.assertEqual('"cx1"."foo"<"cx1"."bar" AND "cx1"."fiz">"cx1"."buz"', str(f))
 
     def test_function_with_only_fields_for_table(self):
         f = fn.Sum(self.
-                   t0.foo).for_(self.t1)
+                   table_abc.foo).for_(self.table_efg)
 
-        self.assertEqual('SUM("t1"."foo")', str(f))
+        self.assertEqual('SUM("cx1"."foo")', str(f))
 
     def test_function_with_values_and_fields_for_table(self):
-        f = Mod(self.t0.foo, 2).for_(self.t1)
+        f = Mod(self.table_abc.foo, 2).for_(self.table_efg)
 
-        self.assertEqual('MOD("t1"."foo",2)', str(f))
+        self.assertEqual('MOD("cx1"."foo",2)', str(f))
 
     def test_betweencriterion_for_table(self):
-        f = self.t0.foo[0:1].for_(self.t1)
+        f = self.table_abc.foo[0:1].for_(self.table_efg)
 
-        self.assertEqual('"t1"."foo" BETWEEN 0 AND 1', str(f))
+        self.assertEqual('"cx1"."foo" BETWEEN 0 AND 1', str(f))
 
     def test_nullcriterion_for_table(self):
-        f = self.t0.foo.isnull().for_(self.t1)
+        f = self.table_abc.foo.isnull().for_(self.table_efg)
 
-        self.assertEqual('"t1"."foo" IS NULL', str(f))
+        self.assertEqual('"cx1"."foo" IS NULL', str(f))
 
     def test_notnullcriterion_for_table(self):
-        f = self.t0.foo.notnull().for_(self.t1)
+        f = self.table_abc.foo.notnull().for_(self.table_efg)
 
-        self.assertEqual('"t1"."foo" IS NOT NULL', str(f))
+        self.assertEqual('"cx1"."foo" IS NOT NULL', str(f))
