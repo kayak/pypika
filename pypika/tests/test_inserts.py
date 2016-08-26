@@ -124,8 +124,8 @@ class InsertSelectFromTests(unittest.TestCase):
         )
 
         self.assertEqual('INSERT INTO "abc" ("c1","c2","c3","c4") '
-                         'SELECT "t0"."foo","t0"."bar","t1"."fiz","t1"."buz" FROM "efg" "t0" '
-                         'JOIN "hij" "t1" ON "t0"."id"="t1"."abc_id"', str(query))
+                         'SELECT "efg"."foo","efg"."bar","hij"."fiz","hij"."buz" FROM "efg" '
+                         'JOIN "hij" ON "efg"."id"="hij"."abc_id"', str(query))
 
 
 class SelectIntoTests(unittest.TestCase):
@@ -152,6 +152,6 @@ class SelectIntoTests(unittest.TestCase):
             self.table_hij.fiz, self.table_hij.buz
         ).into(self.table_efg)
 
-        self.assertEqual('SELECT "t0"."foo","t0"."bar","t1"."fiz","t1"."buz" '
-                         'INTO "efg" FROM "abc" "t0" '
-                         'JOIN "hij" "t1" ON "t0"."id"="t1"."abc_id"', str(query))
+        self.assertEqual('SELECT "abc"."foo","abc"."bar","hij"."fiz","hij"."buz" '
+                         'INTO "efg" FROM "abc" '
+                         'JOIN "hij" ON "abc"."id"="hij"."abc_id"', str(query))

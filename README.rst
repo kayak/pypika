@@ -310,7 +310,7 @@ calling :class:`Joiner.on()` the original query builder is returned and addition
 
 .. code-block:: sql
 
-    SELECT t0.* FROM history t0 JOIN customers t1 ON t0.customer_id=t1.id WHERE t1.id=5
+    SELECT history.* FROM history JOIN customers ON history.customer_id=customers.id WHERE customers.id=5
 
 Unions
 """"""

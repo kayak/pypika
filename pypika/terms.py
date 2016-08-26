@@ -192,12 +192,13 @@ class Field(Term):
         self.table = table
         return self
 
-    def get_sql(self, with_alias=False, with_quotes=True, **kwargs):
+    def get_sql(self, with_alias=False, with_quotes=True, with_namespace=False, **kwargs):
         quote_char = '\"' if with_quotes else ''
 
-        if getattr(self, 'table', None) and getattr(self.table, 'alias', None):
+        # Need to add namespace if the table has an alias
+        if self.table and (with_namespace or self.table.alias):
             name = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
-                namespace=self.table.alias,
+                namespace=self.table.alias or self.table.table_name,
                 name=self.name,
                 quote=quote_char,
             )
@@ -221,10 +222,10 @@ class Star(Field):
     def __init__(self, table=None):
         super(Star, self).__init__('*', table=table)
 
-    def get_sql(self, with_alias=False, **kwargs):
-        if self.table is not None and self.table.alias is not None:
+    def get_sql(self, with_alias=False, with_namespace=False, **kwargs):
+        if self.table and (with_namespace or self.table.alias):
             return "\"{namespace}\".*".format(
-                namespace=self.table.alias,
+                namespace=self.table.alias or self.table.table_name,
             )
 
         return '*'
@@ -520,11 +521,12 @@ class Function(Term):
                        for param in self.params]
         return self
 
-    def get_sql(self, with_alias=False, **kwargs):
+    def get_sql(self, with_alias=False, with_namespace=False, **kwargs):
         # FIXME escape
         return '{name}({params}){alias}'.format(
             name=self.name,
-            params=','.join(p.get_sql(with_quotes=True, with_alias=False) if hasattr(p, 'get_sql')
+            params=','.join(p.get_sql(with_quotes=True, with_alias=False, with_namespace=with_namespace)
+                            if hasattr(p, 'get_sql')
                             else str(p)
                             for p in self.params),
             alias=' \"{}\"'.format(self.alias) if self.alias is not None and with_alias else ''

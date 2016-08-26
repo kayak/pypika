@@ -180,50 +180,50 @@ class GroupByTests(unittest.TestCase):
 
 
 class HavingTests(unittest.TestCase):
-    t0, t1 = Tables('abc', 'efg')
+    table_abc, table_efg = Tables('abc', 'efg')
 
     def test_having_greater_than(self):
-        q = Query.from_(self.t0).select(
-            self.t0.foo, fn.Sum(self.t0.bar)
+        q = Query.from_(self.table_abc).select(
+            self.table_abc.foo, fn.Sum(self.table_abc.bar)
         ).groupby(
-            self.t0.foo
+            self.table_abc.foo
         ).having(
-            fn.Sum(self.t0.bar) > 1
+            fn.Sum(self.table_abc.bar) > 1
         )
 
         self.assertEqual('SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar")>1', str(q))
 
     def test_having_and(self):
-        q = Query.from_(self.t0).select(
-            self.t0.foo, fn.Sum(self.t0.bar)
+        q = Query.from_(self.table_abc).select(
+            self.table_abc.foo, fn.Sum(self.table_abc.bar)
         ).groupby(
-            self.t0.foo
+            self.table_abc.foo
         ).having(
-            (fn.Sum(self.t0.bar) > 1) & (fn.Sum(self.t0.bar) < 100)
+            (fn.Sum(self.table_abc.bar) > 1) & (fn.Sum(self.table_abc.bar) < 100)
         )
 
         self.assertEqual('SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar")>1 AND SUM("bar")<100',
                          str(q))
 
     def test_having_join_and_equality(self):
-        q = Query.from_(self.t0).join(
-            self.t1
+        q = Query.from_(self.table_abc).join(
+            self.table_efg
         ).on(
-            self.t0.foo == self.t1.foo
+            self.table_abc.foo == self.table_efg.foo
         ).select(
-            self.t0.foo, fn.Sum(self.t1.bar), self.t0.buz
+            self.table_abc.foo, fn.Sum(self.table_efg.bar), self.table_abc.buz
         ).groupby(
-            self.t0.foo
+            self.table_abc.foo
         ).having(
-            self.t0.buz == 'fiz'
+            self.table_abc.buz == 'fiz'
         ).having(
-            fn.Sum(self.t1.bar) > 100
+            fn.Sum(self.table_efg.bar) > 100
         )
 
-        self.assertEqual('SELECT "t0"."foo",SUM("t1"."bar"),"t0"."buz" FROM "abc" "t0" '
-                         'JOIN "efg" "t1" ON "t0"."foo"="t1"."foo" '
-                         'GROUP BY "t0"."foo" '
-                         "HAVING \"t0\".\"buz\"='fiz' AND SUM(\"t1\".\"bar\")>100", str(q))
+        self.assertEqual('SELECT "abc"."foo",SUM("efg"."bar"),"abc"."buz" FROM "abc" '
+                         'JOIN "efg" ON "abc"."foo"="efg"."foo" '
+                         'GROUP BY "abc"."foo" '
+                         "HAVING \"abc\".\"buz\"='fiz' AND SUM(\"efg\".\"bar\")>100", str(q))
 
 
 class OrderByTests(unittest.TestCase):
@@ -388,9 +388,9 @@ class SubqueryTests(unittest.TestCase):
             self.table_abc.bar == subquery.buz
         ).select(self.table_abc.foo, subquery.fiz)
 
-        self.assertEqual('SELECT "t0"."foo","t1"."fiz" FROM "abc" "t0" '
-                         'JOIN (SELECT "fiz","buz" FROM "efg" WHERE "buz"=0) "t1" '
-                         'ON "t0"."bar"="t1"."buz"', str(q))
+        self.assertEqual('SELECT "abc"."foo","sq0"."fiz" FROM "abc" '
+                         'JOIN (SELECT "fiz","buz" FROM "efg" WHERE "buz"=0) "sq0" '
+                         'ON "abc"."bar"="sq0"."buz"', str(q))
 
     def test_where__equality(self):
         subquery = Query.from_('efg').select('fiz').where(F('buz') == 0)
@@ -437,15 +437,15 @@ class SubqueryTests(unittest.TestCase):
         )
 
         self.assertEqual('SELECT '
-                         '"t0"."foo","t0"."fizzbuzz",'
-                         '"t1"."foo_two","t1"."bar" '
+                         '"sq0"."foo","sq0"."fizzbuzz",'
+                         '"sq1"."foo_two","sq1"."bar" '
                          'FROM ('
                          'SELECT '
                          '"foo",SUM("fizz"+"buzz") "fizzbuzz" '
                          'FROM "abc" '
                          'GROUP BY "foo"'
-                         ') "t0" JOIN ('
+                         ') "sq0" JOIN ('
                          'SELECT '
                          '"foo" "foo_two","bar" '
                          'FROM "efg"'
-                         ') "t1" ON "t0"."foo"="t1"."foo_two"', str(query))
+                         ') "sq1" ON "sq0"."foo"="sq1"."foo_two"', str(query))
