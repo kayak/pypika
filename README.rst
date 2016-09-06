@@ -41,7 +41,7 @@ Tutorial
 
 .. _tutorial_start:
 
-The main classes in pypika are :class:`pypika.Query`, :class:`pypika.Table`, and :class:`pypika.Field`.
+The main classes in pypika are ``pypika.Query``, ``pypika.Table``, and ``pypika.Field``.
 
 .. code-block:: python
 
@@ -51,9 +51,9 @@ The main classes in pypika are :class:`pypika.Query`, :class:`pypika.Table`, and
 Selecting Data
 ^^^^^^^^^^^^^^
 
-The entry point for building queries is :class:`pypika.Query`.  In order to select columns from a table, the table must
+The entry point for building queries is ``pypika.Query``.  In order to select columns from a table, the table must
 first be added to the query.  For simple queries with only one table, tables and and columns can be references using
-strings.  For more sophisticated queries a :class:`pypika.Table` must be used.
+strings.  For more sophisticated queries a ``pypika.Table`` must be used.
 
 .. code-block:: python
 
@@ -65,7 +65,7 @@ To convert the query into raw SQL, it can be cast to a string.
 
     str(q)
 
-Using :class:`pypika.Table`
+Using ``pypika.Table``
 
 .. code-block:: python
 
@@ -83,7 +83,7 @@ Arithmetic
 """"""""""
 
 Arithmetic expressions can also be constructed using pypika.  Operators such as `+`, `-`, `*`, and `/` are implemented
-by :class:`pypika.Field` which can be used simply with a :class:`pypika.Table` or directly.
+by ``pypika.Field`` which can be used simply with a ``pypika.Table`` or directly.
 
 .. code-block:: python
 
@@ -97,7 +97,7 @@ by :class:`pypika.Field` which can be used simply with a :class:`pypika.Table` o
 
     SELECT revenue-cost FROM accounts
 
-Using :class:`pypika.Table`
+Using ``pypika.Table``
 
 .. code-block:: python
 
@@ -143,7 +143,7 @@ More arithmetic examples
 Filtering
 """""""""
 
-Queries can be filtered with :class:`pypika.Criterion` by using equality or inequality operators
+Queries can be filtered with ``pypika.Criterion`` by using equality or inequality operators
 
 .. code-block:: python
 
@@ -262,7 +262,7 @@ Grouping allows for aggregated results and works similar to ``SELECT`` clauses.
     SELECT id,SUM(revenue) FROM customers WHERE age>=18 GROUP BY id ORDER BY id ASC
 
 After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes available.  The method
-:class:`Query.having()` takes a :class:`Criterion` parameter similar to the method :class:`Query.where()`.
+``Query.having()`` takes a ``Criterion`` parameter similar to the method ``Query.where()``.
 
 .. code-block:: python
 
@@ -289,11 +289,11 @@ After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes ava
 Joining Tables and Subqueries
 """""""""""""""""""""""""""""
 
-Tables and subqueries can be joined to any query using the :class:`Query.join()` method.  When joining tables and
+Tables and subqueries can be joined to any query using the ``Query.join()`` method.  When joining tables and
 subqueries, a criterion must provided containing an equality between a field from the primary table or joined tables and
-a field from the joining table.  When calling :class:`Query.join()` with a table, a :class:`TablerJoiner` will be
-returned with only the :class:`Joiner.on()` function available which takes a :class:`Criterion` parameter.  After
-calling :class:`Joiner.on()` the original query builder is returned and additional methods may be chained.
+a field from the joining table.  When calling ``Query.join()`` with a table, a ``TablerJoiner`` will be
+returned with only the ``Joiner.on()`` function available which takes a ``Criterion`` parameter.  After
+calling ``Joiner.on()`` the original query builder is returned and additional methods may be chained.
 
 .. code-block:: python
 
@@ -317,10 +317,10 @@ Unions
 
 Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and |Brand| does not
 provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
-trying to cast a unioned query to string with through a :class:`UnionException` if the column sizes are mismatched.
+trying to cast a unioned query to string with through a ``UnionException`` if the column sizes are mismatched.
 
-To create a union query, use either the :class:`Query.union()` method or `+` operator with two query instances. For a
-union all, use :class:`Query.union_all()` or the `*` operator.
+To create a union query, use either the ``Query.union()`` method or `+` operator with two query instances. For a
+union all, use ``Query.union_all()`` or the `*` operator.
 
 .. code-block:: python
 
@@ -339,7 +339,7 @@ union all, use :class:`Query.union_all()` or the `*` operator.
 Date, Time, and Intervals
 """""""""""""""""""""""""
 
-Using :class:`pypika.Interval`, queries can be constructed with date arithmetic.  Any combination of intervals can be
+Using ``pypika.Interval``, queries can be constructed with date arithmetic.  Any combination of intervals can be
 used except for weeks and quarters, which must be used separately and will ignore any other values if selected.
 
 .. code-block:: python
@@ -363,7 +363,7 @@ Strings Functions
 """""""""""""""""
 
 There are several string operations and function wrappers included in |Brand|.  Function wrappers can be found in the
-:class:`pypika.functions` package.  In addition, `LIKE` and `REGEX` queries are supported as well.
+``pypika.functions`` package.  In addition, `LIKE` and `REGEX` queries are supported as well.
 
 .. code-block:: python
 
