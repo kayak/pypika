@@ -159,6 +159,7 @@ class QueryBuilder(Selectable, Term):
         self._columns = []
         self._values = []
         self._distinct = False
+        self._ignore = False
 
         self._wheres = None
         self._groupbys = []
@@ -249,6 +250,10 @@ class QueryBuilder(Selectable, Term):
     @builder
     def distinct(self):
         self._distinct = True
+
+    @builder
+    def ignore(self):
+        self._ignore = True
 
     @builder
     def where(self, criterion):
@@ -514,8 +519,9 @@ class QueryBuilder(Selectable, Term):
         )
 
     def _insert_sql(self):
-        return 'INSERT INTO {table}'.format(
-            table=self._insert_table
+        return 'INSERT {ignore}INTO {table}'.format(
+            table=self._insert_table,
+            ignore='IGNORE ' if self._ignore else ''
         )
 
     def _columns_sql(self):
