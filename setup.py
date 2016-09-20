@@ -1,8 +1,8 @@
 # coding: utf8
 
-from setuptools import setup
+import ast
 
-import pypika
+from setuptools import setup
 
 
 def readme():
@@ -10,12 +10,35 @@ def readme():
         return f.read()
 
 
+def version():
+    path = 'pypika/__init__.py'
+    with open(path, 'rU') as file:
+        t = compile(file.read(), path, 'exec', ast.PyCF_ONLY_AST)
+        for node in (n for n in t.body if isinstance(n, ast.Assign)):
+            if len(node.targets) == 1:
+                name = node.targets[0]
+                if isinstance(name, ast.Name) and \
+                        name.id in ('__version__', '__version_info__', 'VERSION'):
+                    v = node.value
+                    if isinstance(v, ast.Str):
+                        return v.s
+
+                    if isinstance(v, ast.Tuple):
+                        r = []
+                        for e in v.elts:
+                            if isinstance(e, ast.Str):
+                                r.append(e.s)
+                            elif isinstance(e, ast.Num):
+                                r.append(str(e.n))
+                        return '.'.join(r)
+
+
 setup(
     # Application name:
     name="PyPika",
 
     # Version number:
-    version=pypika.__version__,
+    version=version(),
 
     # Application author details:
     author="Timothy Heys",
