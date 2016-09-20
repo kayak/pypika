@@ -240,6 +240,18 @@ class JoinBehaviorTests(unittest.TestCase):
                          'JOIN "efg" ON "abc"."foo"="efg"."bar" '
                          'ORDER BY DATE("abc"."foo")', str(test_query))
 
+    def test_join_from_join(self):
+        test_query = Query.from_(self.table_abc) \
+            .join(self.table_efg) \
+            .on(self.table_abc.efg_id == self.table_efg.id) \
+            .join(self.table_hij) \
+            .on(self.table_efg.hij_id == self.table_hij.id) \
+            .select(self.table_abc.foo, self.table_efg.bar, self.table_hij.fizz)
+
+        self.assertEqual('SELECT "abc"."foo","efg"."bar","hij"."fizz" FROM "abc" '
+                         'JOIN "efg" ON "abc"."efg_id"="efg"."id" '
+                         'JOIN "hij" ON "efg"."hij_id"="hij"."id"', str(test_query))
+
 
 class UnionTests(unittest.TestCase):
     table1, table2 = Tables('abc', 'efg')

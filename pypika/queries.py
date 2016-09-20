@@ -417,8 +417,8 @@ class QueryBuilder(Selectable, Term):
 
     def _validate_join(self, criterion, item):
         criterion_tables = set([f.table for f in criterion.fields()])
-        join_tables = ({self._from} | set(self._joins) | {item}) & criterion_tables
-        missing_tables = criterion_tables - join_tables
+        available_tables = ({self._from} | {join.item for join in self._joins} | {item})
+        missing_tables = criterion_tables - available_tables
         if missing_tables:
             raise JoinException('Invalid join criterion. One field is required from the joined item and '
                                 'another from the selected table or an existing join.  Found [{tables}]'.format(
