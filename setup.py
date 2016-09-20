@@ -2,9 +2,7 @@
 
 from setuptools import setup
 
-__major_version__ = 0
-__minor_version__ = 0
-__patch_version__ = 28
+import pypika
 
 
 def readme():
@@ -17,9 +15,7 @@ setup(
     name="PyPika",
 
     # Version number:
-    version='{major}.{minor}.{patch}'.format(major=__major_version__,
-                                             minor=__minor_version__,
-                                             patch=__patch_version__),
+    version=pypika.__version__,
 
     # Application author details:
     author="Timothy Heys",
