@@ -72,10 +72,15 @@ class InsertIntoTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query))
 
-    def test_insert_none_ignored(self):
+    def test_insert_none_skipped(self):
         query = Query.into(self.table_abc).insert()
 
         self.assertEqual('', str(query))
+
+    def test_insert_ignore(self):
+        query = Query.into(self.table_abc).insert(1).ignore()
+
+        self.assertEqual('INSERT IGNORE INTO "abc" VALUES (1)', str(query))
 
 
 class InsertSelectFromTests(unittest.TestCase):
@@ -126,6 +131,11 @@ class InsertSelectFromTests(unittest.TestCase):
         self.assertEqual('INSERT INTO "abc" ("c1","c2","c3","c4") '
                          'SELECT "efg"."foo","efg"."bar","hij"."fiz","hij"."buz" FROM "efg" '
                          'JOIN "hij" ON "efg"."id"="hij"."abc_id"', str(query))
+
+    def test_insert_star(self):
+        query = Query.into(self.table_abc).from_(self.table_efg).select('*').ignore()
+
+        self.assertEqual('INSERT IGNORE INTO "abc" SELECT * FROM "efg"', str(query))
 
 
 class SelectIntoTests(unittest.TestCase):
