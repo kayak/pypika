@@ -37,6 +37,8 @@ class Term(object):
         from .queries import QueryBuilder
         if isinstance(val, Term) or isinstance(val, QueryBuilder):
             return val
+        if val is None:
+            return NullValue()
 
         return ValueWrapper(val)
 
@@ -171,6 +173,14 @@ class ValueWrapper(Term):
             return str.lower(str(self.value))
 
         return str(self.value)
+
+
+class NullValue(Term):
+    def fields(self):
+        return []
+
+    def get_sql(self, **kwargs):
+        return 'null'
 
 
 class Field(Term):

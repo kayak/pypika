@@ -532,9 +532,8 @@ class QueryBuilder(Selectable, Term):
 
     def _values_sql(self):
         return ' VALUES ({values})'.format(
-            values='),('.join(','.join
-                              (term.get_sql(with_quotes=True, with_alias=True)
-                               for term in row)
+            values='),('.join(','.join(term.get_sql(with_quotes=True, with_alias=True)
+                                       for term in row)
                               for row in self._values)
 
         )
