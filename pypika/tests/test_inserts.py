@@ -82,6 +82,11 @@ class InsertIntoTests(unittest.TestCase):
 
         self.assertEqual('INSERT IGNORE INTO "abc" VALUES (1)', str(query))
 
+    def test_insert_null(self):
+        query = Query.into(self.table_abc).insert(None)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (null)', str(query))
+
 
 class InsertSelectFromTests(unittest.TestCase):
     table_abc, table_efg, table_hij = Tables('abc', 'efg', 'hij')
