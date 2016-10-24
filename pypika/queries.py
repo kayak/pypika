@@ -516,6 +516,12 @@ class QueryBuilder(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
+        if self._offset:
+            querystring += self._offset_sql()
+
+        if self._limit:
+            querystring += self._limit_sql()
+
         if subquery:
             querystring = '({query})'.format(
                 query=querystring,
@@ -526,12 +532,6 @@ class QueryBuilder(Selectable, Term):
 
         if with_unions:
             querystring += self._union_sql(querystring)
-
-        if self._offset:
-            querystring += self._offset_sql()
-
-        if self._limit:
-            querystring += self._limit_sql()
 
         return querystring
 
