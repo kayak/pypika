@@ -88,6 +88,31 @@ class SelectTests(unittest.TestCase):
         with self.assertRaises(AttributeError):
             Query.select(1).from_('abc').from_('efg')
 
+    def test_select_with_limit(self):
+        q1 = Query.from_('abc').select('foo')[:10]
+
+        self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10', str(q1))
+
+    def test_select_with_limit__func(self):
+        q1 = Query.from_('abc').select('foo').limit(10)
+
+        self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10', str(q1))
+
+    def test_select_with_offset(self):
+        q1 = Query.from_('abc').select('foo')[10:]
+
+        self.assertEqual('SELECT "foo" FROM "abc" OFFSET 10', str(q1))
+
+    def test_select_with_offset__func(self):
+        q1 = Query.from_('abc').select('foo').offset(10)
+
+        self.assertEqual('SELECT "foo" FROM "abc" OFFSET 10', str(q1))
+
+    def test_select_with_limit_and_offset(self):
+        q1 = Query.from_('abc').select('foo')[10:10]
+
+        self.assertEqual('SELECT "foo" FROM "abc" OFFSET 10 LIMIT 10', str(q1))
+
 
 class WhereTests(unittest.TestCase):
     t = Table('abc')

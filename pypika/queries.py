@@ -168,6 +168,9 @@ class QueryBuilder(Selectable, Term):
         self._joins = []
         self._unions = []
 
+        self._limit = None
+        self._offset = None
+
         self._select_star = False
         self._select_star_tables = set()
         self._mysql_rollup = False
@@ -320,6 +323,14 @@ class QueryBuilder(Selectable, Term):
         raise ValueError("Cannot join on type '%s'" % type(item))
 
     @builder
+    def limit(self, limit):
+        self._limit = limit
+
+    @builder
+    def offset(self, offset):
+        self._offset = offset
+
+    @builder
     def union(self, other):
         self._unions.append((UnionType.distinct, other))
 
@@ -332,6 +343,13 @@ class QueryBuilder(Selectable, Term):
 
     def __mul__(self, other):
         return self.union_all(other)
+
+    @builder
+    def __getitem__(self, item):
+        if not isinstance(item, slice):
+            raise TypeError("Query' object is not subscriptable")
+        self._offset = item.start
+        self._limit = item.stop
 
     @staticmethod
     def _list_aliases(field_set):
@@ -509,6 +527,12 @@ class QueryBuilder(Selectable, Term):
         if with_unions:
             querystring += self._union_sql(querystring)
 
+        if self._offset:
+            querystring += self._offset_sql()
+
+        if self._limit:
+            querystring += self._limit_sql()
+
         return querystring
 
     def _select_sql(self, **kwargs):
@@ -605,6 +629,12 @@ class QueryBuilder(Selectable, Term):
                     query=other.get_sql()
                 )
         return unionstring
+
+    def _offset_sql(self):
+        return " OFFSET {offset}".format(offset=self._offset)
+
+    def _limit_sql(self):
+        return " LIMIT {limit}".format(limit=self._limit)
 
 
 class Joiner(object):
