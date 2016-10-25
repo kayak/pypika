@@ -138,9 +138,24 @@ class Length(Function):
         super(Length, self).__init__('LENGTH', term, alias=alias)
 
 
+class Upper(Function):
+    def __init__(self, term, alias=None):
+        super(Upper, self).__init__('UPPER', term, alias=alias)
+
+
 class Lower(Function):
     def __init__(self, term, alias=None):
         super(Lower, self).__init__('LOWER', term, alias=alias)
+
+
+class Substring(Function):
+    def __init__(self, term, alias=None):
+        super(Substring, self).__init__('SUBSTRING', term, alias=alias)
+
+
+class Reverse(Function):
+    def __init__(self, term, alias=None):
+        super(Reverse, self).__init__('REVERSE', term, alias=alias)
 
 
 # Date Functions
