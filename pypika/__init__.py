@@ -38,4 +38,4 @@ from .utils import JoinException, GroupingException, CaseException, UnionExcepti
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.1.1"
+__version__ = "0.1.2"

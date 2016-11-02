@@ -117,6 +117,11 @@ class Ascii(Function):
         super(Ascii, self).__init__('ASCII', term, alias=alias)
 
 
+class NullIf(Function):
+    def __init__(self, term, criterion, alias=None):
+        super(NullIf, self).__init__('NULLIF', term, criterion, alias=alias)
+
+
 class Bin(Function):
     def __init__(self, term, alias=None):
         super(Bin, self).__init__('BIN', term, alias=alias)
