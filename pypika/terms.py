@@ -22,7 +22,7 @@ class Term(object):
 
     @property
     def tables_(self):
-        return {}
+        return set()
 
     @staticmethod
     def _wrap(val):
