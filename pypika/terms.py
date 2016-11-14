@@ -20,6 +20,10 @@ class Term(object):
         self.alias = alias
         return self
 
+    @property
+    def tables_(self):
+        return {}
+
     @staticmethod
     def _wrap(val):
         """
@@ -189,6 +193,10 @@ class Field(Term):
         self.name = name
         self.table = table
 
+    @property
+    def tables_(self):
+        return {self.table}
+
     @builder
     def for_(self, table):
         """
@@ -294,6 +302,10 @@ class BasicCriterion(Criterion):
         self.left = left
         self.right = right
 
+    @property
+    def tables_(self):
+        return self.left.tables_ | self.right.tables_
+
     @builder
     def for_(self, table):
         self.left = self.left.for_(table)
@@ -343,6 +355,10 @@ class BetweenCriterion(Criterion):
         self.start = start
         self.end = end
 
+    @property
+    def tables_(self):
+        return self.term.tables_
+
     @builder
     def for_(self, table):
         self.term = self.term.for_(table)
@@ -364,6 +380,10 @@ class NullCriterion(Criterion):
     def __init__(self, term, isnull):
         self.term = term
         self.isnull = isnull
+
+    @property
+    def tables_(self):
+        return self.term.tables_
 
     @builder
     def for_(self, table):
@@ -431,6 +451,10 @@ class ArithmeticExpression(Term):
         self.operator = operator
         self.left = left
         self.right = right
+
+    @property
+    def tables_(self):
+        return self.left.tables_ | self.right.tables_
 
     @builder
     def for_(self, table):
@@ -515,6 +539,12 @@ class Function(Term):
         self.params = [self._wrap(param)
                        for param in params]
         self.alias = kwargs.get('alias')
+
+    @property
+    def tables_(self):
+        return {table
+                for param in self.params
+                for table in param.tables_}
 
     @builder
     def for_(self, table):
