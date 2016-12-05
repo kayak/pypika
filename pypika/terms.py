@@ -154,12 +154,16 @@ class Term(object):
     def __str__(self):
         return self.get_sql()
 
+    def __hash__(self):
+        return hash(self.get_sql())
+
     def get_sql(self):
         raise NotImplementedError()
 
 
 class ValueWrapper(Term):
     def __init__(self, value):
+        super(ValueWrapper, self).__init__()
         self.value = value
 
     def fields(self):
@@ -264,6 +268,7 @@ class ListField(object):
 
 
 class Criterion(Term):
+
     def __and__(self, other):
         return ComplexCriterion(Boolean.and_, self, other)
 
@@ -276,9 +281,8 @@ class Criterion(Term):
     def fields(self):
         raise NotImplementedError()
 
-    def __str__(self):
-        return self.get_sql()
-
+    def get_sql(self):
+        raise NotImplementedError()
 
 class BasicCriterion(Criterion):
     def __init__(self, comparator, left, right, alias=None):
