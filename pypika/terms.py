@@ -263,7 +263,7 @@ class ListField(object):
         )
 
 
-class Criterion(object):
+class Criterion(Term):
     def __and__(self, other):
         return ComplexCriterion(Boolean.and_, self, other)
 

@@ -12,6 +12,11 @@ __email__ = "theys@kayak.com"
 class CriterionTests(unittest.TestCase):
     t = Table('test', alias = 'crit')
 
+    def test__criterion_with_alias(self):
+        c1 = (Field('foo') == Field('bar')).as_('criterion')
+
+        self.assertEqual('"foo"="bar"', str(c1))
+
     def test__criterion_eq_number(self):
         c1 = Field('foo') == 1
         c2 = Field('foo', table=self.t).eq(0)
