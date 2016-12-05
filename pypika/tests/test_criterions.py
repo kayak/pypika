@@ -10,12 +10,13 @@ __email__ = "theys@kayak.com"
 
 
 class CriterionTests(unittest.TestCase):
-    t = Table('test', alias = 'crit')
+    t = Table('test', alias='crit')
 
     def test__criterion_with_alias(self):
         c1 = (Field('foo') == Field('bar')).as_('criterion')
 
         self.assertEqual('"foo"="bar"', str(c1))
+        self.assertEqual('"foo"="bar" "criterion"', c1.get_sql(with_alias=True))
 
     def test__criterion_eq_number(self):
         c1 = Field('foo') == 1
@@ -245,7 +246,7 @@ class CriterionTests(unittest.TestCase):
 
 
 class BetweenTests(unittest.TestCase):
-    t = Table('abc', alias = 'btw')
+    t = Table('abc', alias='btw')
 
     def test__between_number(self):
         c1 = Field('foo').between(0, 1)
@@ -294,7 +295,7 @@ class BetweenTests(unittest.TestCase):
 
 
 class IsInTests(unittest.TestCase):
-    t = Table('abc',alias = 'isin')
+    t = Table('abc', alias='isin')
 
     def test__in_number(self):
         c1 = Field('foo').isin([0, 1])
