@@ -279,12 +279,9 @@ class Criterion(Term):
     def __str__(self):
         return self.get_sql()
 
-    def get_sql(self):
-        raise NotImplementedError()
-
 
 class BasicCriterion(Criterion):
-    def __init__(self, comparator, left, right):
+    def __init__(self, comparator, left, right, alias=None):
         """
         A wrapper for a basic criterion such as equality or inequality.  This wraps three parts, a left and right term
         and a comparator which defines the type of comparison.
@@ -298,6 +295,7 @@ class BasicCriterion(Criterion):
         :param right:
             The term on the right side of the expression.
         """
+        super(BasicCriterion, self).__init__(alias)
         self.comparator = comparator
         self.left = left
         self.right = right
@@ -315,16 +313,20 @@ class BasicCriterion(Criterion):
     def fields(self):
         return self.left.fields() + self.right.fields()
 
-    def get_sql(self, **kwargs):
-        return '{left}{comparator}{right}'.format(
+    def get_sql(self, with_alias=False, **kwargs):
+        sql = '{left}{comparator}{right}'.format(
             comparator=self.comparator.value,
             left=self.left.get_sql(**kwargs),
             right=self.right.get_sql(**kwargs),
         )
+        if with_alias and self.alias:
+            return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
+
+        return sql
 
 
 class ContainsCriterion(Criterion):
-    def __init__(self, term, container):
+    def __init__(self, term, container, alias=None):
         """
         A wrapper for a "IN" criterion.  This wraps two parts, a term and a container.  The term is the part of the
         expression that is checked for membership in the container.  The container can either be a list or a subquery.
@@ -335,6 +337,7 @@ class ContainsCriterion(Criterion):
         :param container:
             A list or subquery.
         """
+        super(ContainsCriterion, self).__init__(alias)
         self.term = term
         self.container = container
 
@@ -350,7 +353,8 @@ class ContainsCriterion(Criterion):
 
 
 class BetweenCriterion(Criterion):
-    def __init__(self, term, start, end):
+    def __init__(self, term, start, end, alias=None):
+        super(BetweenCriterion, self).__init__(alias)
         self.term = term
         self.start = start
         self.end = end
@@ -377,7 +381,8 @@ class BetweenCriterion(Criterion):
 
 
 class NullCriterion(Criterion):
-    def __init__(self, term, isnull):
+    def __init__(self, term, isnull, alias=None):
+        super(NullCriterion, self).__init__(alias)
         self.term = term
         self.isnull = isnull
 
