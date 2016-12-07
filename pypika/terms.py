@@ -53,10 +53,10 @@ class Term(object):
         return self == other
 
     def isnull(self):
-        return NullCriterion(self, True)
+        return NullCriterion(self)
 
     def notnull(self):
-        return NullCriterion(self, False)
+        return self.isnull().negate()
 
     def gt(self, other):
         return self > other
@@ -86,6 +86,9 @@ class Term(object):
         if isinstance(arg, (list, tuple, set)):
             return ContainsCriterion(self, ListField([self._wrap(value) for value in arg]))
         return ContainsCriterion(self, arg)
+
+    def notin(self, arg):
+        return self.isin(arg).negate()
 
     def bin_regex(self, pattern):
         return BasicCriterion(Matching.bin_regex, self, self._wrap(pattern))
@@ -268,6 +271,9 @@ class ListField(object):
 
 
 class Criterion(Term):
+    def __init__(self, alias=None):
+        super(Criterion, self).__init__(alias)
+        self._is_negated = False
 
     def __and__(self, other):
         return ComplexCriterion(Boolean.and_, self, other)
@@ -278,6 +284,11 @@ class Criterion(Term):
     def __xor__(self, other):
         return ComplexCriterion(Boolean.xor_, self, other)
 
+    @builder
+    def negate(self):
+        self._is_negated = True
+        return self
+
     def fields(self):
         raise NotImplementedError()
 
@@ -287,7 +298,7 @@ class Criterion(Term):
 class BasicCriterion(Criterion):
     def __init__(self, comparator, left, right, alias=None):
         """
-        A wrapper for a basic criterion such as equality or inequality.  This wraps three parts, a left and right term
+        A wrapper for a basic criterion such as equality or inequality. This wraps three parts, a left and right term
         and a comparator which defines the type of comparison.
 
 
@@ -350,9 +361,10 @@ class ContainsCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         # FIXME escape
-        return "{term} IN {container}".format(
+        return "{term} {not_}IN {container}".format(
             term=self.term.get_sql(**kwargs),
-            container=self.container.get_sql(**kwargs)
+            container=self.container.get_sql(**kwargs),
+            not_='NOT ' if self._is_negated else ''
         )
 
 
@@ -385,10 +397,9 @@ class BetweenCriterion(Criterion):
 
 
 class NullCriterion(Criterion):
-    def __init__(self, term, isnull, alias=None):
+    def __init__(self, term, alias=None):
         super(NullCriterion, self).__init__(alias)
         self.term = term
-        self.isnull = isnull
 
     @property
     def tables_(self):
@@ -402,7 +413,7 @@ class NullCriterion(Criterion):
     def get_sql(self, **kwargs):
         return "{term} IS{not_} NULL".format(
             term=self.term.get_sql(**kwargs),
-            not_='' if self.isnull else ' NOT'
+            not_=' NOT' if self._is_negated else ''
         )
 
     def fields(self):

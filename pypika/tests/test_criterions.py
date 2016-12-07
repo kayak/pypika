@@ -278,7 +278,6 @@ class BetweenTests(unittest.TestCase):
     def test__function_between(self):
         c1 = fn.Coalesce(Field('foo'), 0)[0:1]
         c2 = fn.Coalesce(Field('foo', table=self.t), 0)[0:1]
-        c3 = fn.Coalesce(Field('foo', table=self.t), 0).between(0, 1)
 
         self.assertEqual('COALESCE("foo",0) BETWEEN 0 AND 1', str(c1))
         self.assertEqual('COALESCE("btw"."foo",0) BETWEEN 0 AND 1', str(c2))
@@ -331,6 +330,45 @@ class IsInTests(unittest.TestCase):
 
         self.assertEqual('COALESCE("foo",0) IN (0,1)', str(c1))
         self.assertEqual('COALESCE("isin"."foo",0) IN (0,1)', str(c2))
+
+
+class NotInTests(unittest.TestCase):
+    t = Table('abc', alias='notin')
+
+    def test__notin_number(self):
+        c1 = Field('foo').notin([0, 1])
+        c2 = Field('foo', table=self.t).notin([0, 1])
+
+        self.assertEqual('"foo" NOT IN (0,1)', str(c1))
+        self.assertEqual('"notin"."foo" NOT IN (0,1)', str(c2))
+
+    def test__notin_character(self):
+        c1 = Field('foo').notin(['a', 'b'])
+        c2 = Field('foo', table=self.t).notin(['a', 'b'])
+
+        self.assertEqual('"foo" NOT IN (\'a\',\'b\')', str(c1))
+        self.assertEqual('"notin"."foo" NOT IN (\'a\',\'b\')', str(c2))
+
+    def test__notin_date(self):
+        c1 = Field('foo').notin([date(2000, 1, 1), date(2000, 12, 31)])
+        c2 = Field('foo', table=self.t).notin([date(2000, 1, 1), date(2000, 12, 31)])
+
+        self.assertEqual('"foo" NOT IN (\'2000-01-01\',\'2000-12-31\')', str(c1))
+        self.assertEqual('"notin"."foo" NOT IN (\'2000-01-01\',\'2000-12-31\')', str(c2))
+
+    def test__notin_datetime(self):
+        c1 = Field('foo').notin([datetime(2000, 1, 1, 0, 0, 0), datetime(2000, 12, 31, 23, 59, 59)])
+        c2 = Field('foo', table=self.t).notin([datetime(2000, 1, 1, 0, 0, 0), datetime(2000, 12, 31, 23, 59, 59)])
+
+        self.assertEqual('"foo" NOT IN (\'2000-01-01T00:00:00\',\'2000-12-31T23:59:59\')', str(c1))
+        self.assertEqual('"notin"."foo" NOT IN (\'2000-01-01T00:00:00\',\'2000-12-31T23:59:59\')', str(c2))
+
+    def test__function_notin(self):
+        c1 = fn.Coalesce(Field('foo'), 0).notin([0, 1])
+        c2 = fn.Coalesce(Field('foo', table=self.t), 0).notin([0, 1])
+
+        self.assertEqual('COALESCE("foo",0) NOT IN (0,1)', str(c1))
+        self.assertEqual('COALESCE("notin"."foo",0) NOT IN (0,1)', str(c2))
 
 
 class ComplexCriterionTests(unittest.TestCase):
