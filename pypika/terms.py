@@ -295,6 +295,7 @@ class Criterion(Term):
     def get_sql(self):
         raise NotImplementedError()
 
+
 class BasicCriterion(Criterion):
     def __init__(self, comparator, left, right, alias=None):
         """
@@ -529,17 +530,19 @@ class Case(Term):
     def get_sql(self, with_alias=False, **kwargs):
         if not self._cases:
             raise CaseException("At least one 'when' case is required for a CASE statement.")
-        if self._else is None:
-            raise CaseException("'Else' clause is requred for a CASE statement.")
 
-        return 'CASE {cases} ELSE {else_clause} END{alias}'.format(
-            cases=" ".join('WHEN {when} THEN {then}'.format(
-                when=criterion.get_sql(**kwargs),
-                then=term.get_sql(**kwargs)
-            ) for criterion, term in self._cases),
-            else_clause=self._else.get_sql(**kwargs),
-            alias=' \"{}\"'.format(self.alias) if self.alias is not None and with_alias else ''
-        )
+        cases = " ".join('WHEN {when} THEN {then}'.format(
+            when=criterion.get_sql(**kwargs),
+            then=term.get_sql(**kwargs)
+        ) for criterion, term in self._cases)
+        else_ = (' ELSE {}'.format(self._else.get_sql(**kwargs))
+                 if self._else
+                 else '')
+        alias = (' \"{}\"'.format(self.alias)
+                 if self.alias is not None and with_alias
+                 else '')
+
+        return 'CASE {cases}{else_} END{alias}'.format(cases=cases, else_=else_, alias=alias)
 
     def fields(self):
         fields = []

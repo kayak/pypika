@@ -243,6 +243,11 @@ class AggregationTests(unittest.TestCase):
 
 class ConditionTests(unittest.TestCase):
     def test__case__raw(self):
+        q = Q.from_('abc').select(Case().when(F('foo') == 1, 'a'))
+
+        self.assertEqual("SELECT CASE WHEN \"foo\"=1 THEN 'a' END FROM \"abc\"", str(q))
+
+    def test__case__else(self):
         q = Q.from_('abc').select(Case().when(F('foo') == 1, 'a').else_('b'))
 
         self.assertEqual("SELECT CASE WHEN \"foo\"=1 THEN 'a' ELSE 'b' END FROM \"abc\"", str(q))
@@ -267,12 +272,6 @@ class ConditionTests(unittest.TestCase):
     def test__case__no_cases(self):
         with self.assertRaises(CaseException):
             q = Q.from_('abc').select(Case())
-
-            str(q)
-
-    def test__case__no_else(self):
-        with self.assertRaises(CaseException):
-            q = Q.from_('abc').select(Case().when(F('foo') > 0, F('fiz')))
 
             str(q)
 

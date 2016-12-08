@@ -414,6 +414,33 @@ There are several string operations and function wrappers included in |Brand|.  
 
     SELECT id,CONCAT(fname, ' ', lname) full_name FROM customers
 
+Case Statements
+"""""""""""""""
+
+Case statements allow fow a number of conditions to be checked sequentially and return a value for the first condition
+met or otherwise a default value.  The Case object can be used to chain conditions together along with their output
+using the ``when`` method and to set the default value using ``else_``.
+
+
+.. code-block:: python
+
+    from pypika import Case, functions as fn
+
+    customers = Tables('customers')
+    q = Query.from_(customers).select(
+        customers.id,
+        Case()
+           .when(customers.fname == "Tom", "It was Tom")
+           .when(customers.fname == "John", "It was John")
+           else_("It was someone else.").as_('who_was_it'),
+    )
+
+
+.. code-block:: sql
+
+    SELECT "id",CASE WHEN "fname"='Tom' THEN 'It was Tom' WHEN "fname"='John' THEN 'It was John' ELSE 'It was someone else.' END "who_was_it" FROM "customers"
+
+
 
 Inserting Data
 ^^^^^^^^^^^^^^
