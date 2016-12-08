@@ -106,6 +106,11 @@ class Date(Function):
         super(Date, self).__init__('DATE', term, alias=alias)
 
 
+class DateDiff(Function):
+    def __init__(self, interval, term, alias=None):
+        super(DateDiff, self).__init__('DATEDIFF', interval, term, alias=alias)
+
+
 class Timestamp(Function):
     def __init__(self, term, alias=None):
         super(Timestamp, self).__init__('TIMESTAMP', term, alias=alias)
@@ -161,6 +166,11 @@ class Substring(Function):
 class Reverse(Function):
     def __init__(self, term, alias=None):
         super(Reverse, self).__init__('REVERSE', term, alias=alias)
+
+
+class Trim(Function):
+    def __init__(self, term, alias=None):
+        super(Trim, self).__init__('TRIM', term, alias=alias)
 
 
 # Date Functions
