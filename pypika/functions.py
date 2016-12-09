@@ -107,8 +107,8 @@ class Date(Function):
 
 
 class DateDiff(Function):
-    def __init__(self, interval, term, alias=None):
-        super(DateDiff, self).__init__('DATEDIFF', interval, term, alias=alias)
+    def __init__(self, interval, start_date, end_date, alias=None):
+        super(DateDiff, self).__init__('DATEDIFF', interval, start_date, end_date, alias=alias)
 
 
 class Timestamp(Function):
