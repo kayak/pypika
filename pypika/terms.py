@@ -12,6 +12,8 @@ __email__ = "theys@kayak.com"
 
 
 class Term(object):
+    is_aggregate = False
+
     def __init__(self, alias=None):
         self.alias = alias
 
@@ -474,6 +476,10 @@ class ArithmeticExpression(Term):
         self.right = right
 
     @property
+    def is_aggregate(self):
+        return all([self.left.is_aggregate, self.right.is_aggregate])
+
+    @property
     def tables_(self):
         return self.left.tables_ | self.right.tables_
 
@@ -511,6 +517,16 @@ class Case(Term):
         self._cases = []
         self._else = None
         self.alias = alias
+
+    @property
+    def is_aggregate(self):
+        aggregate_cases = all([term.is_aggregate
+                               for _, term in self._cases])
+
+        if self._else:
+            return aggregate_cases and self._else.is_aggregate
+
+        return aggregate_cases
 
     @builder
     def when(self, criterion, term):
@@ -558,10 +574,10 @@ class Case(Term):
 
 class Function(Term):
     def __init__(self, name, *params, **kwargs):
+        super(Function, self).__init__(kwargs.get('alias'))
         self.name = name
         self.params = [self._wrap(param)
                        for param in params]
-        self.alias = kwargs.get('alias')
 
     @property
     def tables_(self):
@@ -605,6 +621,10 @@ class Function(Term):
     def as_(self, alias):
         self.alias = alias
         return self
+
+
+class AggregateFunction(Function):
+    is_aggregate = True
 
 
 class Interval(object):

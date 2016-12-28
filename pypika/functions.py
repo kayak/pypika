@@ -3,7 +3,7 @@
 Package for SQL functions wrappers
 """
 from pypika.enums import SqlTypes
-from pypika.terms import Function, Star
+from pypika.terms import Function, Star, AggregateFunction
 from pypika.utils import builder
 
 __author__ = "Timothy Heys"
@@ -29,32 +29,32 @@ class Count(Function):
 
 
 # Arithmetic Functions
-class Sum(Function):
+class Sum(AggregateFunction):
     def __init__(self, term, alias=None):
         super(Sum, self).__init__('SUM', term, alias=alias)
 
 
-class Avg(Function):
+class Avg(AggregateFunction):
     def __init__(self, term, alias=None):
         super(Avg, self).__init__('AVG', term, alias=alias)
 
 
-class Min(Function):
+class Min(AggregateFunction):
     def __init__(self, term, alias=None):
         super(Min, self).__init__('MIN', term, alias=alias)
 
 
-class Max(Function):
+class Max(AggregateFunction):
     def __init__(self, term, alias=None):
         super(Max, self).__init__('MAX', term, alias=alias)
 
 
-class Std(Function):
+class Std(AggregateFunction):
     def __init__(self, term, alias=None):
         super(Std, self).__init__('STD', term, alias=alias)
 
 
-class StdDev(Function):
+class StdDev(AggregateFunction):
     def __init__(self, term, alias=None):
         super(StdDev, self).__init__('STDDEV', term, alias=alias)
 
