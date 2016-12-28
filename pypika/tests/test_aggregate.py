@@ -3,7 +3,7 @@ import unittest
 
 from pypika import Case
 from pypika import Field, functions as fn
-from terms import ValueWrapper
+from pypika.terms import ValueWrapper
 
 
 class IsAggregateTests(unittest.TestCase):
