@@ -10,7 +10,7 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class Count(Function):
+class Count(AggregateFunction):
     def __init__(self, param, alias=None):
         is_star = isinstance(param, str) and '*' == param
         super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)

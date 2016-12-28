@@ -5,7 +5,7 @@ from datetime import date
 from aenum import Enum
 
 from pypika.enums import Boolean, Equality, Arithmetic, Matching
-from pypika.utils import CaseException, builder
+from pypika.utils import CaseException, builder, resolve_is_aggregate
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -479,11 +479,8 @@ class ArithmeticExpression(Term):
 
     @property
     def is_aggregate(self):
-        # True if both left and right is aggregate. Ignores None
-        return all(filter(
-            lambda x: x is not None,
-            [self.left.is_aggregate, self.right.is_aggregate]
-        ))
+        # True if both left and right terms are True or None. None if both terms are None. Otherwise, False
+        return resolve_is_aggregate([self.left.is_aggregate, self.right.is_aggregate])
 
     @property
     def tables_(self):
@@ -526,13 +523,9 @@ class Case(Term):
 
     @property
     def is_aggregate(self):
-        cases = [term.is_aggregate
-                 for _, term in self._cases]
-
-        if self._else:
-            cases.append(self._else.is_aggregate)
-
-        return all(filter(lambda x: x is not None, cases))
+        # True if all cases are True or None. None all cases are None. Otherwise, False
+        return resolve_is_aggregate([term.is_aggregate for _, term in self._cases]
+                                    + [self._else.is_aggregate if self._else else None])
 
     @builder
     def when(self, criterion, term):
