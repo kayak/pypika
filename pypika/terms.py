@@ -167,6 +167,8 @@ class Term(object):
 
 
 class ValueWrapper(Term):
+    is_aggregate = None
+
     def __init__(self, value):
         super(ValueWrapper, self).__init__()
         self.value = value
@@ -477,7 +479,11 @@ class ArithmeticExpression(Term):
 
     @property
     def is_aggregate(self):
-        return all([self.left.is_aggregate, self.right.is_aggregate])
+        # True if both left and right is aggregate. Ignores None
+        return all(filter(
+            lambda x: x is not None,
+            [self.left.is_aggregate, self.right.is_aggregate]
+        ))
 
     @property
     def tables_(self):
@@ -520,13 +526,13 @@ class Case(Term):
 
     @property
     def is_aggregate(self):
-        aggregate_cases = all([term.is_aggregate
-                               for _, term in self._cases])
+        cases = [term.is_aggregate
+                 for _, term in self._cases]
 
         if self._else:
-            return aggregate_cases and self._else.is_aggregate
+            cases.append(self._else.is_aggregate)
 
-        return aggregate_cases
+        return all(filter(lambda x: x is not None, cases))
 
     @builder
     def when(self, criterion, term):
