@@ -152,7 +152,7 @@ class QueryBuilder(Selectable, Term):
     def __init__(self):
         super(QueryBuilder, self).__init__(None)
 
-        self._from = None
+        self._from = []
         self._insert_table = None
 
         self._selects = []
@@ -192,13 +192,11 @@ class QueryBuilder(Selectable, Term):
         :returns
             A copy of the query with the table added.
         """
-        if self._from is not None:
-            raise AttributeError("'Query' object has no attribute '%s'" % 'from_')
 
-        self._from = Table(selectable) if isinstance(selectable, str) else selectable
+        self._from.append(Table(selectable) if isinstance(selectable, str) else selectable)
 
         if isinstance(selectable, QueryBuilder):
-            selectable.table_name = 'sq0'
+            selectable.table_name = 'sq%d' % self._subquery_count
             self._subquery_count += 1
 
     @builder
@@ -280,7 +278,7 @@ class QueryBuilder(Selectable, Term):
     def groupby(self, *terms):
         for term in terms:
             if isinstance(term, str):
-                term = Field(term, table=self._from)
+                term = Field(term, table=self._from[0])
 
             self._validate_term(term)
             self._groupbys.append(term)
@@ -306,7 +304,7 @@ class QueryBuilder(Selectable, Term):
     @builder
     def orderby(self, *fields, **kwargs):
         for field in fields:
-            field = (Field(field, table=self._from)
+            field = (Field(field, table=self._from[0])
                      if isinstance(field, str)
                      else self._wrap(field))
 
@@ -362,7 +360,7 @@ class QueryBuilder(Selectable, Term):
             self._selects = [Star()]
             return
 
-        self._select_field(Field(term, table=self._from))
+        self._select_field(Field(term, table=self._from[0]))
 
     def _select_field(self, term):
         if self._select_star:
@@ -417,25 +415,28 @@ class QueryBuilder(Selectable, Term):
         if isinstance(item, QueryBuilder):
             self._tag_subquery(item)
 
-        if (isinstance(item, Table) and isinstance(self._from, Table) and
-                    item.alias is None and item.table_name == self._from.table_name):
+        table_in_from = any(isinstance(clause, Table)
+                            and item.table_name == self._from[0].table_name
+                            for clause in self._from)
+        if (isinstance(item, Table) and item.alias is None and table_in_from):
             # On the odd chance that we join the same table as the FROM table and don't set an alias
+            # FIXME only works once
             item.alias = item.table_name + '2'
 
         self._joins.append(Join(item, criterion, how))
 
     def _validate_term(self, term):
         for field in term.fields():
-            if (field.table is not None
-                and field.table != self._from
-                and field.table not in [join.item for join in self._joins]):
+            table_in_froms = field.table in self._from
+            table_in_joins = field.table in [join.item for join in self._joins]
+            if field.table is not None and not table_in_froms and not table_in_joins:
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
                                     'its fields can be used' % field.table)
 
     def _validate_join(self, criterion, item):
         criterion_tables = set([f.table for f in criterion.fields()])
-        available_tables = ({self._from} | {join.item for join in self._joins} | {item})
+        available_tables = (set(self._from) | {join.item for join in self._joins} | {item})
         missing_tables = criterion_tables - available_tables
         if missing_tables:
             raise JoinException('Invalid join criterion. One field is required from the joined item and '
@@ -457,16 +458,13 @@ class QueryBuilder(Selectable, Term):
         if not self.alias == other.alias:
             return False
 
-        if not self._from == other._from:
-            return False
-
         return True
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(self.alias) + hash(self._from)
+        return hash(self.alias) + sum(hash(clause) for clause in self._from)
 
     def get_sql(self, with_alias=False, subquery=False, with_unions=False, **kwargs):
         if not (self._selects or self._insert_table):
@@ -474,7 +472,7 @@ class QueryBuilder(Selectable, Term):
         if self._insert_table and not (self._selects or self._values):
             return ''
 
-        kwargs = {'with_namespace': bool(self._joins)}
+        kwargs = {'with_namespace': bool(self._joins) or 1 < len(self._from)}
 
         if not self._select_into and self._insert_table:
             querystring = self._insert_sql()
@@ -494,7 +492,7 @@ class QueryBuilder(Selectable, Term):
                 querystring += self._into_sql()
 
         if self._from:
-            querystring += self._from_sql()
+            querystring += self._from_sql(**kwargs)
 
         if self._joins:
             for join_item in self._joins:
@@ -567,10 +565,11 @@ class QueryBuilder(Selectable, Term):
             table=self._insert_table.get_sql(with_quotes=True, with_alias=False),
         )
 
-    def _from_sql(self):
-        return ' FROM {selectable}'.format(
-            selectable=self._from.get_sql(with_quotes=True, subquery=True, with_alias=bool(self._joins)),
-        )
+    def _from_sql(self, with_namespace=False, **kwargs):
+        return ' FROM {selectable}'.format(selectable=','.join(
+            clause.get_sql(with_quotes=True, subquery=True, with_alias=with_namespace)
+            for clause in self._from
+        ))
 
     def _jointype_sql(self, join_item):
         return ' {type}'.format(type=join_item.how.value)

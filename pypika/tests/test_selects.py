@@ -8,7 +8,7 @@ __email__ = "theys@kayak.com"
 
 
 class SelectTests(unittest.TestCase):
-    t = Table('abc')
+    table_abc, table_efg = Tables('abc', 'efg')
 
     def test_empty_query(self):
         q = Query.from_('abc')
@@ -59,16 +59,31 @@ class SelectTests(unittest.TestCase):
         self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q2))
 
     def test_select__columns__multi__field(self):
-        q1 = Query.from_(self.t).select(self.t.foo, self.t.bar)
-        q2 = Query.from_(self.t).select(self.t.foo).select(self.t.bar)
+        q1 = Query.from_(self.table_abc).select(self.table_abc.foo, self.table_abc.bar)
+        q2 = Query.from_(self.table_abc).select(self.table_abc.foo).select(self.table_abc.bar)
 
         self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q1))
         self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q2))
 
-    def test_select__fields_after_star(self):
-        q = Query.from_('abc').select('*').select('foo')
+    def test_select__multiple_tables(self):
+        q = Query.from_(self.table_abc) \
+            .select(self.table_abc.foo) \
+            .from_(self.table_efg) \
+            .select(self.table_efg.bar)
 
-        self.assertEqual('SELECT * FROM "abc"', str(q))
+        self.assertEqual('SELECT "abc"."foo","efg"."bar" FROM "abc","efg"', str(q))
+
+    def test_select__multiple_subqueries(self):
+        subquery0 = Query.from_(self.table_abc).select("foo")
+        subquery1 = Query.from_(self.table_efg).select("bar")
+        q = Query \
+            .from_(subquery0) \
+            .from_(subquery1) \
+            .select(subquery0.foo, subquery1.bar)
+
+        self.assertEqual('SELECT "sq0"."foo","sq1"."bar" '
+                         'FROM (SELECT "foo" FROM "abc") "sq0",'
+                         '(SELECT "bar" FROM "efg") "sq1"', str(q))
 
     def test_select__no_table(self):
         q = Query.select(1, 2, 3)
@@ -79,14 +94,6 @@ class SelectTests(unittest.TestCase):
         q = Query.select(1).select(2, 3).from_('abc').select('foo')
 
         self.assertEqual('SELECT 1,2,3,"foo" FROM "abc"', str(q))
-
-    def test_static_from_function_removed_after_called(self):
-        with self.assertRaises(AttributeError):
-            Query.from_('abc').from_('efg')
-
-    def test_instance_from_function_removed_after_called(self):
-        with self.assertRaises(AttributeError):
-            Query.select(1).from_('abc').from_('efg')
 
     def test_select_with_limit(self):
         q1 = Query.from_('abc').select('foo')[:10]
@@ -392,6 +399,16 @@ class AliasTests(unittest.TestCase):
         )
 
         self.assertListEqual(['foo', 'buz2'], test_query.groupby_aliases())
+
+    def test_select__multiple_tables(self):
+        table_abc, table_efg = Table('abc', alias='q0'), Table('efg', alias='q1')
+
+        q = Query.from_(table_abc) \
+            .select(table_abc.foo) \
+            .from_(table_efg) \
+            .select(table_efg.bar)
+
+        self.assertEqual('SELECT "q0"."foo","q1"."bar" FROM "abc" "q0","efg" "q1"', str(q))
 
 
 class SubqueryTests(unittest.TestCase):
