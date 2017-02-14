@@ -529,7 +529,7 @@ class QueryBuilder(Selectable, Term):
             return self._queryalias_sql(querystring)
 
         if with_unions:
-            querystring += self._union_sql(querystring)
+            querystring = self._union_sql(querystring)
 
         return querystring
 
@@ -614,8 +614,10 @@ class QueryBuilder(Selectable, Term):
         )
 
     def _union_sql(self, querystring):
-        unionstring = ''
         if self._unions:
+            # Some queries require brackets for unions so easier to just always use them
+            querystring = "({})".format(querystring)
+
             for (union_type, other) in self._unions:
                 if len(self._selects) != len(other._selects):
                     raise UnionException("Queries must have an equal number of select statements in a union."
@@ -623,11 +625,10 @@ class QueryBuilder(Selectable, Term):
                                          "\n\nUnion Query:\n{query2}".format(query1=querystring,
                                                                              query2=other.get_sql()))
 
-                unionstring += ' UNION{type} {query}'.format(
-                    type=union_type.value,
-                    query=other.get_sql()
-                )
-        return unionstring
+                querystring += ' UNION{type} ({query})' \
+                    .format(type=union_type.value, query=other.get_sql())
+
+        return querystring
 
     def _offset_sql(self):
         return " OFFSET {offset}".format(offset=self._offset)
