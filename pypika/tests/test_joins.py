@@ -260,15 +260,15 @@ class UnionTests(unittest.TestCase):
         query1 = Query.from_(self.table1).select(self.table1.foo)
         query2 = Query.from_(self.table2).select(self.table2.bar)
 
-        self.assertEqual('SELECT "foo" FROM "abc" UNION SELECT "bar" FROM "efg"', str(query1 + query2))
-        self.assertEqual('SELECT "foo" FROM "abc" UNION SELECT "bar" FROM "efg"', str(query1.union(query2)))
+        self.assertEqual('(SELECT "foo" FROM "abc") UNION (SELECT "bar" FROM "efg")', str(query1 + query2))
+        self.assertEqual('(SELECT "foo" FROM "abc") UNION (SELECT "bar" FROM "efg")', str(query1.union(query2)))
 
     def test_union_all(self):
         query1 = Query.from_(self.table1).select(self.table1.foo)
         query2 = Query.from_(self.table2).select(self.table2.bar)
 
-        self.assertEqual('SELECT "foo" FROM "abc" UNION ALL SELECT "bar" FROM "efg"', str(query1 * query2))
-        self.assertEqual('SELECT "foo" FROM "abc" UNION ALL SELECT "bar" FROM "efg"', str(query1.union_all(query2)))
+        self.assertEqual('(SELECT "foo" FROM "abc") UNION ALL (SELECT "bar" FROM "efg")', str(query1 * query2))
+        self.assertEqual('(SELECT "foo" FROM "abc") UNION ALL (SELECT "bar" FROM "efg")', str(query1.union_all(query2)))
 
     def test_require_equal_number_of_fields(self):
         query1 = Query.from_(self.table1).select(self.table1.foo)
