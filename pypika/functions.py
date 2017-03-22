@@ -181,12 +181,12 @@ class Now(Function):
 
 class CurDate(Function):
     def __init__(self, alias=None):
-        super(CurDate, self).__init__('CURDATE', alias=alias)
+        super(CurDate, self).__init__('CURRENT_DATE', alias=alias)
 
 
 class CurTime(Function):
     def __init__(self, alias=None):
-        super(CurTime, self).__init__('CURTIME', alias=alias)
+        super(CurTime, self).__init__('CURRENT_TIME', alias=alias)
 
 
 class Extract(Function):
