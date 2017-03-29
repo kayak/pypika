@@ -91,6 +91,18 @@ class Convert(Function):
         )
 
 
+class ToChar(Function):
+    def __init__(self, term, as_type, alias=None):
+        super(ToChar, self).__init__('TO_CHAR', term, as_type, alias=alias)
+
+    def get_sql(self, **kwargs):
+        return '{name}({field}, {type})'.format(
+            name=self.name,
+            field=self.params[0],
+            type=self.params[1],
+        )
+
+
 class Signed(Cast):
     def __init__(self, term, alias=None):
         super(Signed, self).__init__(term, SqlTypes.SIGNED, alias=alias)
