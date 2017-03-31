@@ -16,8 +16,8 @@ class Count(AggregateFunction):
         super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)
         self._distinct = False
 
-    def get_sql(self, **kwargs):
-        s = super(Count, self).get_sql(**kwargs)
+    def get_function_sql(self, **kwargs):
+        s = super(Count, self).get_function_sql(**kwargs)
         if self._distinct:
             return s[:6] + 'DISTINCT ' + s[6:]
         return s
@@ -69,7 +69,7 @@ class Cast(Function):
     def __init__(self, term, as_type, alias=None):
         super(Cast, self).__init__('CAST', term, as_type, alias=alias)
 
-    def get_sql(self, **kwargs):
+    def get_function_sql(self, **kwargs):
         # FIXME escape
         return '{name}({field} AS {type})'.format(
             name=self.name,
@@ -82,7 +82,7 @@ class Convert(Function):
     def __init__(self, term, encoding, alias=None):
         super(Convert, self).__init__('CONVERT', term, encoding, alias=alias)
 
-    def get_sql(self, **kwargs):
+    def get_function_sql(self, **kwargs):
         # FIXME escape
         return '{name}({field} USING {type})'.format(
             name=self.name,
@@ -94,13 +94,6 @@ class Convert(Function):
 class ToChar(Function):
     def __init__(self, term, as_type, alias=None):
         super(ToChar, self).__init__('TO_CHAR', term, as_type, alias=alias)
-
-    def get_sql(self, **kwargs):
-        return '{name}({field}, {type})'.format(
-            name=self.name,
-            field=self.params[0],
-            type=self.params[1],
-        )
 
 
 class Signed(Cast):
@@ -205,7 +198,7 @@ class Extract(Function):
     def __init__(self, date_part, field, alias=None):
         super(Extract, self).__init__('EXTRACT', date_part, field, alias=alias)
 
-    def get_sql(self, **kwargs):
+    def get_function_sql(self, **kwargs):
         return '{name}({part} FROM {field})'.format(
             name=self.name,
             part=self.params[0],
