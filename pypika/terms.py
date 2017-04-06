@@ -599,14 +599,19 @@ class Function(Term):
                        for param in self.params]
         return self
 
-    def get_sql(self, with_alias=False, with_namespace=False, **kwargs):
-        # FIXME escape
-        return '{name}({params}){alias}'.format(
+    def get_function_sql(self, with_namespace=False):
+        return '{name}({params})'.format(
             name=self.name,
             params=','.join(p.get_sql(with_quotes=True, with_alias=False, with_namespace=with_namespace)
                             if hasattr(p, 'get_sql')
                             else str(p)
                             for p in self.params),
+        )
+
+    def get_sql(self, with_alias=False, with_namespace=False, **kwargs):
+        # FIXME escape
+        return '{function}{alias}'.format(
+            function=self.get_function_sql(with_namespace=with_namespace),
             alias=' \"{}\"'.format(self.alias) if self.alias is not None and with_alias else ''
         )
 

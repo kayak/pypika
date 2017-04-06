@@ -394,7 +394,7 @@ class CastTests(unittest.TestCase):
     def test__tochar__(self):
         q = Q.from_(self.t).select(fn.ToChar(self.t.foo, "SomeFormat"))
 
-        self.assertEqual("SELECT TO_CHAR(\"foo\", 'SomeFormat') FROM \"abc\"", str(q))
+        self.assertEqual("SELECT TO_CHAR(\"foo\",'SomeFormat') FROM \"abc\"", str(q))
 
 
 class DateFunctionsTests(unittest.TestCase):
