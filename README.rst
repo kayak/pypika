@@ -289,11 +289,13 @@ After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes ava
 Joining Tables and Subqueries
 """""""""""""""""""""""""""""
 
-Tables and subqueries can be joined to any query using the ``Query.join()`` method.  When joining tables and
-subqueries, a criterion must provided containing an equality between a field from the primary table or joined tables and
-a field from the joining table.  When calling ``Query.join()`` with a table, a ``TablerJoiner`` will be
-returned with only the ``Joiner.on()`` function available which takes a ``Criterion`` parameter.  After
-calling ``Joiner.on()`` the original query builder is returned and additional methods may be chained.
+Tables and subqueries can be joined to any query using the ``Query.join()`` method.  Joins can be performed with either
+a ``USING`` or ``ON`` clauses.  The ``USING`` clause can be used when both tables/subqueries contain the same field and
+the ``ON`` clause can be used with a criterion. To perform a join, ``...join()`` can be chained but then must be
+followed immediately by ``...on(<criterion>)`` or ``...using(*field)``.
+
+Example of a join using `ON`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -308,9 +310,33 @@ calling ``Joiner.on()`` the original query builder is returned and additional me
         customers.id == 5
     )
 
+
 .. code-block:: sql
 
-    SELECT history.* FROM history JOIN customers ON history.customer_id=customers.id WHERE customers.id=5
+    SELECT "history".* FROM "history" JOIN "customers" ON "history"."customer_id"="customers"."id" WHERE "customers"."id"=5
+
+
+Example of a join using `USING`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    history, customers = Tables('history', 'customers')
+    q = Query.from_(history).join(
+        customers
+    ).on(
+        'customer_id'
+    ).select(
+        history.star
+    ).where(
+        customers.id == 5
+    )
+
+
+.. code-block:: sql
+
+    SELECT "history".* FROM "history" JOIN "customers" USING "customer_id" WHERE "customers"."id"=5
+
 
 Unions
 """"""
@@ -333,7 +359,7 @@ union all, use ``Query.union_all()`` or the `*` operator.
 
 .. code-block:: sql
 
-    SELECT created_time,foo,bar FROM provider_a UNION SELECT created_time,fiz,buz FROM provider_b
+    SELECT "created_time","foo","bar" FROM "provider_a" UNION SELECT "created_time","fiz","buz" FROM "provider_b"
 
 
 Date, Time, and Intervals
