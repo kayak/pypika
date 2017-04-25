@@ -625,8 +625,21 @@ class Joiner(object):
 
     def on(self, criterion):
         if criterion is None:
-            raise JoinException("Parameter 'on' is required when joining a "
-                                "{type} but was not supplied.".format(type=self.type_label))
+            raise JoinException("Parameter 'criterion' is required for a "
+                                "{type} JOIN but was not supplied.".format(type=self.type_label))
+
+        self.query.do_join(JoinOn(self.item, self.how, criterion))
+        return self.query
+
+    def on_field(self, *fields):
+        if not fields:
+            raise JoinException("Parameter 'fields' is required for a "
+                                "{type} JOIN but was not supplied.".format(type=self.type_label))
+
+        criterion = None
+        for field in fields:
+            consituent = Field(field, table=self.query._from[0]) == Field(field, table=self.item)
+            criterion = consituent if criterion is None else criterion & consituent
 
         self.query.do_join(JoinOn(self.item, self.how, criterion))
         return self.query
