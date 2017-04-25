@@ -96,6 +96,11 @@ class InsertSelectFromTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" SELECT * FROM "efg"', str(query))
 
+    def test_insert_ignore_star(self):
+        query = Query.into(self.table_abc).from_(self.table_efg).select('*').ignore()
+
+        self.assertEqual('INSERT IGNORE INTO "abc" SELECT * FROM "efg"', str(query))
+
     def test_insert_from_columns(self):
         query = Query.into(self.table_abc).from_(self.table_efg).select(
             self.table_efg.fiz, self.table_efg.buz, self.table_efg.baz
@@ -136,11 +141,6 @@ class InsertSelectFromTests(unittest.TestCase):
         self.assertEqual('INSERT INTO "abc" ("c1","c2","c3","c4") '
                          'SELECT "efg"."foo","efg"."bar","hij"."fiz","hij"."buz" FROM "efg" '
                          'JOIN "hij" ON "efg"."id"="hij"."abc_id"', str(query))
-
-    def test_insert_star(self):
-        query = Query.into(self.table_abc).from_(self.table_efg).select('*').ignore()
-
-        self.assertEqual('INSERT IGNORE INTO "abc" SELECT * FROM "efg"', str(query))
 
 
 class SelectIntoTests(unittest.TestCase):

@@ -5,7 +5,7 @@ from datetime import date
 from aenum import Enum
 
 from pypika.enums import Boolean, Equality, Arithmetic, Matching
-from pypika.utils import CaseException, builder, resolve_is_aggregate
+from pypika.utils import CaseException, builder, resolve_is_aggregate, alias_sql
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -157,7 +157,7 @@ class Term(object):
         return self.between(item.start, item.stop)
 
     def __str__(self):
-        return self.get_sql()
+        return self.get_sql(quote_char='"')
 
     def __hash__(self):
         return hash(self.get_sql())
@@ -221,40 +221,36 @@ class Field(Term):
         self.table = table
         return self
 
-    def get_sql(self, with_alias=False, with_quotes=True, with_namespace=False, **kwargs):
-        quote_char = '\"' if with_quotes else ''
-
+    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
-            name = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
+            field_sql = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
                 namespace=self.table.alias or self.table.table_name,
                 name=self.name,
-                quote=quote_char,
+                quote=quote_char or '',
             )
         else:
-            name = "{quote}{name}{quote}".format(
+            field_sql = "{quote}{name}{quote}".format(
                 name=self.name,
-                quote=quote_char,
+                quote=quote_char or '',
             )
 
-        alias = getattr(self, 'alias', None)
-        if with_alias and alias:
-            return name + ' {quote}{alias}{quote}'.format(
-                alias=alias,
-                quote=quote_char,
-            )
+        field_alias = getattr(self, 'alias', None)
+        if not with_alias or field_alias is None:
+            return field_sql
 
-        return name
+        return alias_sql(field_sql, field_alias, quote_char)
 
 
 class Star(Field):
     def __init__(self, table=None):
         super(Star, self).__init__('*', table=table)
 
-    def get_sql(self, with_alias=False, with_namespace=False, **kwargs):
+    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         if self.table and (with_namespace or self.table.alias):
-            return "\"{namespace}\".*".format(
+            return "{quote}{namespace}{quote}.*".format(
                 namespace=self.table.alias or self.table.table_name,
+                quote=quote_char or ''
             )
 
         return '*'
@@ -309,7 +305,7 @@ class BasicCriterion(Criterion):
 
         :param comparator:
             Type: Comparator
-            This defines the type of comparison, such as \"=\" or \">\".
+            This defines the type of comparison, such as {quote}={quote} or {quote}>{quote}.
         :param left:
             The term on the left side of the expression.
         :param right:
@@ -462,7 +458,7 @@ class ArithmeticExpression(Term):
 
         :param operator:
             Type: Arithmetic
-            An operator for the expression such as \"+\" or \"/\"
+            An operator for the expression such as {quote}+{quote} or {quote}/{quote}
 
         :param left:
             The term on the left side of the expression.
@@ -507,12 +503,18 @@ class ArithmeticExpression(Term):
         is_mul = self.operator in self.mul_order
         is_left_add, is_right_add = [getattr(side, 'operator', None) in self.add_order
                                      for side in [self.left, self.right]]
-        return '{left}{operator}{right}{alias}'.format(
+
+        quote_char = kwargs.get('quote_char', None)
+        arithmatic_sql = '{left}{operator}{right}'.format(
             operator=self.operator.value,
             left=("({})" if is_mul and is_left_add else "{}").format(self.left.get_sql(**kwargs)),
             right=("({})" if is_mul and is_right_add else "{}").format(self.right.get_sql(**kwargs)),
-            alias=' \"{}\"'.format(self.alias) if with_alias and self.alias is not None else ''
         )
+
+        if not with_alias or self.alias is None:
+            return arithmatic_sql
+
+        return alias_sql(arithmatic_sql, self.alias, quote_char)
 
 
 class Case(Term):
@@ -553,11 +555,14 @@ class Case(Term):
         else_ = (' ELSE {}'.format(self._else.get_sql(**kwargs))
                  if self._else
                  else '')
-        alias = (' \"{}\"'.format(self.alias)
-                 if self.alias is not None and with_alias
-                 else '')
 
-        return 'CASE {cases}{else_} END{alias}'.format(cases=cases, else_=else_, alias=alias)
+        case_sql = 'CASE {cases}{else_} END'.format(cases=cases, else_=else_)
+
+        if self.alias is None:
+            return case_sql
+
+        return alias_sql(case_sql, self.alias, kwargs.get('quote_char'))
+
 
     def fields(self):
         fields = []
@@ -599,21 +604,24 @@ class Function(Term):
                        for param in self.params]
         return self
 
-    def get_function_sql(self, with_namespace=False):
+    def get_function_sql(self, with_namespace=False, quote_char=None):
         return '{name}({params})'.format(
             name=self.name,
-            params=','.join(p.get_sql(with_quotes=True, with_alias=False, with_namespace=with_namespace)
+            params=','.join(p.get_sql(with_alias=False, with_namespace=with_namespace, quote_char=quote_char)
                             if hasattr(p, 'get_sql')
                             else str(p)
                             for p in self.params),
         )
 
-    def get_sql(self, with_alias=False, with_namespace=False, **kwargs):
+    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         # FIXME escape
-        return '{function}{alias}'.format(
-            function=self.get_function_sql(with_namespace=with_namespace),
-            alias=' \"{}\"'.format(self.alias) if self.alias is not None and with_alias else ''
-        )
+
+        function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char)
+
+        if self.alias is None:
+            return function_sql
+
+        return alias_sql(function_sql, self.alias, quote_char)
 
     def fields(self):
         return [field

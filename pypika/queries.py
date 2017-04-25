@@ -1,8 +1,7 @@
 # coding: utf8
 
 from pypika.enums import JoinType, UnionType
-from pypika.utils import JoinException, UnionException, RollupException
-from pypika.utils import builder
+from pypika.utils import JoinException, UnionException, RollupException, builder, alias_sql
 from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup
 
 __author__ = "Timothy Heys"
@@ -37,30 +36,28 @@ class Table(Selectable):
         self.table_name = name
         self.schema = schema
 
-    def get_sql(self, **kwargs):
+    def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape
 
         if self.schema:
-            name = "\"{schema}\".\"{name}\"".format(
+            table_sql = "{quote}{schema}{quote}.{quote}{name}{quote}".format(
                 schema=self.schema,
                 name=self.table_name,
+                quote=quote_char or '',
             )
 
         else:
-            name = "\"{name}\"".format(
-                name=self.table_name
+            table_sql = "{quote}{name}{quote}".format(
+                name=self.table_name,
+                quote=quote_char or '',
             )
 
-        if self.alias:
-            return "{name} \"{alias}\"".format(
-                name=name,
-                alias=self.alias
-            )
-
-        return name
+        if self.alias is None:
+            return table_sql
+        return alias_sql(table_sql, self.alias, quote_char)
 
     def __str__(self):
-        return self.get_sql()
+        return self.get_sql(quote_char='"')
 
     def __eq__(self, other):
         if not isinstance(other, Table):
@@ -350,8 +347,8 @@ class QueryBuilder(Selectable, Term):
         self._limit = item.stop
 
     @staticmethod
-    def _list_aliases(field_set):
-        return [field.alias or field.get_sql(with_quotes=False)
+    def _list_aliases(field_set, quote_char=None):
+        return [field.alias or field.get_sql(quote_char=quote_char)
                 for field in field_set]
 
     def _select_field_str(self, term):
@@ -389,26 +386,6 @@ class QueryBuilder(Selectable, Term):
         # Don't return anything here. Subqueries have their own fields.
         return []
 
-    def select_aliases(self):
-        """
-        Gets a list of aliases for the columns in this query's SELECT clause.  If a field does not have an alias, the
-        field name is returned instead.
-
-        :return:
-            A list[str] of aliases.
-        """
-        return self._list_aliases(self._selects)
-
-    def groupby_aliases(self):
-        """
-        Gets a list of aliases for the columns in this query's GROUP BY clause.  If a field does not have an alias, the
-        field name is returned instead.
-
-        :return:
-            A list[str] of aliases.
-        """
-        return self._list_aliases(self._groupbys)
-
     def do_join(self, join):
         join.validate(self._from, self._joins)
 
@@ -439,7 +416,7 @@ class QueryBuilder(Selectable, Term):
         self._subquery_count += 1
 
     def __str__(self):
-        return self.get_sql(with_unions=True)
+        return self.get_sql(with_unions=True, quote_char='"')
 
     def __eq__(self, other):
         if not isinstance(other, QueryBuilder):
@@ -462,16 +439,16 @@ class QueryBuilder(Selectable, Term):
         if self._insert_table and not (self._selects or self._values):
             return ''
 
-        kwargs = {'with_namespace': bool(self._joins) or 1 < len(self._from)}
+        kwargs['with_namespace'] = bool(self._joins) or 1 < len(self._from)
 
         if not self._select_into and self._insert_table:
-            querystring = self._insert_sql()
+            querystring = self._insert_sql(**kwargs)
 
             if self._columns:
-                querystring += self._columns_sql()
+                querystring += self._columns_sql(**kwargs)
 
             if self._values:
-                return querystring + self._values_sql()
+                return querystring + self._values_sql(**kwargs)
             else:
                 querystring += ' ' + self._select_sql(**kwargs)
 
@@ -479,7 +456,7 @@ class QueryBuilder(Selectable, Term):
             querystring = self._select_sql(**kwargs)
 
             if self._insert_table:
-                querystring += self._into_sql()
+                querystring += self._into_sql(**kwargs)
 
         if self._from:
             querystring += self._from_sql(**kwargs)
@@ -509,103 +486,100 @@ class QueryBuilder(Selectable, Term):
             querystring += self._limit_sql()
 
         if subquery:
-            querystring = '({query})'.format(
-                query=querystring,
-            )
+            querystring = '({query})'.format(query=querystring)
 
         if with_alias:
-            return self._queryalias_sql(querystring)
+            return alias_sql(querystring, self.alias or self.table_name, kwargs.get('quote_char'))
 
         if with_unions:
-            querystring = self._union_sql(querystring)
+            querystring = self._union_sql(querystring, **kwargs)
 
         return querystring
 
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{select}'.format(
             distinct='distinct ' if self._distinct else '',
-            select=','.join(term.get_sql(with_quotes=True, with_alias=True, **kwargs)
+            select=','.join(term.get_sql(with_alias=True, **kwargs)
                             for term in self._selects),
         )
 
-    def _insert_sql(self):
+    def _insert_sql(self, **kwargs):
         return 'INSERT {ignore}INTO {table}'.format(
-            table=self._insert_table,
+            table=self._insert_table.get_sql(**kwargs),
             ignore='IGNORE ' if self._ignore else ''
         )
 
-    def _columns_sql(self):
+    def _columns_sql(self, with_namespace=False, **kwargs):
+        """
+        SQL for Columns clause for INSERT queries 
+        :param with_namespace:
+            Remove from kwargs, never format the column terms with namespaces since only one table can be inserted into 
+        """
         return ' ({columns})'.format(
-            columns=','.join(term.get_sql(with_quotes=True, with_alias=True)
+            columns=','.join(term.get_sql(with_namespace=False, **kwargs)
                              for term in self._columns)
         )
 
-    def _values_sql(self):
+    def _values_sql(self, **kwargs):
         return ' VALUES ({values})'.format(
-            values='),('.join(','.join(term.get_sql(with_quotes=True, with_alias=True)
+            values='),('.join(','.join(term.get_sql(with_alias=True, **kwargs)
                                        for term in row)
                               for row in self._values)
 
         )
 
-    def _into_sql(self):
+    def _into_sql(self, **kwargs):
         return ' INTO {table}'.format(
-            table=self._insert_table.get_sql(with_quotes=True, with_alias=False),
+            table=self._insert_table.get_sql(with_alias=False, **kwargs),
         )
 
-    def _from_sql(self, with_namespace=False, **kwargs):
+    def _from_sql(self, **kwargs):
         return ' FROM {selectable}'.format(selectable=','.join(
-            clause.get_sql(with_quotes=True, subquery=True, with_alias=with_namespace)
+            clause.get_sql(subquery=True, with_alias=kwargs['with_namespace'], **kwargs)
             for clause in self._from
         ))
 
-    def _where_sql(self, **kwargs):
-        return ' WHERE {where}'.format(where=self._wheres.get_sql(with_quotes=True, subquery=True, **kwargs))
+    def _where_sql(self, quote_char=None, **kwargs):
+        return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
-    def _group_sql(self, **kwargs):
+    def _group_sql(self, quote_char=None, **kwargs):
         return ' GROUP BY {groupby}'.format(
-            groupby=','.join(term.get_sql(with_quotes=True, **kwargs)
+            groupby=','.join(term.get_sql(quote_char=quote_char, **kwargs)
                              for term in self._groupbys)
         )
 
     def _rollup_sql(self):
         return ' WITH ROLLUP'
 
-    def _having_sql(self, **kwargs):
-        return ' HAVING {having}'.format(having=self._havings.get_sql(with_quotes=True, **kwargs))
+    def _having_sql(self, quote_char=None, **kwargs):
+        return ' HAVING {having}'.format(having=self._havings.get_sql(quote_char=quote_char, **kwargs))
 
-    def _orderby_sql(self, **kwargs):
+    def _orderby_sql(self, quote_char=None, **kwargs):
         return ' ORDER BY {orderby}'.format(
             orderby=','.join(
                 '{field} {orient}'.format(
-                    field=field.get_sql(with_quotes=True),
+                    field=field.get_sql(quote_char=quote_char),
                     orient=orient.value,
                 ) if orient is not None else
-                field.get_sql(with_quotes=True, **kwargs)
+                field.get_sql(quote_char=quote_char, **kwargs)
                 for field, orient in self._orderbys
             )
         )
 
-    def _queryalias_sql(self, querystring):
-        return '{query} \"{alias}\"'.format(
-            query=querystring,
-            alias=self.alias or self.table_name,
-        )
-
-    def _union_sql(self, querystring):
+    def _union_sql(self, querystring, quote_char=None, **kwargs):
         if self._unions:
             # Some queries require brackets for unions so easier to just always use them
             querystring = "({})".format(querystring)
 
             for (union_type, other) in self._unions:
+                other_querystring = other.get_sql(quote_char=quote_char)
                 if len(self._selects) != len(other._selects):
                     raise UnionException("Queries must have an equal number of select statements in a union."
-                                         "\n\nMain Query:\n{query1}"
-                                         "\n\nUnion Query:\n{query2}".format(query1=querystring,
-                                                                             query2=other.get_sql()))
+                                         "\n\nMain Query:\n{query1}\n\nUnion Query:\n{query2}" \
+                                         .format(query1=querystring, query2=other_querystring))
 
                 querystring += ' UNION{type} ({query})' \
-                    .format(type=union_type.value, query=other.get_sql())
+                    .format(type=union_type.value, query=other_querystring)
 
         return querystring
 
@@ -625,8 +599,21 @@ class Joiner(object):
 
     def on(self, criterion):
         if criterion is None:
-            raise JoinException("Parameter 'on' is required when joining a "
-                                "{type} but was not supplied.".format(type=self.type_label))
+            raise JoinException("Parameter 'criterion' is required for a "
+                                "{type} JOIN but was not supplied.".format(type=self.type_label))
+
+        self.query.do_join(JoinOn(self.item, self.how, criterion))
+        return self.query
+
+    def on_field(self, *fields):
+        if not fields:
+            raise JoinException("Parameter 'fields' is required for a "
+                                "{type} JOIN but was not supplied.".format(type=self.type_label))
+
+        criterion = None
+        for field in fields:
+            consituent = Field(field, table=self.query._from[0]) == Field(field, table=self.item)
+            criterion = consituent if criterion is None else criterion & consituent
 
         self.query.do_join(JoinOn(self.item, self.how, criterion))
         return self.query
@@ -647,7 +634,7 @@ class Join(object):
 
     def get_sql(self, **kwargs):
         sql = 'JOIN {table}'.format(
-            table=self.item.get_sql(with_quotes=True, subquery=True, with_alias=True),
+            table=self.item.get_sql(subquery=True, with_alias=True, **kwargs),
         )
 
         if self.how.value:
@@ -664,7 +651,7 @@ class JoinOn(Join):
         join_sql = super(JoinOn, self).get_sql(**kwargs)
         return '{join} ON {criterion}'.format(
             join=join_sql,
-            criterion=self.criterion.get_sql(with_quotes=True, **kwargs),
+            criterion=self.criterion.get_sql(**kwargs),
         )
 
     def validate(self, _from, _joins):

@@ -315,6 +315,31 @@ Example of a join using `ON`
 
     SELECT "history".* FROM "history" JOIN "customers" ON "history"."customer_id"="customers"."id" WHERE "customers"."id"=5
 
+As a shortcut, the ``Query.join().on_field()`` function is provided for joining the (first) table in the ``FROM`` clause
+with the joined table when the field name(s) are the same in both tables.
+
+Example of a join using `ON`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    history, customers = Tables('history', 'customers')
+    q = Query.from_(history).join(
+        customers
+    ).on_field(
+        'customer_id', 'group'
+    ).select(
+        history.star
+    ).where(
+        customers.group == 'A'
+    )
+
+
+.. code-block:: sql
+
+    SELECT "history".* FROM "history" JOIN "customers" ON "history"."customer_id"="customers"."customer_id" AND "history"."group"="customers"."group" WHERE "customers"."group"='A'
+
+
 
 Example of a join using `USING`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

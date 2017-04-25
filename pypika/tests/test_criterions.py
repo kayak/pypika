@@ -16,7 +16,7 @@ class CriterionTests(unittest.TestCase):
         c1 = (Field('foo') == Field('bar')).as_('criterion')
 
         self.assertEqual('"foo"="bar"', str(c1))
-        self.assertEqual('"foo"="bar" "criterion"', c1.get_sql(with_alias=True))
+        self.assertEqual('"foo"="bar" "criterion"', c1.get_sql(with_alias=True, quote_char='"'))
 
     def test__criterion_eq_number(self):
         c1 = Field('foo') == 1
