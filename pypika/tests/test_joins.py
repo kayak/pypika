@@ -31,6 +31,16 @@ class JoinTypeTests(unittest.TestCase):
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query))
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query_explicit))
 
+    def test_join_using_string_field_name(self):
+        query = Query.from_(self.table0).join(self.table1).using('id').select('*')
+
+        self.assertEqual('SELECT * FROM "abc" JOIN "efg" USING ("id")', str(query))
+
+    def test_join_using_multiple_fields(self):
+        query = Query.from_(self.table0).join(self.table1).using('foo', 'bar').select('*')
+
+        self.assertEqual('SELECT * FROM "abc" JOIN "efg" USING ("foo","bar")', str(query))
+
     def test_outer_join(self):
         query = Query.from_(self.table0).join(self.table1, how=JoinType.outer).on(
             self.table0.foo == self.table1.bar).select('*')

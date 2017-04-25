@@ -409,21 +409,21 @@ class QueryBuilder(Selectable, Term):
         """
         return self._list_aliases(self._groupbys)
 
-    def do_join(self, item, criterion, how):
-        self._validate_join(criterion, item)
+    def do_join(self, join):
+        join.validate(self._from, self._joins)
 
-        if isinstance(item, QueryBuilder):
-            self._tag_subquery(item)
+        if isinstance(join.item, QueryBuilder):
+            self._tag_subquery(join.item)
 
         table_in_from = any(isinstance(clause, Table)
-                            and item.table_name == self._from[0].table_name
+                            and join.item.table_name == self._from[0].table_name
                             for clause in self._from)
-        if (isinstance(item, Table) and item.alias is None and table_in_from):
+        if isinstance(join.item, Table) and join.item.alias is None and table_in_from:
             # On the odd chance that we join the same table as the FROM table and don't set an alias
             # FIXME only works once
-            item.alias = item.table_name + '2'
+            join.item.alias = join.item.table_name + '2'
 
-        self._joins.append(Join(item, criterion, how))
+        self._joins.append(join)
 
     def _validate_term(self, term):
         for field in term.fields():
@@ -433,16 +433,6 @@ class QueryBuilder(Selectable, Term):
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
                                     'its fields can be used' % field.table)
-
-    def _validate_join(self, criterion, item):
-        criterion_tables = set([f.table for f in criterion.fields()])
-        available_tables = (set(self._from) | {join.item for join in self._joins} | {item})
-        missing_tables = criterion_tables - available_tables
-        if missing_tables:
-            raise JoinException('Invalid join criterion. One field is required from the joined item and '
-                                'another from the selected table or an existing join.  Found [{tables}]'.format(
-                tables=', '.join(map(str, missing_tables))
-            ))
 
     def _tag_subquery(self, subquery):
         subquery.alias = 'sq%d' % self._subquery_count
@@ -495,10 +485,8 @@ class QueryBuilder(Selectable, Term):
             querystring += self._from_sql(**kwargs)
 
         if self._joins:
-            for join_item in self._joins:
-                if join_item.how.value:
-                    querystring += self._jointype_sql(join_item)
-                querystring += self._join_sql(join_item, **kwargs)
+            querystring += " " + " ".join(join.get_sql(**kwargs)
+                                          for join in self._joins)
 
         if self._wheres:
             querystring += self._where_sql(**kwargs)
@@ -571,15 +559,6 @@ class QueryBuilder(Selectable, Term):
             for clause in self._from
         ))
 
-    def _jointype_sql(self, join_item):
-        return ' {type}'.format(type=join_item.how.value)
-
-    def _join_sql(self, join, **kwargs):
-        return ' JOIN {table} ON {criterion}'.format(
-            table=join.item.get_sql(with_quotes=True, subquery=True, with_alias=True),
-            criterion=join.criteria.get_sql(with_quotes=True, **kwargs),
-        )
-
     def _where_sql(self, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(with_quotes=True, subquery=True, **kwargs))
 
@@ -649,12 +628,67 @@ class Joiner(object):
             raise JoinException("Parameter 'on' is required when joining a "
                                 "{type} but was not supplied.".format(type=self.type_label))
 
-        self.query.do_join(self.item, criterion, self.how)
+        self.query.do_join(JoinOn(self.item, self.how, criterion))
+        return self.query
+
+    def using(self, *fields):
+        if not fields:
+            raise JoinException("Parameter 'fields' is required when joining with "
+                                "a using clause but was not supplied.".format(type=self.type_label))
+
+        self.query.do_join(JoinUsing(self.item, self.how, [Field(field) for field in fields]))
         return self.query
 
 
 class Join(object):
-    def __init__(self, item, criteria, how):
+    def __init__(self, item, how):
         self.item = item
-        self.criteria = criteria
         self.how = how
+
+    def get_sql(self, **kwargs):
+        sql = 'JOIN {table}'.format(
+            table=self.item.get_sql(with_quotes=True, subquery=True, with_alias=True),
+        )
+
+        if self.how.value:
+            return '{type} {join}'.format(join=sql, type=self.how.value)
+        return sql
+
+
+class JoinOn(Join):
+    def __init__(self, item, how, criteria):
+        super(JoinOn, self).__init__(item, how)
+        self.criterion = criteria
+
+    def get_sql(self, **kwargs):
+        join_sql = super(JoinOn, self).get_sql(**kwargs)
+        return '{join} ON {criterion}'.format(
+            join=join_sql,
+            criterion=self.criterion.get_sql(with_quotes=True, **kwargs),
+        )
+
+    def validate(self, _from, _joins):
+        criterion_tables = set([f.table for f in self.criterion.fields()])
+        available_tables = (set(_from) | {join.item for join in _joins} | {self.item})
+        missing_tables = criterion_tables - available_tables
+        if missing_tables:
+            raise JoinException('Invalid join criterion. One field is required from the joined item and '
+                                'another from the selected table or an existing join.  Found [{tables}]'.format(
+                tables=', '.join(map(str, missing_tables))
+            ))
+
+
+class JoinUsing(Join):
+    def __init__(self, item, how, fields):
+        super(JoinUsing, self).__init__(item, how)
+        self.fields = fields
+
+    def get_sql(self, **kwargs):
+        join_sql = super(JoinUsing, self).get_sql(**kwargs)
+        return '{join} USING ({fields})'.format(
+            join=join_sql,
+            fields=','.join(str(field) for field in self.fields)
+        )
+
+    def validate(self, _from, _joins):
+        pass
