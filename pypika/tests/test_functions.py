@@ -391,6 +391,11 @@ class CastTests(unittest.TestCase):
         self.assertEqual("SELECT TIMESTAMP(\"foo\") FROM \"abc\"", str(q1))
         self.assertEqual("SELECT CAST(\"foo\" AS TIMESTAMP) FROM \"abc\"", str(q2))
 
+    def test__cast__varchar(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.VARCHAR))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS VARCHAR) FROM \"abc\"", str(q))
+
     def test__tochar__(self):
         q = Q.from_(self.t).select(fn.ToChar(self.t.foo, "SomeFormat"))
 
