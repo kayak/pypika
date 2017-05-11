@@ -618,7 +618,7 @@ class Function(Term):
 
         function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char)
 
-        if self.alias is None:
+        if not with_alias or self.alias is None:
             return function_sql
 
         return alias_sql(function_sql, self.alias, quote_char)

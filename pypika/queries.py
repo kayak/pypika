@@ -542,7 +542,7 @@ class QueryBuilder(Selectable, Term):
     def _where_sql(self, quote_char=None, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
-    def _group_sql(self, quote_char=None, **kwargs):
+    def _group_sql(self, quote_char=None, with_alias=None, **kwargs):
         return ' GROUP BY {groupby}'.format(
             groupby=','.join(term.get_sql(quote_char=quote_char, **kwargs)
                              for term in self._groupbys)

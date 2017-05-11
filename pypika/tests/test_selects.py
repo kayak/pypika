@@ -210,6 +210,15 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo",COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"', str(q))
 
+    def test_groupby__alias(self):
+        q = Query.from_(self.t).select(
+            fn.Sum(self.t.foo).as_('bar'),
+        ).groupby(
+            fn.Sum(self.t.foo).as_('bar'),
+        )
+
+        self.assertEqual('SELECT SUM("foo") "bar" FROM "abc" GROUP BY SUM("foo")', str(q))
+
 
 class HavingTests(unittest.TestCase):
     table_abc, table_efg = Tables('abc', 'efg')
@@ -353,7 +362,7 @@ class AliasTests(unittest.TestCase):
     def test_case_using_constructor_param(self):
         q = Query.from_(self.t).select(Case(alias='bar').when(self.t.foo == 1, 'a').else_('b'))
 
-        self.assertEqual("SELECT CASE WHEN \"foo\"=1 THEN 'a' ELSE 'b' END \"bar\" FROM \"abc\"", str(q)) \
+        self.assertEqual("SELECT CASE WHEN \"foo\"=1 THEN 'a' ELSE 'b' END \"bar\" FROM \"abc\"", str(q))
 
     def test_select__multiple_tables(self):
         table_abc, table_efg = Table('abc', alias='q0'), Table('efg', alias='q1')
