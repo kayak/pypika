@@ -2,7 +2,7 @@
 
 from pypika.enums import JoinType, UnionType
 from pypika.utils import JoinException, UnionException, RollupException, builder, alias_sql
-from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup
+from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup, ListField
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -286,6 +286,10 @@ class QueryBuilder(Selectable, Term):
 
         if self._mysql_rollup:
             raise AttributeError("'Query' object has no attribute '%s'" % 'rollup')
+
+        terms = [ListField(term) if isinstance(term, (list, tuple, set))
+                 else term
+                 for term in terms]
 
         if for_mysql:
             if not terms and not self._groupbys:

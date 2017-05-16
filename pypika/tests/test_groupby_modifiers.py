@@ -142,3 +142,13 @@ class RollupTests(unittest.TestCase):
         )
 
         self.assertEqual('SELECT "foo","fiz",SUM("bar") FROM "abc" GROUP BY ROLLUP("foo"),ROLLUP("fiz")', str(q))
+
+    def test_verticaoracle_rollups_with_parity(self):
+        q = Query.from_(self.table).select(
+            self.table.buz,
+        ).rollup(
+            [self.table.foo, self.table.bar],
+            self.table.fiz,
+        )
+
+        self.assertEqual('SELECT "buz" FROM "abc" GROUP BY ROLLUP(("foo","bar"),"fiz")', str(q))
