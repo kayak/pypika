@@ -256,8 +256,9 @@ class Star(Field):
         return '*'
 
 
-class ListField(object):
+class ListField(Term):
     def __init__(self, values):
+        super(ListField, self).__init__()
         self.values = values
 
     def __str__(self):
@@ -265,7 +266,7 @@ class ListField(object):
 
     def get_sql(self, **kwargs):
         return '({})'.format(
-            ','.join(term.get_sql()
+            ','.join(term.get_sql(**kwargs)
                      for term in self.values)
         )
 
