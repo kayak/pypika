@@ -33,7 +33,7 @@ This contains all of the utility classes such as exceptions and decorators.
 """
 from .enums import Order, JoinType, DatePart
 from .queries import Query, Table, make_tables as Tables
-from .terms import Field, Case, Interval, Rollup
+from .terms import Field, Case, Interval, Rollup, Tuple
 from .utils import JoinException, GroupingException, CaseException, UnionException, RollupException
 
 __author__ = "Timothy Heys"

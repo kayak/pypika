@@ -31,11 +31,11 @@ class RollupException(Exception):
 def builder(func):
     import copy
 
-    def _decorator(self, *args, **kwargs):
+    def _copy(self, *args, **kwargs):
         self_copy = copy.deepcopy(self)
         return func(self_copy, *args, **kwargs) or self_copy
 
-    return _decorator
+    return _copy
 
 
 def resolve_is_aggregate(values):

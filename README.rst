@@ -398,16 +398,58 @@ used except for weeks and quarters, which must be used separately and will ignor
     from pypika import functions as fn
 
     fruits = Tables('fruits')
-    q = Query.from_(fruits).select(
-        fruits.id,
-        fruits.name,
-    ).where(
-        fruits.harvest_date + Interval(months=1) < fn.Now()
-    )
+    q = Query.from_(fruits) \
+        .select(fruits.id, fruits.name) \
+        .where(fruits.harvest_date + Interval(months=1) < fn.Now())
 
 .. code-block:: sql
 
     SELECT id,name FROM fruits WHERE harvest_date+INTERVAL 1 MONTH<NOW()
+
+
+Tuples
+""""""
+
+Tuples are supported through the class ``pypika.Tuple`` but also through the native python tuple wherever possible.
+Tuples can be used with ``pypika.Criterion`` in **WHERE** clauses for pairwise comparisons.
+
+.. code-block:: python
+
+    from pypika import Query, Tuple
+
+    q = Query.from_(self.table_abc) \
+        .select(self.table_abc.foo, self.table_abc.bar) \
+        .where(Tuple(self.table_abc.foo, self.table_abc.bar) == Tuple(1, 2))
+
+.. code-block:: sql
+
+    SELECT "foo","bar" FROM "abc" WHERE ("foo","bar")=(1,2)
+
+Using ``pypika.Tuple`` on both sides of the comparison is redundant and |Brand| supports native python tuples.
+
+.. code-block:: python
+
+    from pypika import Query, Tuple
+
+    q = Query.from_(self.table_abc) \
+        .select(self.table_abc.foo, self.table_abc.bar) \
+        .where(Tuple(self.table_abc.foo, self.table_abc.bar) == (1, 2))
+
+.. code-block:: sql
+
+    SELECT "foo","bar" FROM "abc" WHERE ("foo","bar")=(1,2)
+
+Tuples can be used in **IN** clauses.
+
+.. code-block:: python
+
+    Query.from_(self.table_abc) \
+            .select(self.table_abc.foo, self.table_abc.bar) \
+            .where(Tuple(self.table_abc.foo, self.table_abc.bar).isin([(1, 1), (2, 2), (3, 3)]))
+
+.. code-block:: sql
+
+    SELECT "foo","bar" FROM "abc" WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))
 
 
 Strings Functions
@@ -464,6 +506,7 @@ There are several string operations and function wrappers included in |Brand|.  
 .. code-block:: sql
 
     SELECT id,CONCAT(fname, ' ', lname) full_name FROM customers
+
 
 Case Statements
 """""""""""""""
