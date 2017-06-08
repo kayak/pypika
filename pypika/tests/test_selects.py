@@ -1,7 +1,18 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, Field as F, Case, functions as fn, Order
+from pypika import (Query,
+                    Table,
+                    Tables,
+                    Field as F,
+                    Case,
+                    functions as fn,
+                    Order,
+                    MySQLQuery,
+                    VerticaQuery,
+                    MSSQLQuery,
+                    PostgreSQLQuery,
+                    OracleQuery)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -33,12 +44,12 @@ class SelectTests(unittest.TestCase):
     def test_select__distinct__single(self):
         q = Query.from_('abc').select('foo').distinct()
 
-        self.assertEqual('SELECT distinct "foo" FROM "abc"', str(q))
+        self.assertEqual('SELECT DISTINCT "foo" FROM "abc"', str(q))
 
     def test_select__distinct__multi(self):
         q = Query.from_('abc').select('foo', 'bar').distinct()
 
-        self.assertEqual('SELECT distinct "foo","bar" FROM "abc"', str(q))
+        self.assertEqual('SELECT DISTINCT "foo","bar" FROM "abc"', str(q))
 
     def test_select__column__single__str(self):
         q = Query.from_('abc').select('foo')
@@ -119,6 +130,31 @@ class SelectTests(unittest.TestCase):
         q1 = Query.from_('abc').select('foo')[10:10]
 
         self.assertEqual('SELECT "foo" FROM "abc" OFFSET 10 LIMIT 10', str(q1))
+
+    def test_mysql_query_uses_backtick_quote_chars(self):
+        q = MySQLQuery.from_('abc').select('foo', 'bar')
+
+        self.assertEqual('SELECT `foo`,`bar` FROM `abc`', str(q))
+
+    def test_vertica_query_uses_double_quote_chars(self):
+        q = VerticaQuery.from_('abc').select('foo', 'bar')
+
+        self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
+
+    def test_mssql_query_uses_double_quote_chars(self):
+        q = MSSQLQuery.from_('abc').select('foo', 'bar')
+
+        self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
+
+    def test_oracle_query_uses_double_quote_chars(self):
+        q = OracleQuery.from_('abc').select('foo', 'bar')
+
+        self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
+
+    def test_postgres_query_uses_double_quote_chars(self):
+        q = PostgreSQLQuery.from_('abc').select('foo', 'bar')
+
+        self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
 
 
 class WhereTests(unittest.TestCase):
@@ -219,6 +255,31 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT SUM("foo") "bar" FROM "abc" GROUP BY SUM("foo")', str(q))
 
+    def test_mysql_query_uses_backtick_quote_chars(self):
+        q = MySQLQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
+
+        self.assertEqual('SELECT `foo` FROM `abc` GROUP BY `foo`', str(q))
+
+    def test_vertica_query_uses_double_quote_chars(self):
+        q = VerticaQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
+
+    def test_mssql_query_uses_double_quote_chars(self):
+        q = MSSQLQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
+
+    def test_oracle_query_uses_double_quote_chars(self):
+        q = OracleQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
+
+    def test_postgres_query_uses_double_quote_chars(self):
+        q = PostgreSQLQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
+
 
 class HavingTests(unittest.TestCase):
     table_abc, table_efg = Tables('abc', 'efg')
@@ -265,6 +326,56 @@ class HavingTests(unittest.TestCase):
                          'JOIN "efg" ON "abc"."foo"="efg"."foo" '
                          'GROUP BY "abc"."foo" '
                          "HAVING \"abc\".\"buz\"='fiz' AND SUM(\"efg\".\"bar\")>100", str(q))
+
+    def test_mysql_query_uses_backtick_quote_chars(self):
+        q = MySQLQuery.from_(self.table_abc).select(
+            self.table_abc.foo
+        ).groupby(
+            self.table_abc.foo
+        ).having(
+            self.table_abc.buz == 'fiz'
+        )
+        self.assertEqual("SELECT `foo` FROM `abc` GROUP BY `foo` HAVING `buz`='fiz'", str(q))
+
+    def test_vertica_query_uses_double_quote_chars(self):
+        q = VerticaQuery.from_(self.table_abc).select(
+            self.table_abc.foo
+        ).groupby(
+            self.table_abc.foo
+        ).having(
+            self.table_abc.buz == 'fiz'
+        )
+        self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
+
+    def test_mssql_query_uses_double_quote_chars(self):
+        q = MSSQLQuery.from_(self.table_abc).select(
+            self.table_abc.foo
+        ).groupby(
+            self.table_abc.foo
+        ).having(
+            self.table_abc.buz == 'fiz'
+        )
+        self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
+
+    def test_oracle_query_uses_double_quote_chars(self):
+        q = OracleQuery.from_(self.table_abc).select(
+            self.table_abc.foo
+        ).groupby(
+            self.table_abc.foo
+        ).having(
+            self.table_abc.buz == 'fiz'
+        )
+        self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
+
+    def test_postgres_query_uses_double_quote_chars(self):
+        q = PostgreSQLQuery.from_(self.table_abc).select(
+            self.table_abc.foo
+        ).groupby(
+            self.table_abc.foo
+        ).having(
+            self.table_abc.buz == 'fiz'
+        )
+        self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
 
 
 class OrderByTests(unittest.TestCase):

@@ -1,8 +1,20 @@
 # coding: utf8
 
-from pypika.enums import JoinType, UnionType
-from pypika.utils import JoinException, UnionException, RollupException, builder, alias_sql
-from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup, Tuple
+from pypika.enums import (Dialects,
+                          JoinType,
+                          UnionType)
+from pypika.utils import (JoinException,
+                          UnionException,
+                          RollupException,
+                          builder,
+                          alias_sql)
+from .terms import (Field,
+                    Star,
+                    Term,
+                    Function,
+                    ArithmeticExpression,
+                    Rollup,
+                    Tuple)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -26,9 +38,6 @@ class Selectable(object):
 
         return self.field(name)
 
-        # def __hash__(self):
-        #     return hash(str(self))
-
 
 class Table(Selectable):
     def __init__(self, name, schema=None, alias=None):
@@ -43,13 +52,13 @@ class Table(Selectable):
             table_sql = "{quote}{schema}{quote}.{quote}{name}{quote}".format(
                 schema=self.schema,
                 name=self.table_name,
-                quote=quote_char or '',
+                quote=quote_char or ''
             )
 
         else:
             table_sql = "{quote}{name}{quote}".format(
                 name=self.table_name,
-                quote=quote_char or '',
+                quote=quote_char or ''
             )
 
         if self.alias is None:
@@ -92,9 +101,11 @@ class Query(object):
 
     This class is immutable.
     """
+    QUOTE_CHARACTER = '"'
+    DIALECT = None
 
-    @staticmethod
-    def from_(table):
+    @classmethod
+    def from_(cls, table):
         """
         Query builder entry point.  Initializes query building and sets the table to select from.  When using this
         function, the query becomes a SELECT query.
@@ -106,10 +117,10 @@ class Query(object):
 
         :returns QueryBuilder
         """
-        return QueryBuilder().from_(table)
+        return QueryBuilder(quote_char=cls.QUOTE_CHARACTER, dialect=cls.DIALECT).from_(table)
 
-    @staticmethod
-    def into(table):
+    @classmethod
+    def into(cls, table):
         """
         Query builder entry point.  Initializes query building and sets the table to insert into.  When using this
         function, the query becomes an INSERT query.
@@ -121,10 +132,10 @@ class Query(object):
 
         :returns QueryBuilder
         """
-        return QueryBuilder().into(table)
+        return QueryBuilder(quote_char=cls.QUOTE_CHARACTER, dialect=cls.DIALECT).into(table)
 
-    @staticmethod
-    def select(*terms):
+    @classmethod
+    def select(cls, *terms):
         """
         Query builder entry point.  Initializes query building without a table and selects fields.  Useful when testing
         SQL functions.
@@ -137,7 +148,47 @@ class Query(object):
 
         :returns QueryBuilder
         """
-        return QueryBuilder().select(*terms)
+        return QueryBuilder(quote_char=cls.QUOTE_CHARACTER, dialect=cls.DIALECT).select(*terms)
+
+
+class MySQLQuery(Query):
+    """
+    Defines a query class for use with MySQL.
+    """
+    QUOTE_CHARACTER = "`"
+    DIALECT = Dialects.MYSQL
+
+
+class VerticaQuery(Query):
+    """
+    Defines a query class for use with Vertica.
+    """
+    QUOTE_CHARACTER = '"'
+    DIALECT = Dialects.VERTICA
+
+
+class OracleQuery(Query):
+    """
+    Defines a query class for use with Oracle.
+    """
+    QUOTE_CHARACTER = '"'
+    DIALECT = Dialects.ORACLE
+
+
+class PostgreSQLQuery(Query):
+    """
+    Defines a query class for use with PostgreSQL.
+    """
+    QUOTE_CHARACTER = '"'
+    DIALECT = Dialects.POSTGRESQL
+
+
+class MSSQLQuery(Query):
+    """
+    Defines a query class for use with Microsoft SQL Server.
+    """
+    QUOTE_CHARACTER = '"'
+    DIALECT = Dialects.MSSQL
 
 
 class QueryBuilder(Selectable, Term):
@@ -146,7 +197,7 @@ class QueryBuilder(Selectable, Term):
     state to be branched immutably.
     """
 
-    def __init__(self):
+    def __init__(self, quote_char='"', dialect=None):
         super(QueryBuilder, self).__init__(None)
 
         self._from = []
@@ -174,6 +225,8 @@ class QueryBuilder(Selectable, Term):
         self._select_into = False
 
         self._subquery_count = 0
+        self.quote_char = quote_char
+        self.dialect = dialect
 
     @builder
     def from_(self, selectable):
@@ -420,7 +473,7 @@ class QueryBuilder(Selectable, Term):
         self._subquery_count += 1
 
     def __str__(self):
-        return self.get_sql(with_unions=True, quote_char='"')
+        return self.get_sql(with_unions=True, quote_char=self.quote_char, dialect=self.dialect)
 
     def __eq__(self, other):
         if not isinstance(other, QueryBuilder):
@@ -502,7 +555,7 @@ class QueryBuilder(Selectable, Term):
 
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{select}'.format(
-            distinct='distinct ' if self._distinct else '',
+            distinct='DISTINCT ' if self._distinct else '',
             select=','.join(term.get_sql(with_alias=True, **kwargs)
                             for term in self._selects),
         )

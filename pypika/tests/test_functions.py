@@ -1,8 +1,16 @@
 # coding: utf8
 import unittest
 
-from pypika import Query as Q, Table as T, Field as F, functions as fn, CaseException, Case, Interval, DatePart
-from pypika.enums import SqlTypes
+from pypika import (Query as Q,
+                    Table as T,
+                    Field as F,
+                    functions as fn,
+                    CaseException,
+                    Case,
+                    Interval,
+                    DatePart)
+from pypika.enums import (SqlTypes,
+                          Dialects)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -510,6 +518,18 @@ class DateFunctionsTests(unittest.TestCase):
         c = self.dt + Interval(quarters=1) + Interval(weeks=1)
 
         self.assertEqual("\"dt\"+INTERVAL \'1 QUARTER\'+INTERVAL \'1 WEEK\'", str(c))
+
+    def test_mysql_dialect_does_not_use_quotes_around_interval(self):
+        c = Interval(days=1).get_sql(dialect=Dialects.MYSQL)
+        self.assertEqual("INTERVAL 1 DAY", str(c))
+
+    def test_oracle_dialect_uses_single_quotes_around_expression_in_an_interval(self):
+        c = Interval(days=1).get_sql(dialect=Dialects.ORACLE)
+        self.assertEqual("INTERVAL '1' DAY", str(c))
+
+    def test_vertica_dialect_uses_single_quotes_around_interval(self):
+        c = Interval(days=1).get_sql(dialect=Dialects.VERTICA)
+        self.assertEqual("INTERVAL '1 DAY'", str(c))
 
     def _test_extract_datepart(self, date_part):
         q = Q.from_(self.t).select(fn.Extract(date_part, self.t.foo))

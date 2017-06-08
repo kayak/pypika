@@ -4,8 +4,15 @@ from datetime import date
 
 from aenum import Enum
 
-from pypika.enums import Boolean, Equality, Arithmetic, Matching
-from pypika.utils import CaseException, builder, resolve_is_aggregate, alias_sql
+from pypika.enums import (Boolean,
+                          Dialects,
+                          Equality,
+                          Arithmetic,
+                          Matching)
+from pypika.utils import (CaseException,
+                          builder,
+                          resolve_is_aggregate,
+                          alias_sql)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -42,7 +49,7 @@ class Term(object):
         """
         from .queries import QueryBuilder
 
-        if isinstance(val, (Term, QueryBuilder)):
+        if isinstance(val, (Term, QueryBuilder, Interval)):
             return val
         if val is None:
             return NullValue()
@@ -570,7 +577,6 @@ class Case(Term):
 
         return alias_sql(case_sql, self.alias, kwargs.get('quote_char'))
 
-
     def fields(self):
         fields = []
 
@@ -674,7 +680,12 @@ class Interval(object):
     def __str__(self):
         return self.get_sql()
 
+    def fields(self):
+        return []
+
     def get_sql(self, **kwargs):
+        dialect = kwargs.get('dialect')
+
         if hasattr(self, 'quarters'):
             expr = getattr(self, 'quarters')
             unit = 'QUARTER'
@@ -684,7 +695,7 @@ class Interval(object):
             unit = 'WEEK'
 
         else:
-            # Create the whole expression but trim out the unnecessery fields
+            # Create the whole expression but trim out the unnecessary fields
             expr = self.trim_pattern.sub(
                 '',
                 "{years}-{months}-{days} {hours}:{minutes}:{seconds}.{microseconds}".format(
@@ -701,10 +712,16 @@ class Interval(object):
                 largest=self.largest,
                 smallest=self.smallest,
             ) if self.largest != self.smallest else self.largest
-        return 'INTERVAL \'{expr} {unit}\''.format(
-            expr=expr,
-            unit=unit,
-        )
+
+        if dialect == Dialects.MYSQL:
+            # MySQL requires no single quotes around the expr and unit
+            return 'INTERVAL {expr} {unit}'.format(expr=expr, unit=unit)
+
+        if dialect == Dialects.ORACLE:
+            # Oracle requires just single quotes around the expr
+            return 'INTERVAL \'{expr}\' {unit}'.format(expr=expr, unit=unit)
+
+        return 'INTERVAL \'{expr} {unit}\''.format(expr=expr, unit=unit)
 
 
 class Pow(Function):
