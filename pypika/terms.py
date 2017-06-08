@@ -666,9 +666,9 @@ class Interval(object):
                 self.smallest = label
 
     def __str__(self):
-        return self.get_sql()
+        return self.get_sql(quote_char="'")
 
-    def get_sql(self, **kwargs):
+    def get_sql(self, quote_char=None, **kwargs):
         if hasattr(self, 'quarters'):
             expr = getattr(self, 'quarters')
             unit = 'QUARTER'
@@ -678,7 +678,7 @@ class Interval(object):
             unit = 'WEEK'
 
         else:
-            # Create the whole expression but trim out the unnecessery fields
+            # Create the whole expression but trim out the unnecessary fields
             expr = self.trim_pattern.sub(
                 '',
                 "{years}-{months}-{days} {hours}:{minutes}:{seconds}.{microseconds}".format(
@@ -695,9 +695,10 @@ class Interval(object):
                 largest=self.largest,
                 smallest=self.smallest,
             ) if self.largest != self.smallest else self.largest
-        return 'INTERVAL \'{expr} {unit}\''.format(
+        return 'INTERVAL {quote}{expr} {unit}{quote}'.format(
             expr=expr,
             unit=unit,
+            quote=quote_char or ''
         )
 
 
