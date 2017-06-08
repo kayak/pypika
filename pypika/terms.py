@@ -41,10 +41,13 @@ class Term(object):
 
         """
         from .queries import QueryBuilder
-        if isinstance(val, Term) or isinstance(val, QueryBuilder):
+
+        if isinstance(val, (Term, QueryBuilder)):
             return val
         if val is None:
             return NullValue()
+        if isinstance(val, (list, tuple)):
+            return Tuple(*val)
 
         return ValueWrapper(val)
 
@@ -86,7 +89,7 @@ class Term(object):
 
     def isin(self, arg):
         if isinstance(arg, (list, tuple, set)):
-            return ContainsCriterion(self, ListField([self._wrap(value) for value in arg]))
+            return ContainsCriterion(self, Tuple(*[self._wrap(value) for value in arg]))
         return ContainsCriterion(self, arg)
 
     def notin(self, arg):
@@ -256,13 +259,16 @@ class Star(Field):
         return '*'
 
 
-class ListField(Term):
-    def __init__(self, values):
-        super(ListField, self).__init__()
-        self.values = values
+class Tuple(Term):
+    def __init__(self, *values):
+        super(Tuple, self).__init__()
+        self.values = [self._wrap(value) for value in values]
 
     def __str__(self):
         return self.get_sql()
+
+    def fields(self):
+        return sum([value.fields() for value in self.values], [])
 
     def get_sql(self, **kwargs):
         return '({})'.format(

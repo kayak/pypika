@@ -2,7 +2,7 @@
 
 from pypika.enums import JoinType, UnionType
 from pypika.utils import JoinException, UnionException, RollupException, builder, alias_sql
-from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup, ListField
+from .terms import Field, Star, Term, Function, ArithmeticExpression, Rollup, Tuple
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -287,7 +287,7 @@ class QueryBuilder(Selectable, Term):
         if self._mysql_rollup:
             raise AttributeError("'Query' object has no attribute '%s'" % 'rollup')
 
-        terms = [ListField(term) if isinstance(term, (list, tuple, set))
+        terms = [Tuple(*term) if isinstance(term, (list, tuple, set))
                  else term
                  for term in terms]
 
@@ -515,9 +515,9 @@ class QueryBuilder(Selectable, Term):
 
     def _columns_sql(self, with_namespace=False, **kwargs):
         """
-        SQL for Columns clause for INSERT queries 
+        SQL for Columns clause for INSERT queries
         :param with_namespace:
-            Remove from kwargs, never format the column terms with namespaces since only one table can be inserted into 
+            Remove from kwargs, never format the column terms with namespaces since only one table can be inserted into
         """
         return ' ({columns})'.format(
             columns=','.join(term.get_sql(with_namespace=False, **kwargs)
