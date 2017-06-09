@@ -713,15 +713,15 @@ class Interval(object):
                 smallest=self.smallest,
             ) if self.largest != self.smallest else self.largest
 
-        if dialect == Dialects.MYSQL:
+        interval_templates = {
             # MySQL requires no single quotes around the expr and unit
-            return 'INTERVAL {expr} {unit}'.format(expr=expr, unit=unit)
+            Dialects.MYSQL: 'INTERVAL {expr} {unit}',
 
-        if dialect == Dialects.ORACLE:
             # Oracle requires just single quotes around the expr
-            return 'INTERVAL \'{expr}\' {unit}'.format(expr=expr, unit=unit)
+            Dialects.ORACLE: 'INTERVAL \'{expr}\' {unit}'
+        }
 
-        return 'INTERVAL \'{expr} {unit}\''.format(expr=expr, unit=unit)
+        return interval_templates.get(dialect, 'INTERVAL \'{expr} {unit}\'').format(expr=expr, unit=unit)
 
 
 class Pow(Function):
