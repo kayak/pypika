@@ -73,3 +73,11 @@ class SqlTypes(Enum):
     DATE = 'DATE'
     TIMESTAMP = 'TIMESTAMP'
     VARCHAR = 'VARCHAR'
+
+
+class Dialects(Enum):
+    VERTICA = 'vertica'
+    ORACLE = 'oracle'
+    MSSQL = 'mssql'
+    MYSQL = 'mysql'
+    POSTGRESQL = 'postgressql'
