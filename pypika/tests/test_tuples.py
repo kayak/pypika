@@ -56,3 +56,13 @@ class TupleTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo","bar" FROM "abc" '
                          'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))', str(q))
+
+    def test_tuples_in_join(self):
+        query = Query.from_(self.table_abc) \
+            .join(self.table_efg) \
+            .on(self.table_abc.foo == self.table_efg.bar) \
+            .select('*') \
+            .where(Tuple(self.table_abc.foo, self.table_efg.bar).isin([(1, 1), Tuple(2, 2), (3, 3)]))
+
+        self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar" '
+                         'WHERE ("abc"."foo","efg"."bar") IN ((1,1),(2,2),(3,3))', str(query))
