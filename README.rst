@@ -340,7 +340,6 @@ Example of a join using `ON`
     SELECT "history".* FROM "history" JOIN "customers" ON "history"."customer_id"="customers"."customer_id" AND "history"."group"="customers"."group" WHERE "customers"."group"='A'
 
 
-
 Example of a join using `USING`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -533,7 +532,6 @@ using the ``when`` method and to set the default value using ``else_``.
 .. code-block:: sql
 
     SELECT "id",CASE WHEN "fname"='Tom' THEN 'It was Tom' WHEN "fname"='John' THEN 'It was John' ELSE 'It was someone else.' END "who_was_it" FROM "customers"
-
 
 
 Inserting Data
