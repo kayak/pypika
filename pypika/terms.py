@@ -559,7 +559,7 @@ class Case(Term):
 
         case_sql = 'CASE {cases}{else_} END'.format(cases=cases, else_=else_)
 
-        if self.alias is None:
+        if not with_alias or self.alias is None:
             return case_sql
 
         return alias_sql(case_sql, self.alias, kwargs.get('quote_char'))
