@@ -525,7 +525,7 @@ using the ``when`` method and to set the default value using ``else_``.
         Case()
            .when(customers.fname == "Tom", "It was Tom")
            .when(customers.fname == "John", "It was John")
-           else_("It was someone else.").as_('who_was_it'),
+           .else_("It was someone else.").as_('who_was_it')
     )
 
 

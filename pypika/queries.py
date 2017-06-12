@@ -602,9 +602,9 @@ class QueryBuilder(Selectable, Term):
     def _where_sql(self, quote_char=None, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
-    def _group_sql(self, quote_char=None, with_alias=None, **kwargs):
+    def _group_sql(self, quote_char=None, with_alias=False, **kwargs):
         return ' GROUP BY {groupby}'.format(
-            groupby=','.join(term.get_sql(quote_char=quote_char, **kwargs)
+            groupby=','.join(term.get_sql(quote_char=quote_char, with_alias=with_alias, **kwargs)
                              for term in self._groupbys)
         )
 

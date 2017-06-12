@@ -263,6 +263,25 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT SUM("foo") "bar" FROM "abc" GROUP BY SUM("foo")', str(q))
 
+    def test_groupby_with_case_does_not_show_an_alias(self):
+        q = Query.from_(self.t).select(
+            fn.Sum(self.t.foo).as_('bar'),
+            Case()
+                .when(self.t.fname == "Tom", "It was Tom")
+                .else_("It was someone else.").as_('who_was_it')
+        ).groupby(
+            Case()
+                .when(self.t.fname == "Tom", "It was Tom")
+                .else_("It was someone else.").as_('who_was_it')
+        )
+
+        self.assertEqual("SELECT SUM(\"foo\") \"bar\","
+                         "CASE WHEN \"fname\"='Tom' THEN 'It was Tom' "
+                         "ELSE 'It was someone else.' END \"who_was_it\" "
+                         "FROM \"abc\" "
+                         "GROUP BY "
+                         "CASE WHEN \"fname\"='Tom' THEN 'It was Tom' ELSE 'It was someone else.' END", str(q))
+
     def test_mysql_query_uses_backtick_quote_chars(self):
         q = MySQLQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
 
