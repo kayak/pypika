@@ -18,6 +18,7 @@ which quote characters are used. To ensure that the correct SQL standard is used
 the platform-specific Query classes can be used.
 
 .. code-block:: python
+
     from pypika import MySQLQuery, MSSQLQuery, PostgreSQLQuery, OracleQuery, VerticaQuery
 
 You can use these query classes as a drop in replacement for the default ``Query`` class shown in the other examples.
