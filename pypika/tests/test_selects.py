@@ -84,6 +84,14 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "abc"."foo","efg"."bar" FROM "abc","efg"', str(q))
 
+    def test_select__subquery(self):
+        subquery = Query.from_(self.table_abc).select("*")
+        q = Query.from_(subquery) \
+            .select(subquery.foo, subquery.bar)
+
+        self.assertEqual('SELECT "sq0"."foo","sq0"."bar" '
+                         'FROM (SELECT * FROM "abc") "sq0"', str(q))
+
     def test_select__multiple_subqueries(self):
         subquery0 = Query.from_(self.table_abc).select("foo")
         subquery1 = Query.from_(self.table_efg).select("bar")
@@ -528,11 +536,11 @@ class SubqueryTests(unittest.TestCase):
 
         query = Query.from_(subquery).select(subquery.foo, subquery.bar, subquery.fizzbuzz)
 
-        self.assertEqual('SELECT "foo","bar","fizzbuzz" '
+        self.assertEqual('SELECT "sq0"."foo","sq0"."bar","sq0"."fizzbuzz" '
                          'FROM ('
                          'SELECT "foo","bar","fizz"+"buzz" "fizzbuzz" '
                          'FROM "abc"'
-                         ')', str(query))
+                         ') "sq0"', str(query))
 
     def test_select_from_nested_query_with_join(self):
         subquery1 = Query.from_(self.table_abc).select(
