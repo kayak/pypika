@@ -52,7 +52,7 @@ Selecting Data
 ^^^^^^^^^^^^^^
 
 The entry point for building queries is ``pypika.Query``.  In order to select columns from a table, the table must
-first be added to the query.  For simple queries with only one table, tables and and columns can be references using
+first be added to the query.  For simple queries with only one table, tables and columns can be references using
 strings.  For more sophisticated queries a ``pypika.Table`` must be used.
 
 .. code-block:: python
