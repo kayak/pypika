@@ -1,8 +1,7 @@
 # coding: utf-8
 import unittest
 
-from pypika import Case
-from pypika import Field, functions as fn
+from pypika import Case , Field, functions as fn
 from pypika.terms import ValueWrapper
 
 

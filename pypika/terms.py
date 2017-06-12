@@ -27,7 +27,6 @@ class Term(object):
     @builder
     def as_(self, alias):
         self.alias = alias
-        return self
 
     @property
     def tables_(self):
@@ -229,7 +228,6 @@ class Field(Term):
             A copy of the field with it's table value replaced.
         """
         self.table = table
-        return self
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         # Need to add namespace if the table has an alias
@@ -301,7 +299,6 @@ class Criterion(Term):
     @builder
     def negate(self):
         self._is_negated = True
-        return self
 
     def fields(self):
         raise NotImplementedError()
@@ -338,7 +335,6 @@ class BasicCriterion(Criterion):
     def for_(self, table):
         self.left = self.left.for_(table)
         self.right = self.right.for_(table)
-        return self
 
     def fields(self):
         return self.left.fields() + self.right.fields()
@@ -397,7 +393,6 @@ class BetweenCriterion(Criterion):
     @builder
     def for_(self, table):
         self.term = self.term.for_(table)
-        return self
 
     def get_sql(self, **kwargs):
         # FIXME escape
@@ -423,7 +418,6 @@ class NullCriterion(Criterion):
     @builder
     def for_(self, table):
         self.term = self.term.for_(table)
-        return self
 
     def get_sql(self, **kwargs):
         return "{term} IS{not_} NULL".format(
@@ -508,7 +502,6 @@ class ArithmeticExpression(Term):
         """
         self.left = self.left.for_(table)
         self.right = self.right.for_(table)
-        return self
 
     def fields(self):
         return self.left.fields() + self.right.fields()
@@ -546,16 +539,10 @@ class Case(Term):
     @builder
     def when(self, criterion, term):
         self._cases.append((criterion, self._wrap(term)))
-        return self
 
     @builder
     def else_(self, term):
         self._else = self._wrap(term)
-        return self
-
-    @builder
-    def as_(self, alias):
-        self.alias = alias
         return self
 
     def get_sql(self, with_alias=False, **kwargs):
@@ -590,16 +577,16 @@ class Case(Term):
 
 
 class Function(Term):
-    def __init__(self, name, *params, **kwargs):
+    def __init__(self, name, *args, **kwargs):
         super(Function, self).__init__(kwargs.get('alias'))
         self.name = name
-        self.params = [self._wrap(param)
-                       for param in params]
+        self.args = [self._wrap(param)
+                     for param in args]
 
     @property
     def tables_(self):
         return {table
-                for param in self.params
+                for param in self.args
                 for table in param.tables_}
 
     @builder
@@ -612,18 +599,23 @@ class Function(Term):
         :return:
             A copy of the field with it's table value replaced.
         """
-        self.params = [param.for_(table) if hasattr(param, 'for_')
+        self.args = [param.for_(table) if hasattr(param, 'for_')
                        else param
-                       for param in self.params]
-        return self
+                     for param in self.args]
 
-    def get_function_sql(self, with_namespace=False, quote_char=None):
-        return '{name}({params})'.format(
+    def get_special_params_sql(self, **kwargs):
+        pass
+
+    def get_function_sql(self, **kwargs):
+        special_params_sql = self.get_special_params_sql(**kwargs)
+
+        return '{name}({args}{special})'.format(
             name=self.name,
-            params=','.join(p.get_sql(with_alias=False, with_namespace=with_namespace, quote_char=quote_char)
+            args=','.join(p.get_sql(with_alias=False, **kwargs)
                             if hasattr(p, 'get_sql')
                             else str(p)
-                            for p in self.params),
+                          for p in self.args),
+            special=(' ' + special_params_sql) if special_params_sql else '',
         )
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
@@ -638,18 +630,85 @@ class Function(Term):
 
     def fields(self):
         return [field
-                for param in self.params
+                for param in self.args
                 if hasattr(param, 'fields')
                 for field in param.fields()]
-
-    @builder
-    def as_(self, alias):
-        self.alias = alias
-        return self
 
 
 class AggregateFunction(Function):
     is_aggregate = True
+
+
+class AnalyticFunction(Function):
+    is_analytic = True
+
+    def __init__(self, name, *args, **kwargs):
+        super(AnalyticFunction, self).__init__(name, *args, **kwargs)
+        self._partition = []
+        self._order = []
+
+    @builder
+    def over(self, *terms):
+        self._partition += terms
+
+    @builder
+    def orderby(self, *terms):
+        self._order += terms
+
+    def get_partition_sql(self, **kwargs):
+        terms = []
+        if self._partition:
+            terms.append('PARTITION BY {args}'.format(
+                args=','.join(p.get_sql(**kwargs)
+                              if hasattr(p, 'get_sql')
+                              else str(p)
+                              for p in self._partition)))
+
+        if self._order:
+            terms.append('ORDER BY {args}'.format(
+                args=','.join(p.get_sql(**kwargs)
+                              if hasattr(p, 'get_sql')
+                              else str(p)
+                              for p in self._order)))
+
+        return ' '.join(terms)
+
+    def get_function_sql(self, **kwargs):
+        function_sql = super(AnalyticFunction, self).get_function_sql(**kwargs)
+        partition_sql = self.get_partition_sql(**kwargs)
+
+        if not partition_sql:
+            return function_sql
+
+        return '{function_sql} OVER({partition_sql})'.format(
+            function_sql=function_sql,
+            partition_sql=partition_sql
+        )
+
+
+class IgnoreNullsAnalyticFunction(AnalyticFunction):
+    def __init__(self, name, *args, **kwargs):
+        super(IgnoreNullsAnalyticFunction, self).__init__(name, *args, **kwargs)
+        self._ignore_nulls = False
+
+    @builder
+    def ignore_nulls(self):
+        self._ignore_nulls = True
+
+    def get_special_params_sql(self, **kwargs):
+        if self._ignore_nulls:
+            return 'IGNORE NULLS'
+
+        # No special params unless ignoring nulls
+        return None
+
+    def get_function_sql(self, with_namespace=False, quote_char=None):
+        function_sql = super(AnalyticFunction, self).get_function_sql(with_namespace=False, quote_char=quote_char)
+
+        return '{function_sql} OVER({partition_sql})'.format(
+            function_sql=function_sql,
+            partition_sql=self.get_partition_sql(with_alias=False, with_namespace=with_namespace, quote_char=quote_char)
+        )
 
 
 class Interval(object):

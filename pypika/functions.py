@@ -25,7 +25,6 @@ class Count(AggregateFunction):
     @builder
     def distinct(self):
         self._distinct = True
-        return self
 
 
 # Arithmetic Functions
@@ -67,28 +66,20 @@ class Coalesce(Function):
 # Type Functions
 class Cast(Function):
     def __init__(self, term, as_type, alias=None):
-        super(Cast, self).__init__('CAST', term, as_type, alias=alias)
+        super(Cast, self).__init__('CAST', term, alias=alias)
+        self.as_type = as_type
 
-    def get_function_sql(self, **kwargs):
-        # FIXME escape
-        return '{name}({field} AS {type})'.format(
-            name=self.name,
-            field=self.params[0],
-            type=self.params[1],
-        )
+    def get_special_params_sql(self, **kwargs):
+        return 'AS {type}'.format(type=self.as_type.value)
 
 
 class Convert(Function):
     def __init__(self, term, encoding, alias=None):
-        super(Convert, self).__init__('CONVERT', term, encoding, alias=alias)
+        super(Convert, self).__init__('CONVERT', term, alias=alias)
+        self.encoding = encoding
 
-    def get_function_sql(self, **kwargs):
-        # FIXME escape
-        return '{name}({field} USING {type})'.format(
-            name=self.name,
-            field=self.params[0],
-            type=self.params[1],
-        )
+    def get_special_params_sql(self, **kwargs):
+        return 'USING {type}'.format(type=self.encoding.value)
 
 
 class ToChar(Function):
@@ -196,11 +187,10 @@ class CurTime(Function):
 
 class Extract(Function):
     def __init__(self, date_part, field, alias=None):
-        super(Extract, self).__init__('EXTRACT', date_part, field, alias=alias)
+        super(Extract, self).__init__('EXTRACT', date_part, alias=alias)
+        self.field = field
 
-    def get_function_sql(self, **kwargs):
-        return '{name}({part} FROM {field})'.format(
-            name=self.name,
-            part=self.params[0],
-            field=self.params[1],
+    def get_special_params_sql(self, **kwargs):
+        return 'FROM {field}'.format(
+            field=self.field,
         )
