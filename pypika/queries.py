@@ -496,7 +496,10 @@ class QueryBuilder(Selectable, Term):
         if self._insert_table and not (self._selects or self._values):
             return ''
 
-        kwargs['with_namespace'] = bool(self._joins) or 1 < len(self._from)
+        has_joins = bool(self._joins)
+        has_multiple_from_clauses = 1 < len(self._from)
+        has_subquery_from_clause = 0 < len(self._from) and isinstance(self._from[0], QueryBuilder)
+        kwargs['with_namespace'] = any((has_joins, has_multiple_from_clauses, has_subquery_from_clause))
 
         if not self._select_into and self._insert_table:
             querystring = self._insert_sql(**kwargs)
