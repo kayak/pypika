@@ -645,15 +645,25 @@ class AnalyticFunction(Function):
     def __init__(self, name, *args, **kwargs):
         super(AnalyticFunction, self).__init__(name, *args, **kwargs)
         self._partition = []
-        self._order = []
+        self._orderbys = []
 
     @builder
     def over(self, *terms):
         self._partition += terms
 
     @builder
-    def orderby(self, *terms):
-        self._order += terms
+    def orderby(self, *terms, **kwargs):
+        self._orderbys += [(term, kwargs.get('order'))
+                           for term in terms]
+
+    def _orderby_field(self, field, orient, **kwargs):
+        if orient is None:
+            return field.get_sql(**kwargs)
+
+        return '{field} {orient}'.format(
+            field=field.get_sql(**kwargs),
+            orient=orient.value,
+        )
 
     def get_partition_sql(self, **kwargs):
         terms = []
@@ -664,12 +674,12 @@ class AnalyticFunction(Function):
                               else str(p)
                               for p in self._partition)))
 
-        if self._order:
-            terms.append('ORDER BY {args}'.format(
-                args=','.join(p.get_sql(**kwargs)
-                              if hasattr(p, 'get_sql')
-                              else str(p)
-                              for p in self._order)))
+        if self._orderbys:
+            terms.append('ORDER BY {orderby}'.format(
+                orderby=','.join(
+                    self._orderby_field(field, orient, **kwargs)
+                    for field, orient in self._orderbys
+                )))
 
         return ' '.join(terms)
 
@@ -683,6 +693,63 @@ class AnalyticFunction(Function):
         return '{function_sql} OVER({partition_sql})'.format(
             function_sql=function_sql,
             partition_sql=partition_sql
+        )
+
+
+class WindowFrameAnalyticFunction(AnalyticFunction):
+    class Edge:
+        def __init__(self, value=None):
+            self.value = value
+
+        def __str__(self):
+            return '{value} {modifier}'.format(
+                value=self.value or 'UNBOUNDED',
+                modifier=self.modifier,
+            )
+
+    def __init__(self, name, *args, **kwargs):
+        super(WindowFrameAnalyticFunction, self).__init__(name, *args, **kwargs)
+        self.frame = None
+        self.bound = None
+
+    def _set_frame_and_bounds(self, frame, bound, and_bound):
+        if self.frame or self.bound:
+            raise AttributeError()
+
+        self.frame = frame
+        self.bound = (bound, and_bound) if and_bound else bound
+
+    @builder
+    def rows(self, bound, and_bound=None):
+        self._set_frame_and_bounds('ROWS', bound, and_bound)
+
+    @builder
+    def range(self, bound, and_bound=None):
+        self._set_frame_and_bounds('RANGE', bound, and_bound)
+
+    def get_frame_sql(self):
+        if not isinstance(self.bound, tuple):
+            return '{frame} {bound}'.format(
+                frame=self.frame,
+                bound=self.bound
+            )
+
+        lower, upper = self.bound
+        return '{frame} BETWEEN {lower} AND {upper}'.format(
+            frame=self.frame,
+            lower=lower,
+            upper=upper,
+        )
+
+    def get_partition_sql(self, **kwargs):
+        partition_sql = super(WindowFrameAnalyticFunction, self).get_partition_sql(**kwargs)
+
+        if not self.frame and not self.bound:
+            return partition_sql
+
+        return '{over} {frame}'.format(
+            over=partition_sql,
+            frame=self.get_frame_sql()
         )
 
 
@@ -701,14 +768,6 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
 
         # No special params unless ignoring nulls
         return None
-
-    def get_function_sql(self, with_namespace=False, quote_char=None):
-        function_sql = super(AnalyticFunction, self).get_function_sql(with_namespace=False, quote_char=quote_char)
-
-        return '{function_sql} OVER({partition_sql})'.format(
-            function_sql=function_sql,
-            partition_sql=self.get_partition_sql(with_alias=False, with_namespace=with_namespace, quote_char=quote_char)
-        )
 
 
 class Interval(object):

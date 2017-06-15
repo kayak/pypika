@@ -1,7 +1,7 @@
 # coding: utf-8
 import unittest
 
-from pypika import Query, Tables, analytics as an, JoinType
+from pypika import Query, Tables, analytics as an, JoinType, Order
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -20,6 +20,19 @@ class RankTests(unittest.TestCase):
         self.assertEqual('SELECT '
                          'RANK() '
                          'OVER(PARTITION BY "foo" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
+    def test_rank_with_alias(self):
+        expr = an.Rank() \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .as_('rank')
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'RANK() '
+                         'OVER(PARTITION BY "foo" ORDER BY "date") "rank" '
                          'FROM "abc"', str(q))
 
     def test_multiple_partitions(self):
@@ -139,6 +152,30 @@ class RankTests(unittest.TestCase):
                          'OVER(PARTITION BY "foo" ORDER BY "date") '
                          'FROM "abc"', str(q))
 
+    def test_orderby_asc(self):
+        expr = an.LastValue(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date, order=Order.asc)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'LAST_VALUE("fizz") '
+                         'OVER(PARTITION BY "foo" ORDER BY "date" ASC) '
+                         'FROM "abc"', str(q))
+
+    def test_orderby_desc(self):
+        expr = an.LastValue(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date, order=Order.desc)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'LAST_VALUE("fizz") '
+                         'OVER(PARTITION BY "foo" ORDER BY "date" DESC) '
+                         'FROM "abc"', str(q))
+
     def test_last_value_multi_argument(self):
         expr = an.LastValue(self.table_abc.fizz, self.table_abc.buzz) \
             .over(self.table_abc.foo) \
@@ -212,3 +249,228 @@ class RankTests(unittest.TestCase):
 
         self.assertEqual('SELECT *,RANK() OVER(PARTITION BY "abc"."foo" ORDER BY "efg"."date") '
                          'FROM "abc" LEFT JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query))
+
+    def test_sum_rows_unbounded_preceeding(self):
+        expr = an.Sum(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .rows(an.Preceding())
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'SUM("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'ROWS UNBOUNDED PRECEDING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_max_rows_x_preceeding(self):
+        expr = an.Max(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .rows(an.Preceding(5))
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'MAX("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'ROWS 5 PRECEDING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_min_rows_current_row(self):
+        expr = an.Min(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .rows(an.CURRENT_ROW)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'MIN("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'ROWS CURRENT ROW'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_varpop_range_unbounded_preceeding(self):
+        expr = an.VarPop(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .range(an.Preceding())
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'VAR_POP("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'RANGE UNBOUNDED PRECEDING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_max_range_x_preceeding(self):
+        expr = an.Max(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .range(an.Preceding(5))
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'MAX("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'RANGE 5 PRECEDING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_min_range_current_row(self):
+        expr = an.Min(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .range(an.CURRENT_ROW)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'MIN("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'RANGE CURRENT ROW'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_variance_rows_between_unbounded_preceeding_unbounded_following(self):
+        expr = an.Variance(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .rows(an.Preceding(), an.Following())
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'VARIANCE("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_first_value_range_between_x_preceeding_unbounded_following(self):
+        expr = an.FirstValue(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .range(an.Preceding(3), an.Following())
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'FIRST_VALUE("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'RANGE BETWEEN 3 PRECEDING AND UNBOUNDED FOLLOWING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_varpop_rows_between_unbounded_preceeding_x_following(self):
+        expr = an.VarPop(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .rows(an.Preceding(), an.Following(6))
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'VAR_POP("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'ROWS BETWEEN UNBOUNDED PRECEDING AND 6 FOLLOWING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_count_range_between_unbounded_preceeding_current_row(self):
+        expr = an.Count(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .range(an.Preceding(), an.CURRENT_ROW)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'COUNT("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_last_value_rows_between_current_row_unbounded_following(self):
+        expr = an.LastValue(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .rows(an.CURRENT_ROW, an.Following())
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'LAST_VALUE("fizz") '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_last_value_rows_between_current_row_unbounded_following_ignore_nulls(self):
+        expr = an.LastValue(self.table_abc.fizz) \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date) \
+            .ignore_nulls() \
+            .rows(an.CURRENT_ROW, an.Following(8))
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'LAST_VALUE("fizz" IGNORE NULLS) '
+                         'OVER('
+                         'PARTITION BY "foo" ORDER BY "date" '
+                         'ROWS BETWEEN CURRENT ROW AND 8 FOLLOWING'
+                         ') '
+                         'FROM "abc"', str(q))
+
+    def test_rows_called_twice_raises_attribute_error(self):
+        with self.assertRaises(AttributeError):
+            an.Sum(self.table_abc.fizz) \
+                .over(self.table_abc.foo) \
+                .orderby(self.table_abc.date) \
+                .rows(an.Preceding()) \
+                .rows(an.Preceding())
+
+    def test_range_called_twice_raises_attribute_error(self):
+        with self.assertRaises(AttributeError):
+            an.Sum(self.table_abc.fizz) \
+                .over(self.table_abc.foo) \
+                .orderby(self.table_abc.date) \
+                .range(an.Preceding()) \
+                .range(an.Preceding())
+
+    def test_rows_then_range_raises_attribute_error(self):
+        with self.assertRaises(AttributeError):
+            an.Sum(self.table_abc.fizz) \
+                .over(self.table_abc.foo) \
+                .orderby(self.table_abc.date) \
+                .rows(an.Preceding()) \
+                .range(an.Preceding())
+
+    def test_range_then_rows_raises_attribute_error(self):
+        with self.assertRaises(AttributeError):
+            an.Sum(self.table_abc.fizz) \
+                .over(self.table_abc.foo) \
+                .orderby(self.table_abc.date) \
+                .range(an.Preceding()) \
+                .rows(an.Preceding())
