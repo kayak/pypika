@@ -129,3 +129,34 @@ These functions take one or more arguments
 .. code-block:: sql
 
     SELECT MEDIAN("annual_income") OVER(PARTITION BY "customer_state") "MEDIAN",AVG("annual_income") OVER(PARTITION BY "customer_state") "AVG",STDDEV("annual_income") OVER(PARTITION BY "customer_state") "STDDEV" FROM "customer_dimension" WHERE "customer_state" IN ('DC','WI') ORDER BY "customer_state"
+
+Window Frames
+=============
+
+Functions which use window aggregation expose the functions ``rows()`` and ``range()`` with varying parameters to define
+the window.  Both of these functions take one or two parameters which specify the offset boundaries.  Boundaries can be
+set either as the current row with ``an.CURRENT_ROW`` or a value preceding or following the current row with
+``an.Preceding(constant_value)`` and ``an.Following(constant_value)``.  The ranges can be unbounded preceding or
+following the current row by omitting the ``constant_value`` parameter like ``an.Preceding()`` or ``an.Following()``.
+
+``FIRST_VALUE`` and ``LAST_VALUE`` also support window frames.
+
+.. code-block:: python
+
+    from pypika import Query, Table, analytics as an
+
+    t_transactions = Table('t_customers')
+
+    rolling_7_sum = an.Sum(t_transactions.total) \
+        .over(t_transactions.item_id) \
+        .orderby(t_transactions.day) \
+        .rows(an.Preceding(7), an.CURRENT_ROW)
+
+    query = Query.from_(t_transactions) \
+        .select(rolling_7_sum)
+
+.. code-block:: sql
+
+    SELECT SUM("total") OVER(PARTITION BY "item_id" ORDER BY "day" ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) FROM "t_customers"
+
+
