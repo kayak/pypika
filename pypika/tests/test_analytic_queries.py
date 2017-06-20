@@ -22,6 +22,30 @@ class RankTests(unittest.TestCase):
                          'OVER(PARTITION BY "foo" ORDER BY "date") '
                          'FROM "abc"', str(q))
 
+    def test_dense_rank(self):
+        expr = an.DenseRank() \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'DENSE_RANK() '
+                         'OVER(PARTITION BY "foo" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
+    def test_row_number(self):
+        expr = an.RowNumber() \
+            .over(self.table_abc.foo) \
+            .orderby(self.table_abc.date)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'ROW_NUMBER() '
+                         'OVER(PARTITION BY "foo" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
     def test_rank_with_alias(self):
         expr = an.Rank() \
             .over(self.table_abc.foo) \
@@ -234,6 +258,66 @@ class RankTests(unittest.TestCase):
 
         self.assertEqual('SELECT '
                          'STDDEV("fizz") '
+                         'OVER(PARTITION BY "foo","bar" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
+    def test_stddev_pop(self):
+        expr = an.StdDevPop(self.table_abc.fizz) \
+            .over(self.table_abc.foo, self.table_abc.bar) \
+            .orderby(self.table_abc.date)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'STDDEV_POP("fizz") '
+                         'OVER(PARTITION BY "foo","bar" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
+    def test_stddev_samp(self):
+        expr = an.StdDevSamp(self.table_abc.fizz) \
+            .over(self.table_abc.foo, self.table_abc.bar) \
+            .orderby(self.table_abc.date)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'STDDEV_SAMP("fizz") '
+                         'OVER(PARTITION BY "foo","bar" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
+    def test_variance(self):
+        expr = an.Variance(self.table_abc.fizz) \
+            .over(self.table_abc.foo, self.table_abc.bar) \
+            .orderby(self.table_abc.date)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'VARIANCE("fizz") '
+                         'OVER(PARTITION BY "foo","bar" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
+    def test_var_pop(self):
+        expr = an.VarPop(self.table_abc.fizz) \
+            .over(self.table_abc.foo, self.table_abc.bar) \
+            .orderby(self.table_abc.date)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'VAR_POP("fizz") '
+                         'OVER(PARTITION BY "foo","bar" ORDER BY "date") '
+                         'FROM "abc"', str(q))
+
+    def test_var_samp(self):
+        expr = an.VarSamp(self.table_abc.fizz) \
+            .over(self.table_abc.foo, self.table_abc.bar) \
+            .orderby(self.table_abc.date)
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual('SELECT '
+                         'VAR_SAMP("fizz") '
                          'OVER(PARTITION BY "foo","bar" ORDER BY "date") '
                          'FROM "abc"', str(q))
 

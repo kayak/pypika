@@ -26,6 +26,16 @@ class Rank(AnalyticFunction):
         super(Rank, self).__init__('RANK', **kwargs)
 
 
+class DenseRank(AnalyticFunction):
+    def __init__(self, **kwargs):
+        super(DenseRank, self).__init__('DENSE_RANK', **kwargs)
+
+
+class RowNumber(AnalyticFunction):
+    def __init__(self, **kwargs):
+        super(RowNumber, self).__init__('ROW_NUMBER', **kwargs)
+
+
 class NTile(AnalyticFunction):
     def __init__(self, term, **kwargs):
         super(NTile, self).__init__('NTILE', term, **kwargs)
