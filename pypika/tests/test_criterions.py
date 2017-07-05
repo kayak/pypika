@@ -80,13 +80,6 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"foo" IS NULL', str(c1))
         self.assertEqual('"crit"."foo" IS NULL', str(c2))
 
-    def test__criterion_is_not_null(self):
-        c1 = Field('foo').notnull()
-        c2 = Field('foo', table=self.t).notnull()
-
-        self.assertEqual('"foo" IS NOT NULL', str(c1))
-        self.assertEqual('"crit"."foo" IS NOT NULL', str(c2))
-
     def test__criterion_ne_number(self):
         c1 = Field('foo') != 1
         c2 = Field('foo', table=self.t).ne(0)
@@ -243,6 +236,42 @@ class CriterionTests(unittest.TestCase):
 
         self.assertEqual('"foo">=1', str(c1))
         self.assertEqual('"crit"."foo">=-1', str(c2))
+
+
+class NotTests(unittest.TestCase):
+    table_abc = Table('abc', alias='cx0')
+
+    def test_negate(self):
+        c1 = Field('foo') >= 1
+        c2 = c1.negate()
+
+        self.assertEqual('"foo">=1', str(c1))
+        self.assertEqual('NOT "foo">=1', str(c2))
+
+    def test_variable_access(self):
+        c1 = Field('foo').negate()
+
+        self.assertEqual(c1.is_aggregate, False)
+
+    def test_chained_function(self):
+        field1 = Field('foo').negate()
+        field2 = field1.eq('bar')
+
+        self.assertEqual('NOT "foo"', str(field1))
+        self.assertEqual('NOT "foo"=\'bar\'', str(field2))
+        self.assertIsNot(field1, field2)
+
+    def test_not_null(self):
+        c1 = Field('foo').notnull()
+        c2 = Field('foo', table=self.table_abc).notnull()
+
+        self.assertEqual('NOT "foo" IS NULL', str(c1))
+        self.assertEqual('NOT "cx0"."foo" IS NULL', str(c2))
+
+    def test_notnullcriterion_for_table(self):
+        f = self.table_abc.foo.notnull().for_(self.table_abc)
+
+        self.assertEqual('NOT "cx0"."foo" IS NULL', str(f))
 
 
 class BetweenTests(unittest.TestCase):
@@ -459,8 +488,3 @@ class CriterionOperationsTests(unittest.TestCase):
         f = self.table_abc.foo.isnull().for_(self.table_efg)
 
         self.assertEqual('"cx1"."foo" IS NULL', str(f))
-
-    def test_notnullcriterion_for_table(self):
-        f = self.table_abc.foo.notnull().for_(self.table_efg)
-
-        self.assertEqual('"cx1"."foo" IS NOT NULL', str(f))

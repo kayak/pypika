@@ -1,21 +1,61 @@
 # coding: utf8
+import copy
 import re
 from datetime import date
+from functools import partial
 
 from aenum import Enum
 
-from pypika.enums import (Boolean,
-                          Dialects,
-                          Equality,
-                          Arithmetic,
-                          Matching)
-from pypika.utils import (CaseException,
-                          builder,
-                          resolve_is_aggregate,
-                          alias_sql)
+from pypika.enums import (
+    Boolean,
+    Dialects,
+    Equality,
+    Arithmetic,
+    Matching,
+)
+from pypika.utils import (
+    CaseException,
+    builder,
+    resolve_is_aggregate,
+    alias_sql,
+)
+import inspect
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
+
+
+class Not(object):
+    def __init__(self, term):
+        self.term = term
+
+    def fields(self):
+        return self.term.fields() if self.term.fields else []
+
+    def get_sql(self, **kwargs):
+        return "NOT {term}".format(term=self.term.get_sql(**kwargs))
+
+    def __str__(self):
+        return self.get_sql(quote_char='"')
+
+    def __getattr__(self, item):
+        """
+        Delegate method calls to the class wrapped by Not().
+        Re-wrap methods on child classes of Term (e.g. isin, eg...) to retain 'NOT <term>' output.
+        """
+
+        item_func = getattr(self.term, item)
+
+        if not inspect.ismethod(item_func):
+            return item_func
+
+        def inner(inner_self, *args, **kwargs):
+            result = item_func(inner_self, *args, **kwargs)
+            if isinstance(result, (Term, )):
+                return Not(result)
+            return result
+
+        return inner
 
 
 class Term(object):
@@ -103,6 +143,9 @@ class Term(object):
 
     def bin_regex(self, pattern):
         return BasicCriterion(Matching.bin_regex, self, self._wrap(pattern))
+
+    def negate(self):
+        return Not(self)
 
     def __add__(self, other):
         return ArithmeticExpression(Arithmetic.add, self, self._wrap(other))
@@ -283,10 +326,6 @@ class Tuple(Term):
 
 
 class Criterion(Term):
-    def __init__(self, alias=None):
-        super(Criterion, self).__init__(alias)
-        self._is_negated = False
-
     def __and__(self, other):
         return ComplexCriterion(Boolean.and_, self, other)
 
@@ -295,10 +334,6 @@ class Criterion(Term):
 
     def __xor__(self, other):
         return ComplexCriterion(Boolean.xor_, self, other)
-
-    @builder
-    def negate(self):
-        self._is_negated = True
 
     def fields(self):
         raise NotImplementedError()
@@ -366,6 +401,7 @@ class ContainsCriterion(Criterion):
         super(ContainsCriterion, self).__init__(alias)
         self.term = term
         self.container = container
+        self._is_negated = False
 
     def fields(self):
         return self.term.fields() if self.term.fields else []
@@ -377,6 +413,10 @@ class ContainsCriterion(Criterion):
             container=self.container.get_sql(**kwargs),
             not_='NOT ' if self._is_negated else ''
         )
+
+    def negate(self):
+        self._is_negated = True
+        return self
 
 
 class BetweenCriterion(Criterion):
@@ -420,9 +460,8 @@ class NullCriterion(Criterion):
         self.term = self.term.for_(table)
 
     def get_sql(self, **kwargs):
-        return "{term} IS{not_} NULL".format(
+        return "{term} IS NULL".format(
             term=self.term.get_sql(**kwargs),
-            not_=' NOT' if self._is_negated else ''
         )
 
     def fields(self):
@@ -600,7 +639,7 @@ class Function(Term):
             A copy of the field with it's table value replaced.
         """
         self.args = [param.for_(table) if hasattr(param, 'for_')
-                       else param
+                     else param
                      for param in self.args]
 
     def get_special_params_sql(self, **kwargs):
@@ -612,8 +651,8 @@ class Function(Term):
         return '{name}({args}{special})'.format(
             name=self.name,
             args=','.join(p.get_sql(with_alias=False, **kwargs)
-                            if hasattr(p, 'get_sql')
-                            else str(p)
+                          if hasattr(p, 'get_sql')
+                          else str(p)
                           for p in self.args),
             special=(' ' + special_params_sql) if special_params_sql else '',
         )
