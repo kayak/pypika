@@ -539,11 +539,11 @@ class QueryBuilder(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
-        if self._offset:
-            querystring += self._offset_sql()
-
         if self._limit:
             querystring += self._limit_sql()
+
+        if self._offset:
+            querystring += self._offset_sql()
 
         if subquery:
             querystring = '({query})'.format(query=querystring)

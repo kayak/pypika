@@ -137,7 +137,7 @@ class SelectTests(unittest.TestCase):
     def test_select_with_limit_and_offset(self):
         q1 = Query.from_('abc').select('foo')[10:10]
 
-        self.assertEqual('SELECT "foo" FROM "abc" OFFSET 10 LIMIT 10', str(q1))
+        self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10 OFFSET 10', str(q1))
 
     def test_mysql_query_uses_backtick_quote_chars(self):
         q = MySQLQuery.from_('abc').select('foo', 'bar')
