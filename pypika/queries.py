@@ -1,20 +1,26 @@
 # coding: utf8
 
-from pypika.enums import (Dialects,
-                          JoinType,
-                          UnionType)
-from pypika.utils import (JoinException,
-                          UnionException,
-                          RollupException,
-                          builder,
-                          alias_sql)
-from .terms import (Field,
-                    Star,
-                    Term,
-                    Function,
-                    ArithmeticExpression,
-                    Rollup,
-                    Tuple)
+from pypika.enums import (
+    Dialects,
+    JoinType,
+    UnionType,
+)
+from pypika.utils import (
+    JoinException,
+    RollupException,
+    UnionException,
+    alias_sql,
+    builder,
+)
+from .terms import (
+    ArithmeticExpression,
+    Field,
+    Function,
+    Rollup,
+    Star,
+    Term,
+    Tuple,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -101,8 +107,10 @@ class Query(object):
 
     This class is immutable.
     """
-    QUOTE_CHARACTER = '"'
-    DIALECT = None
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder()
 
     @classmethod
     def from_(cls, table):
@@ -117,7 +125,7 @@ class Query(object):
 
         :returns QueryBuilder
         """
-        return QueryBuilder(quote_char=cls.QUOTE_CHARACTER, dialect=cls.DIALECT).from_(table)
+        return cls._builder().from_(table)
 
     @classmethod
     def into(cls, table):
@@ -132,7 +140,7 @@ class Query(object):
 
         :returns QueryBuilder
         """
-        return QueryBuilder(quote_char=cls.QUOTE_CHARACTER, dialect=cls.DIALECT).into(table)
+        return cls._builder().into(table)
 
     @classmethod
     def select(cls, *terms):
@@ -148,47 +156,57 @@ class Query(object):
 
         :returns QueryBuilder
         """
-        return QueryBuilder(quote_char=cls.QUOTE_CHARACTER, dialect=cls.DIALECT).select(*terms)
+        return cls._builder().select(*terms)
 
 
 class MySQLQuery(Query):
     """
     Defines a query class for use with MySQL.
     """
-    QUOTE_CHARACTER = "`"
-    DIALECT = Dialects.MYSQL
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder(quote_char='`', dialect=Dialects.MYSQL, wrap_union_queries=False)
 
 
 class VerticaQuery(Query):
     """
     Defines a query class for use with Vertica.
     """
-    QUOTE_CHARACTER = '"'
-    DIALECT = Dialects.VERTICA
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder(dialect=Dialects.VERTICA)
 
 
 class OracleQuery(Query):
     """
     Defines a query class for use with Oracle.
     """
-    QUOTE_CHARACTER = '"'
-    DIALECT = Dialects.ORACLE
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder(dialect=Dialects.ORACLE)
 
 
 class PostgreSQLQuery(Query):
     """
     Defines a query class for use with PostgreSQL.
     """
-    QUOTE_CHARACTER = '"'
-    DIALECT = Dialects.POSTGRESQL
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder(dialect=Dialects.POSTGRESQL)
 
 
 class MSSQLQuery(Query):
     """
     Defines a query class for use with Microsoft SQL Server.
     """
-    QUOTE_CHARACTER = '"'
-    DIALECT = Dialects.MSSQL
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder(dialect=Dialects.MSSQL)
 
 
 class QueryBuilder(Selectable, Term):
@@ -197,7 +215,7 @@ class QueryBuilder(Selectable, Term):
     state to be branched immutably.
     """
 
-    def __init__(self, quote_char='"', dialect=None):
+    def __init__(self, quote_char='"', dialect=None, wrap_union_queries=True):
         super(QueryBuilder, self).__init__(None)
 
         self._from = []
@@ -225,8 +243,10 @@ class QueryBuilder(Selectable, Term):
         self._select_into = False
 
         self._subquery_count = 0
+
         self.quote_char = quote_char
         self.dialect = dialect
+        self.wrap_union_queries = wrap_union_queries
 
     @builder
     def from_(self, selectable):
@@ -627,19 +647,21 @@ class QueryBuilder(Selectable, Term):
         )
 
     def _union_sql(self, querystring, quote_char=None, **kwargs):
-        if self._unions:
-            # Some queries require brackets for unions so easier to just always use them
-            querystring = "({})".format(querystring)
+        if not self._unions:
+            return querystring
 
-            for (union_type, other) in self._unions:
-                other_querystring = other.get_sql(quote_char=quote_char)
-                if len(self._selects) != len(other._selects):
-                    raise UnionException("Queries must have an equal number of select statements in a union."
-                                         "\n\nMain Query:\n{query1}\n\nUnion Query:\n{query2}" \
-                                         .format(query1=querystring, query2=other_querystring))
+        template = '({query}) UNION{type} ({union})' \
+            if self.wrap_union_queries \
+            else '{query} UNION{type} {union}'
 
-                querystring += ' UNION{type} ({query})' \
-                    .format(type=union_type.value, query=other_querystring)
+        for (union_type, other) in self._unions:
+            other_querystring = other.get_sql(quote_char=quote_char)
+            if len(self._selects) != len(other._selects):
+                raise UnionException("Queries must have an equal number of select statements in a union."
+                                     "\n\nMain Query:\n{query1}\n\nUnion Query:\n{query2}"
+                                     .format(query1=querystring, query2=other_querystring))
+
+            querystring = template.format(query=querystring, type=union_type.value, union=other_querystring)
 
         return querystring
 
