@@ -55,4 +55,4 @@ from .utils import (JoinException,
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
