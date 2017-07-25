@@ -1,7 +1,17 @@
 # coding: utf8
 import unittest
 
-from pypika import Query, Table, Tables, JoinException, functions as fn, JoinType, UnionException, Interval
+from pypika import (
+    Query,
+    Table,
+    Tables,
+    JoinException,
+    functions as fn,
+    JoinType,
+    UnionException,
+    Interval,
+    MySQLQuery,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -303,3 +313,9 @@ class UnionTests(unittest.TestCase):
 
         with self.assertRaises(UnionException):
             str(query1 + query2)
+
+    def test_mysql_query_does_not_wrap_unioned_queries_with_params(self):
+        query1 = MySQLQuery.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+
+        self.assertEqual('SELECT `foo` FROM `abc` UNION SELECT `bar` FROM `efg`', str(query1 + query2))
