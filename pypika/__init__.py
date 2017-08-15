@@ -35,11 +35,6 @@ from .enums import (Order,
                     JoinType,
                     DatePart)
 from .queries import (Query,
-                      MySQLQuery,
-                      MSSQLQuery,
-                      OracleQuery,
-                      PostgreSQLQuery,
-                      VerticaQuery,
                       Table,
                       make_tables as Tables,
                       Tuple)
@@ -52,6 +47,11 @@ from .utils import (JoinException,
                     CaseException,
                     UnionException,
                     RollupException)
+from .dialects import (MSSQLQuery,
+                       MySQLQuery,
+                       OracleQuery,
+                       PostgreSQLQuery,
+                       VerticaQuery)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
