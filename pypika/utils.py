@@ -29,13 +29,45 @@ class RollupException(Exception):
 
 
 def builder(func):
+    """
+    Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
+    building queries which mutate the query and return self.  To make the build functions immutable, this decorator is
+    used which will deepcopy the current instance.  This decorator will return the return value of the inner function
+    or the new copy of the instance.  The inner function does not need to return self.
+    """
     import copy
 
     def _copy(self, *args, **kwargs):
         self_copy = copy.deepcopy(self)
-        return func(self_copy, *args, **kwargs) or self_copy
+        result = func(self_copy, *args, **kwargs)
+
+        # Return self if the inner function returns None.  This way the inner function can return something
+        # different (for example when creating joins, a different builder is returned).
+        if result is None:
+            return self_copy
+
+        return result
 
     return _copy
+
+
+def ignoredeepcopy(func):
+    """
+    Decorator for wrapping the __getattr__ function for classes that are copied via deepcopy.  This prevents infinite
+    recursion caused by deepcopy looking for magic functions in the class. Any class implementing __getattr__ that is
+    meant to be deepcopy'd should use this decorator.
+
+    deepcopy is used by pypika in builder functions (decorated by @builder) to make the results immutable.  Any data
+    model type class (stored in the Query instance) is copied.
+    """
+
+    def _getattr(self, name):
+        if name in ['__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
+            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+
+        return func(self, name)
+
+    return _getattr
 
 
 def resolve_is_aggregate(values):
