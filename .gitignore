@@ -70,3 +70,6 @@ target/
 # virtualenv
 venv/
 ENV/
+
+# OS X
+.DS_Store
