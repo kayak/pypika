@@ -1,61 +1,27 @@
 # coding: utf8
-import copy
+import inspect
 import re
 from datetime import date
-from functools import partial
 
 from aenum import Enum
 
 from pypika.enums import (
+    Arithmetic,
     Boolean,
     Dialects,
     Equality,
-    Arithmetic,
     Matching,
 )
 from pypika.utils import (
     CaseException,
-    builder,
-    resolve_is_aggregate,
     alias_sql,
+    builder,
+    ignoredeepcopy,
+    resolve_is_aggregate,
 )
-import inspect
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-
-
-class Not(object):
-    def __init__(self, term):
-        self.term = term
-
-    def fields(self):
-        return self.term.fields() if self.term.fields else []
-
-    def get_sql(self, **kwargs):
-        return "NOT {term}".format(term=self.term.get_sql(**kwargs))
-
-    def __str__(self):
-        return self.get_sql(quote_char='"')
-
-    def __getattr__(self, item):
-        """
-        Delegate method calls to the class wrapped by Not().
-        Re-wrap methods on child classes of Term (e.g. isin, eg...) to retain 'NOT <term>' output.
-        """
-
-        item_func = getattr(self.term, item)
-
-        if not inspect.ismethod(item_func):
-            return item_func
-
-        def inner(inner_self, *args, **kwargs):
-            result = item_func(inner_self, *args, **kwargs)
-            if isinstance(result, (Term, )):
-                return Not(result)
-            return result
-
-        return inner
 
 
 class Term(object):
@@ -613,6 +579,39 @@ class Case(Term):
             fields += self._else.fields()
 
         return fields
+
+
+class Not(object):
+    def __init__(self, term):
+        self.term = term
+
+    def fields(self):
+        return self.term.fields() if self.term.fields else []
+
+    def get_sql(self, **kwargs):
+        return "NOT {term}".format(term=self.term.get_sql(**kwargs))
+
+    def __str__(self):
+        return self.get_sql(quote_char='"')
+
+    @ignoredeepcopy
+    def __getattr__(self, name):
+        """
+        Delegate method calls to the class wrapped by Not().
+        Re-wrap methods on child classes of Term (e.g. isin, eg...) to retain 'NOT <term>' output.
+        """
+        item_func = getattr(self.term, name)
+
+        if not inspect.ismethod(item_func):
+            return item_func
+
+        def inner(inner_self, *args, **kwargs):
+            result = item_func(inner_self, *args, **kwargs)
+            if isinstance(result, (Term,)):
+                return Not(result)
+            return result
+
+        return inner
 
 
 class Function(Term):

@@ -40,6 +40,7 @@ from .queries import (Query,
                       Tuple)
 from .terms import (Field,
                     Case,
+                    Not,
                     Interval,
                     Rollup)
 from .utils import (JoinException,

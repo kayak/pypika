@@ -1,5 +1,4 @@
 # coding: utf8
-
 from pypika.enums import (
     Dialects,
     JoinType,
@@ -11,6 +10,7 @@ from pypika.utils import (
     UnionException,
     alias_sql,
     builder,
+    ignoredeepcopy,
 )
 from .terms import (
     ArithmeticExpression,
@@ -37,11 +37,8 @@ class Selectable(object):
     def star(self):
         return Star(self)
 
+    @ignoredeepcopy
     def __getattr__(self, name):
-        # This prevents Fields being when deepcopy functions are called
-        if name in ['__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
-            raise AttributeError("'Table' object has no attribute '%s'" % name)
-
         return self.field(name)
 
 
