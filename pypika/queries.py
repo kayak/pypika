@@ -20,7 +20,7 @@ from .terms import (
     Star,
     Term,
     Tuple,
-)
+    ValueWrapper)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -155,6 +155,21 @@ class Query(object):
         """
         return cls._builder().select(*terms)
 
+    @classmethod
+    def update(cls, table):
+        """
+        Query builder entry point.  Initializes query building and sets the table to update.  When using this
+        function, the query becomes an UPDATE query.
+
+        :param table:
+            Type: Table or str
+
+            An instance of a Table object or a string table name.
+
+        :returns QueryBuilder
+        """
+        return cls._builder().update(table)
+
 
 class QueryBuilder(Selectable, Term):
     """
@@ -167,6 +182,8 @@ class QueryBuilder(Selectable, Term):
 
         self._from = []
         self._insert_table = None
+        self._update_table = None
+        self._delete_from = False
 
         self._selects = []
         self._columns = []
@@ -183,6 +200,8 @@ class QueryBuilder(Selectable, Term):
 
         self._limit = None
         self._offset = None
+
+        self._updates = []
 
         self._select_star = False
         self._select_star_tables = set()
@@ -237,6 +256,20 @@ class QueryBuilder(Selectable, Term):
                 self._select_other(term)
             else:
                 self._select_other(self._wrap(term))
+
+    @builder
+    def delete(self):
+        if self._delete_from or self._selects or self._update_table:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'delete')
+
+        self._delete_from = True
+
+    @builder
+    def update(self, table):
+        if self._update_table is not None or self._selects or self._delete_from:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'update')
+
+        self._update_table = table if isinstance(table, Table) else Table(table)
 
     @builder
     def columns(self, *terms):
@@ -357,6 +390,11 @@ class QueryBuilder(Selectable, Term):
     def union_all(self, other):
         self._unions.append((UnionType.all, other))
 
+    @builder
+    def set(self, field, value):
+        field = Field(field) if not isinstance(field, Field) else field
+        self._updates.append((field, ValueWrapper(value)))
+
     def __add__(self, other):
         return self.union(other)
 
@@ -430,7 +468,10 @@ class QueryBuilder(Selectable, Term):
         for field in term.fields():
             table_in_froms = field.table in self._from
             table_in_joins = field.table in [join.item for join in self._joins]
-            if field.table is not None and not table_in_froms and not table_in_joins:
+            if field.table is not None and \
+                    not table_in_froms and \
+                    not table_in_joins and \
+                    field.table != self._update_table:
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
                                     'its fields can be used' % field.table)
@@ -458,9 +499,11 @@ class QueryBuilder(Selectable, Term):
         return hash(self.alias) + sum(hash(clause) for clause in self._from)
 
     def get_sql(self, with_alias=False, subquery=False, with_unions=False, **kwargs):
-        if not (self._selects or self._insert_table):
+        if not (self._selects or self._insert_table or self._delete_from or self._update_table):
             return ''
         if self._insert_table and not (self._selects or self._values):
+            return ''
+        if self._update_table and not self._updates:
             return ''
 
         has_joins = bool(self._joins)
@@ -468,7 +511,16 @@ class QueryBuilder(Selectable, Term):
         has_subquery_from_clause = 0 < len(self._from) and isinstance(self._from[0], QueryBuilder)
         kwargs['with_namespace'] = any((has_joins, has_multiple_from_clauses, has_subquery_from_clause))
 
-        if not self._select_into and self._insert_table:
+        if self._update_table:
+            querystring = self._update_sql(**kwargs)
+            querystring += self._set_sql(**kwargs)
+
+            if self._wheres:
+                querystring += self._where_sql(**kwargs)
+            return querystring
+        elif self._delete_from:
+            querystring = self._delete_sql(**kwargs)
+        elif not self._select_into and self._insert_table:
             querystring = self._insert_sql(**kwargs)
 
             if self._columns:
@@ -478,7 +530,6 @@ class QueryBuilder(Selectable, Term):
                 return querystring + self._values_sql(**kwargs)
             else:
                 querystring += ' ' + self._select_sql(**kwargs)
-
         else:
             querystring = self._select_sql(**kwargs)
 
@@ -534,6 +585,15 @@ class QueryBuilder(Selectable, Term):
         return 'INSERT {ignore}INTO {table}'.format(
             table=self._insert_table.get_sql(**kwargs),
             ignore='IGNORE ' if self._ignore else ''
+        )
+
+    @staticmethod
+    def _delete_sql(**kwargs):
+        return 'DELETE'
+
+    def _update_sql(self, **kwargs):
+        return 'UPDATE {table}'.format(
+            table=self._update_table.get_sql(**kwargs)
         )
 
     def _columns_sql(self, with_namespace=False, **kwargs):
@@ -617,6 +677,15 @@ class QueryBuilder(Selectable, Term):
 
     def _limit_sql(self):
         return " LIMIT {limit}".format(limit=self._limit)
+
+    def _set_sql(self, **kwargs):
+        return ' SET {set}'.format(
+            set=','.join(
+                '{field}={value}'.format(
+                    field=field.get_sql(**kwargs),
+                    value=value.get_sql(**kwargs)) for field, value in self._updates
+            )
+        )
 
 
 class Joiner(object):
