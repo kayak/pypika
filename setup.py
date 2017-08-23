@@ -1,13 +1,12 @@
 # coding: utf8
 
 import ast
-
 from setuptools import setup
 
 
 def readme():
-    with open('README.rst') as f:
-        return f.read()
+    with open('README.rst', 'rb') as f:
+        return f.read().decode('UTF-8')
 
 
 def version():
