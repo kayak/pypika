@@ -360,6 +360,13 @@ class IsInTests(unittest.TestCase):
         self.assertEqual('COALESCE("foo",0) IN (0,1)', str(c1))
         self.assertEqual('COALESCE("isin"."foo",0) IN (0,1)', str(c2))
 
+    def test__in_unicode(self):
+        c1 = Field('foo').isin([u'a', u'b'])
+        c2 = Field('foo', table=self.t).isin([u'a', u'b'])
+
+        self.assertEqual('"foo" IN (\'a\',\'b\')', str(c1))
+        self.assertEqual('"isin"."foo" IN (\'a\',\'b\')', str(c2))
+
 
 class NotInTests(unittest.TestCase):
     t = Table('abc', alias='notin')
