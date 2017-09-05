@@ -20,6 +20,13 @@ from pypika.utils import (
     resolve_is_aggregate,
 )
 
+
+try:
+  basestring
+except NameError:
+  basestring = str
+
+
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
@@ -200,7 +207,7 @@ class ValueWrapper(Term):
             return self.value.value
         if isinstance(self.value, date):
             return "'%s'" % self.value.isoformat()
-        if isinstance(self.value, str):
+        if isinstance(self.value, basestring):
             return "'%s'" % self.value
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
