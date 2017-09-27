@@ -562,3 +562,11 @@ class DateFunctionsTests(unittest.TestCase):
 
     def test_extract_year(self):
         self._test_extract_datepart(DatePart.year)
+
+    def test_timestampadd(self):
+        a = fn.TimestampAdd('year', 1, '2017-10-01')
+        self.assertEqual(str(a), "TIMESTAMPADD('year',1,'2017-10-01')")
+
+    def test_date_add(self):
+        a = fn.DateAdd('year', 1, '2017-10-01')
+        self.assertEqual(str(a), "DATE_ADD('year',1,'2017-10-01')")
