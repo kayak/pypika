@@ -45,6 +45,16 @@ class PostgreSQLQuery(Query):
         return QueryBuilder(dialect=Dialects.POSTGRESQL)
 
 
+class RedshiftQuery(Query):
+    """
+    Defines a query class for use with Amazon Redshift.
+    """
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder(dialect=Dialects.REDSHIFT)
+
+
 class MSSQLQuery(Query):
     """
     Defines a query class for use with Microsoft SQL Server.

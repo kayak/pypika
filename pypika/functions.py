@@ -107,9 +107,19 @@ class DateDiff(Function):
         super(DateDiff, self).__init__('DATEDIFF', interval, start_date, end_date, alias=alias)
 
 
+class DateAdd(Function):
+    def __init__(self, date_part, interval, term, alias=None):
+        super(DateAdd, self).__init__('DATE_ADD', date_part, interval, term, alias=alias)
+
+
 class Timestamp(Function):
     def __init__(self, term, alias=None):
         super(Timestamp, self).__init__('TIMESTAMP', term, alias=alias)
+
+
+class TimestampAdd(Function):
+    def __init__(self, date_part, interval, term, alias=None):
+        super(TimestampAdd, self).__init__('TIMESTAMPADD', date_part, interval, term, alias=alias)
 
 
 # String Functions

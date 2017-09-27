@@ -821,7 +821,9 @@ class Interval(object):
 
     trim_pattern = re.compile(r'^[0\-\.: ]+|[0\-\.: ]+$')
 
-    def __init__(self, years=0, months=0, days=0, hours=0, minutes=0, seconds=0, microseconds=0, quarters=0, weeks=0):
+    def __init__(self, years=0, months=0, days=0, hours=0, minutes=0, seconds=0, microseconds=0, quarters=0, weeks=0,
+                 dialect=None):
+        self.dialect = dialect
         self.largest = None
         self.smallest = None
 
@@ -847,7 +849,7 @@ class Interval(object):
         return []
 
     def get_sql(self, **kwargs):
-        dialect = kwargs.get('dialect')
+        dialect = self.dialect or kwargs.get('dialect')
 
         if hasattr(self, 'quarters'):
             expr = getattr(self, 'quarters')
@@ -879,6 +881,10 @@ class Interval(object):
         interval_templates = {
             # MySQL requires no single quotes around the expr and unit
             Dialects.MYSQL: 'INTERVAL {expr} {unit}',
+
+            # PostgreSQL and Redshift require quotes around the expr and unit e.g. INTERVAL '1 week'
+            Dialects.POSTGRESQL: 'INTERVAL \'{expr} {unit}\'',
+            Dialects.REDSHIFT: 'INTERVAL \'{expr} {unit}\'',
 
             # Oracle requires just single quotes around the expr
             Dialects.ORACLE: 'INTERVAL \'{expr}\' {unit}'
