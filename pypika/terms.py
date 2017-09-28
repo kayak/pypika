@@ -882,9 +882,10 @@ class Interval(object):
             # MySQL requires no single quotes around the expr and unit
             Dialects.MYSQL: 'INTERVAL {expr} {unit}',
 
-            # PostgreSQL and Redshift require quotes around the expr and unit e.g. INTERVAL '1 week'
+            # PostgreSQL, Redshift and Vertica require quotes around the expr and unit e.g. INTERVAL '1 week'
             Dialects.POSTGRESQL: 'INTERVAL \'{expr} {unit}\'',
             Dialects.REDSHIFT: 'INTERVAL \'{expr} {unit}\'',
+            Dialects.VERTICA: 'INTERVAL \'{expr} {unit}\'',
 
             # Oracle requires just single quotes around the expr
             Dialects.ORACLE: 'INTERVAL \'{expr}\' {unit}'
