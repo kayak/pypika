@@ -31,28 +31,40 @@ pypika.utils
 This contains all of the utility classes such as exceptions and decorators.
 
 """
-from .enums import (Order,
-                    JoinType,
-                    DatePart)
-from .queries import (Query,
-                      Table,
-                      make_tables as Tables,
-                      Tuple)
-from .terms import (Field,
-                    Case,
-                    Not,
-                    Interval,
-                    Rollup)
-from .utils import (JoinException,
-                    GroupingException,
-                    CaseException,
-                    UnionException,
-                    RollupException)
-from .dialects import (MSSQLQuery,
-                       MySQLQuery,
-                       OracleQuery,
-                       PostgreSQLQuery,
-                       VerticaQuery)
+from .dialects import (
+    Dialects,
+    MSSQLQuery,
+    MySQLQuery,
+    OracleQuery,
+    PostgreSQLQuery,
+    RedshiftQuery,
+    VerticaQuery,
+)
+from .enums import (
+    DatePart,
+    JoinType,
+    Order,
+)
+from .queries import (
+    Query,
+    Table,
+    Tuple,
+    make_tables as Tables,
+)
+from .terms import (
+    Case,
+    Field,
+    Interval,
+    Not,
+    Rollup,
+)
+from .utils import (
+    CaseException,
+    GroupingException,
+    JoinException,
+    RollupException,
+    UnionException,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

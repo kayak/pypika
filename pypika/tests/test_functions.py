@@ -531,6 +531,14 @@ class DateFunctionsTests(unittest.TestCase):
         c = Interval(days=1).get_sql(dialect=Dialects.VERTICA)
         self.assertEqual("INTERVAL '1 DAY'", str(c))
 
+    def test_redshift_dialect_uses_single_quotes_around_interval(self):
+        c = Interval(days=1).get_sql(dialect=Dialects.REDSHIFT)
+        self.assertEqual("INTERVAL '1 DAY'", str(c))
+
+    def test_postgresql_dialect_uses_single_quotes_around_interval(self):
+        c = Interval(days=1).get_sql(dialect=Dialects.POSTGRESQL)
+        self.assertEqual("INTERVAL '1 DAY'", str(c))
+
     def _test_extract_datepart(self, date_part):
         q = Q.from_(self.t).select(fn.Extract(date_part, self.t.foo))
 
@@ -562,3 +570,11 @@ class DateFunctionsTests(unittest.TestCase):
 
     def test_extract_year(self):
         self._test_extract_datepart(DatePart.year)
+
+    def test_timestampadd(self):
+        a = fn.TimestampAdd('year', 1, '2017-10-01')
+        self.assertEqual(str(a), "TIMESTAMPADD('year',1,'2017-10-01')")
+
+    def test_date_add(self):
+        a = fn.DateAdd('year', 1, '2017-10-01')
+        self.assertEqual(str(a), "DATE_ADD('year',1,'2017-10-01')")

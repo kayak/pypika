@@ -1,18 +1,21 @@
 # coding: utf8
 import unittest
 
-from pypika import (Query,
-                    Table,
-                    Tables,
-                    Field as F,
-                    Case,
-                    functions as fn,
-                    Order,
-                    MySQLQuery,
-                    VerticaQuery,
-                    MSSQLQuery,
-                    PostgreSQLQuery,
-                    OracleQuery)
+from pypika import (
+    Query,
+    Table,
+    Tables,
+    Field as F,
+    Case,
+    functions as fn,
+    Order,
+    MySQLQuery,
+    VerticaQuery,
+    MSSQLQuery,
+    PostgreSQLQuery,
+    OracleQuery,
+    RedshiftQuery,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -159,8 +162,13 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
 
-    def test_postgres_query_uses_double_quote_chars(self):
+    def test_postgresql_query_uses_double_quote_chars(self):
         q = PostgreSQLQuery.from_('abc').select('foo', 'bar')
+
+        self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
+
+    def test_redshift_query_uses_double_quote_chars(self):
+        q = RedshiftQuery.from_('abc').select('foo', 'bar')
 
         self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
 
@@ -307,6 +315,11 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
 
+    def test_redshift_query_uses_double_quote_chars(self):
+        q = RedshiftQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
+
 
 class HavingTests(unittest.TestCase):
     table_abc, table_efg = Tables('abc', 'efg')
@@ -396,6 +409,16 @@ class HavingTests(unittest.TestCase):
 
     def test_postgres_query_uses_double_quote_chars(self):
         q = PostgreSQLQuery.from_(self.table_abc).select(
+            self.table_abc.foo
+        ).groupby(
+            self.table_abc.foo
+        ).having(
+            self.table_abc.buz == 'fiz'
+        )
+        self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
+
+    def test_redshift_query_uses_double_quote_chars(self):
+        q = RedshiftQuery.from_(self.table_abc).select(
             self.table_abc.foo
         ).groupby(
             self.table_abc.foo

@@ -81,3 +81,4 @@ class Dialects(Enum):
     MSSQL = 'mssql'
     MYSQL = 'mysql'
     POSTGRESQL = 'postgressql'
+    REDSHIFT = 'redshift'
