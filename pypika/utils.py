@@ -28,6 +28,10 @@ class RollupException(Exception):
     pass
 
 
+class DialectNotSupported(Exception):
+    pass
+
+
 def builder(func):
     """
     Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
