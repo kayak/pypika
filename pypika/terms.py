@@ -14,6 +14,7 @@ from pypika.enums import (
 )
 from pypika.utils import (
     CaseException,
+    DialectNotSupported,
     alias_sql,
     builder,
     ignoredeepcopy,
@@ -654,19 +655,48 @@ class Function(Term):
     def get_function_sql(self, **kwargs):
         special_params_sql = self.get_special_params_sql(**kwargs)
 
+        dialect = kwargs.get('dialect', None)
+        dialect_name = self.get_name_for_dialect(dialect=dialect)
+        dialect_args = self.get_args_for_dialect(dialect=dialect)
+
+        if dialect_name is None or dialect_args is None:
+            raise DialectNotSupported('The function {} has no support for {} dialect'.format(self.name, dialect))
+
         return '{name}({args}{special})'.format(
-            name=self.name,
+            name=dialect_name,
             args=','.join(p.get_sql(with_alias=False, **kwargs)
                           if hasattr(p, 'get_sql')
                           else str(p)
-                          for p in self.args),
+                          for p in dialect_args),
             special=(' ' + special_params_sql) if special_params_sql else '',
         )
+
+    def get_name_for_dialect(self, dialect=None):
+        """
+        This function will transform the original function name into the equivalent for different dialects.
+        In practice this method should be overriden on subclasses whenever different dialects support is
+        required. Otherwise the original name will be used.
+
+        :param dialect: one of the options in the Dialects enum.
+        :return: the function name that should be used by the get_function_sql method when serializing.
+        """
+        return self.name
+
+    def get_args_for_dialect(self, dialect=None):
+        """
+        This function will transform the original function args into the equivalent for different dialects.
+        In practice this method should be overriden on subclasses whenever different dialects support is
+        required. Otherwise the original arguments will be used.
+
+        :param dialect: one of the options in the Dialects enum.
+        :return: the function args that should be used by the get_function_sql method when serializing.
+        """
+        return self.args
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         # FIXME escape
 
-        function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char)
+        function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char, **kwargs)
 
         if not with_alias or self.alias is None:
             return function_sql
