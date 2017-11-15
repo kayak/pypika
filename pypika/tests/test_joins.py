@@ -7,6 +7,7 @@ from pypika import (
     Tables,
     JoinException,
     functions as fn,
+    analytics as an,
     JoinType,
     UnionException,
     Interval,
@@ -319,3 +320,11 @@ class UnionTests(unittest.TestCase):
         query2 = Query.from_(self.table2).select(self.table2.bar)
 
         self.assertEqual('SELECT `foo` FROM `abc` UNION SELECT `bar` FROM `efg`', str(query1 + query2))
+
+    def test_union_as_subquery(self):
+        abc, efg = Tables('abc', 'efg')
+        hij = Query.from_(abc).select(abc.t).union(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual('SELECT AVG("sq0"."t") FROM ((SELECT "t" FROM "abc") UNION (SELECT "t" FROM "efg")) "sq0"',
+                         str(q))
