@@ -1,6 +1,5 @@
 # coding: utf8
 from pypika.enums import (
-    Dialects,
     JoinType,
     UnionType,
 )
@@ -563,14 +562,14 @@ class QueryBuilder(Selectable, Term):
         if self._offset:
             querystring += self._offset_sql()
 
+        if with_unions:
+            querystring = self._union_sql(querystring, **kwargs)
+
         if subquery:
             querystring = '({query})'.format(query=querystring)
 
         if with_alias:
             return alias_sql(querystring, self.alias or self.table_name, kwargs.get('quote_char'))
-
-        if with_unions:
-            querystring = self._union_sql(querystring, **kwargs)
 
         return querystring
 
@@ -620,9 +619,9 @@ class QueryBuilder(Selectable, Term):
             table=self._insert_table.get_sql(with_alias=False, **kwargs),
         )
 
-    def _from_sql(self, **kwargs):
+    def _from_sql(self, subquery=None, with_alias=None, with_unions=None, **kwargs):
         return ' FROM {selectable}'.format(selectable=','.join(
-            clause.get_sql(subquery=True, with_alias=kwargs['with_namespace'], **kwargs)
+            clause.get_sql(subquery=True, with_alias=kwargs['with_namespace'], with_unions=True, **kwargs)
             for clause in self._from
         ))
 
