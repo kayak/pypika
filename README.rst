@@ -78,6 +78,18 @@ Both of the above examples result in the following SQL:
 
     SELECT id,fname,lname,phone FROM customers
 
+Results can be ordered by using the following syntax:
+
+.. code-block:: python
+
+    from pypika import Order
+    Query.from_('customers').select('id', 'fname', 'lname', 'phone').orderby('id', order=Order.desc)
+
+This results in the following SQL:
+
+.. code-block:: sql
+
+    SELECT "id","fname","lname","phone" FROM "customers" ORDER BY "id" DESC
 
 Arithmetic
 """"""""""
@@ -602,6 +614,24 @@ builder chain.
 .. code-block:: sql
 
     INSERT INTO customers_backup SELECT * FROM customers
+
+Updating Data
+^^^^^^^^^^^^^^
+PyPika allows update queries to be constructed with or without where clauses.
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    Query.update(customers).set('last_login', '2017-01-01 10:00:00')
+
+    Query.update(customers).set('lname', 'smith').where(customers.id == 10)
+
+.. code-block:: sql
+
+    UPDATE "customers" SET "last_login"='2017-01-01 10:00:00'
+
+    UPDATE "customers" SET "lname"='smith' WHERE "id"=10
 
 .. _tutorial_end:
 
