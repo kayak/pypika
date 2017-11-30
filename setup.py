@@ -32,6 +32,10 @@ def version():
                         return '.'.join(r)
 
 
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
+
+
 setup(
     # Application name:
     name="PyPika",
@@ -77,8 +81,6 @@ setup(
               'orm object mapper'),
 
     # Dependent packages (distributions)
-    install_requires=[
-        'aenum'
-    ],
+    install_requires=required,
     test_suite="pypika.tests",
 )
