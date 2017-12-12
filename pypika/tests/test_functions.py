@@ -2,23 +2,20 @@
 import unittest
 
 from pypika import (
+    Case,
+    CaseException,
+    DatePart,
+    Field as F,
+    Interval,
     Query as Q,
     Table as T,
-    Field as F,
-    functions as fn,
-    CaseException,
-    Case,
-    Interval,
-    DatePart,
-    MySQLQuery,
     VerticaQuery,
-    PostgreSQLQuery,
-    RedshiftQuery,
-    OracleQuery,
+    functions as fn,
 )
-from pypika.enums import (SqlTypes,
-                          Dialects)
-from pypika.utils import DialectNotSupported
+from pypika.enums import (
+    Dialects,
+    SqlTypes,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -369,58 +366,17 @@ class StringTests(unittest.TestCase):
 class SplitPartFunctionTests(unittest.TestCase):
     t = T('abc')
 
-    def test__split_part__field_with_vertica_dialect(self):
+    def test__split_part(self):
         q = VerticaQuery.from_(self.t).select(fn.SplitPart(self.t.foo, '|', 3))
 
         self.assertEqual("SELECT SPLIT_PART(\"foo\",\'|\',3) FROM \"abc\"", str(q))
-
-    def test__split_part__field_with_mysql_dialect(self):
-        q = MySQLQuery.from_(self.t).select(fn.SplitPart(self.t.foo, '|', 3))
-
-        self.assertEqual("SELECT SUBSTRING_INDEX(`foo`,\'|\',3) FROM `abc`", str(q))
-
-    def test__split_part__field_with_postgresql_dialect(self):
-        q = PostgreSQLQuery.from_(self.t).select(fn.SplitPart(self.t.foo, '|', 3))
-
-        self.assertEqual("SELECT SPLIT_PART(\"foo\",\'|\',3) FROM \"abc\"", str(q))
-
-    def test__split_part__field_with_redshift_dialect(self):
-        q = RedshiftQuery.from_(self.t).select(fn.SplitPart(self.t.foo, '|', 3))
-
-        self.assertEqual("SELECT SPLIT_PART(\"foo\",\'|\',3) FROM \"abc\"", str(q))
-
-    def test__split_part__field_with_oracle_dialect(self):
-        q = OracleQuery.from_(self.t).select(fn.SplitPart(self.t.foo, '|', 3))
-
-        self.assertEqual("SELECT REGEXP_SUBSTR(\"foo\",\'[^|]+\',1,3) FROM \"abc\"", str(q))
 
 
 class RegexpLikeFunctionTests(unittest.TestCase):
     t = T('abc')
 
-    def test__regexp_like__field_with_vertica_dialect(self):
+    def test__regexp_like(self):
         q = VerticaQuery.from_(self.t).select(fn.RegexpLike(self.t.foo, '^a', 'x'))
-
-        self.assertEqual("SELECT REGEXP_LIKE(\"foo\",\'^a\',\'x\') FROM \"abc\"", str(q))
-
-    def test__regexp_like__field_with_mysql_dialect(self):
-        q = MySQLQuery.from_(self.t).select(fn.RegexpLike(self.t.foo, '^a', 'x'))
-
-        with self.assertRaises(DialectNotSupported):
-            str(q)
-
-    def test__regexp_like__field_with_postgresql_dialect(self):
-        q = PostgreSQLQuery.from_(self.t).select(fn.RegexpLike(self.t.foo, '^a', 'x'))
-
-        self.assertEqual("SELECT REGEXP_MATCHES(\"foo\",\'^a\',\'x\') FROM \"abc\"", str(q))
-
-    def test__regexp_like__field_with_redshift_dialect(self):
-        q = RedshiftQuery.from_(self.t).select(fn.RegexpLike(self.t.foo, '^a', 'x'))
-
-        self.assertEqual("SELECT REGEXP_MATCHES(\"foo\",\'^a\',\'x\') FROM \"abc\"", str(q))
-
-    def test__regexp_like__field_with_oracle_dialect(self):
-        q = OracleQuery.from_(self.t).select(fn.RegexpLike(self.t.foo, '^a', 'x'))
 
         self.assertEqual("SELECT REGEXP_LIKE(\"foo\",\'^a\',\'x\') FROM \"abc\"", str(q))
 
