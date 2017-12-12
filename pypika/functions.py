@@ -4,13 +4,11 @@ Package for SQL functions wrappers
 """
 from pypika.enums import (
     SqlTypes,
-    Dialects,
 )
 from pypika.terms import (
+    AggregateFunction,
     Function,
     Star,
-    AggregateFunction,
-    ValueWrapper,
 )
 from pypika.utils import builder
 
@@ -191,49 +189,14 @@ class SplitPart(Function):
     def __init__(self, term, delimiter, index, alias=None):
         super(SplitPart, self).__init__('SPLIT_PART', term, delimiter, index, alias=alias)
 
-    def get_name_for_dialect(self, dialect=None):
-        return {
-            Dialects.MYSQL: 'SUBSTRING_INDEX',
-            Dialects.POSTGRESQL: 'SPLIT_PART',
-            Dialects.REDSHIFT: 'SPLIT_PART',
-            Dialects.VERTICA: 'SPLIT_PART',
-            Dialects.ORACLE: 'REGEXP_SUBSTR',
-        }.get(dialect, None)
 
-    def get_args_for_dialect(self, dialect=None):
-        term, delimiter, index = self.args
-
-        return {
-            Dialects.MYSQL: (term, delimiter, index),
-            Dialects.POSTGRESQL: (term, delimiter, index),
-            Dialects.REDSHIFT: (term, delimiter, index),
-            Dialects.VERTICA: (term, delimiter, index),
-            Dialects.ORACLE: (term, ValueWrapper('[^{}]+'.format(delimiter.value)), 1, index)
-        }.get(dialect, None)
-
+class RegexpMatches(Function):
+    def __init__(self, term, pattern, modifiers, alias=None):
+        super(RegexpMatches, self).__init__('REGEXP_MATCHES', term, pattern, modifiers, alias=alias)
 
 class RegexpLike(Function):
     def __init__(self, term, pattern, modifiers, alias=None):
         super(RegexpLike, self).__init__('REGEXP_LIKE', term, pattern, modifiers, alias=alias)
-
-    def get_name_for_dialect(self, dialect=None):
-        return {
-            Dialects.POSTGRESQL: 'REGEXP_MATCHES',
-            Dialects.REDSHIFT: 'REGEXP_MATCHES',
-            Dialects.VERTICA: 'REGEXP_LIKE',
-            Dialects.ORACLE: 'REGEXP_LIKE',
-        }.get(dialect, self.name)
-
-    def get_args_for_dialect(self, dialect=None):
-        term, pattern, modifiers = self.args
-
-        return {
-            Dialects.POSTGRESQL: (term, pattern, modifiers),
-            Dialects.REDSHIFT: (term, pattern, modifiers),
-            Dialects.VERTICA: (term, pattern, modifiers),
-            Dialects.ORACLE: (term, pattern, modifiers)
-        }.get(dialect, None)
-
 
 # Date Functions
 class Now(Function):
