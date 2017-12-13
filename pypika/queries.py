@@ -628,37 +628,53 @@ class QueryBuilder(Selectable, Term):
     def _where_sql(self, quote_char=None, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
-    def _group_sql(self, quote_char=None, with_alias=False, **kwargs):
+    def _group_sql(self, quote_char=None, **kwargs):
+        """
+        Produces the GROUP BY part of the query.  This is a list of fields. The clauses are stored in the query under
+        self._groupbys as a list fields.
+
+        If an groupby field is used in the select clause, determined by a matching alias, then the GROUP BY clause will
+        use the alias, otherwise the entire field will be rendered as SQL.
+        """
         clauses = []
-        for term in self._groupbys:
-            selected_aliases = {s.alias for s in self._selects}
-            if term.alias is not None and term.alias in selected_aliases:
+        selected_aliases = {s.alias for s in self._selects}
+        for field in self._groupbys:
+            if field.alias and field.alias in selected_aliases:
                 clauses.append("{quote}{alias}{quote}".format(
-                    alias=term.alias,
+                    alias=field.alias,
                     quote=quote_char or '',
                 ))
             else:
-                clauses.append(term.get_sql(quote_char=quote_char, with_alias=with_alias, **kwargs))
+                clauses.append(field.get_sql(quote_char=quote_char, **kwargs))
 
         return ' GROUP BY {groupby}'.format(groupby=','.join(clauses))
+
+    def _orderby_sql(self, quote_char=None, **kwargs):
+        """
+        Produces the ORDER BY part of the query.  This is a list of fields and possibly their directionality, ASC or
+        DESC. The clauses are stored in the query under self._orderbys as a list of tuples containing the field and
+        directionality (which can be None).
+
+        If an order by field is used in the select clause, determined by a matching , then the ORDER BY clause will use
+        the alias, otherwise the field will be rendered as SQL.
+        """
+        clauses = []
+        selected_aliases = {s.alias for s in self._selects}
+        for field, directionality in self._orderbys:
+            term = "{quote}{alias}{quote}".format(alias=field.alias, quote=quote_char or '') \
+                if field.alias and field.alias in selected_aliases \
+                else field.get_sql(quote_char=quote_char, **kwargs)
+
+            clauses.append('{term} {orient}'.format(term=term, orient=directionality.value)
+                           if directionality is not None else term)
+
+        return ' ORDER BY {orderby}'.format(orderby=','.join(clauses))
 
     def _rollup_sql(self):
         return ' WITH ROLLUP'
 
     def _having_sql(self, quote_char=None, **kwargs):
         return ' HAVING {having}'.format(having=self._havings.get_sql(quote_char=quote_char, **kwargs))
-
-    def _orderby_sql(self, quote_char=None, **kwargs):
-        return ' ORDER BY {orderby}'.format(
-            orderby=','.join(
-                '{field} {orient}'.format(
-                    field=field.get_sql(quote_char=quote_char),
-                    orient=orient.value,
-                ) if orient is not None else
-                field.get_sql(quote_char=quote_char, **kwargs)
-                for field, orient in self._orderbys
-            )
-        )
 
     def _union_sql(self, querystring, quote_char=None, **kwargs):
         if not self._unions:

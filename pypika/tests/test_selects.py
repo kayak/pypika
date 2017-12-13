@@ -546,6 +546,20 @@ class AliasTests(unittest.TestCase):
 
         self.assertEqual('SELECT "q0"."foo","q1"."bar" FROM "abc" "q0","efg" "q1"', str(q))
 
+    def test_use_aliases_in_groupby_and_orderby(self):
+        table_abc = Table('abc', alias='q0')
+
+        my_foo = table_abc.foo.as_('my_foo')
+        q = Query.from_(table_abc) \
+            .select(my_foo, table_abc.bar) \
+            .groupby(my_foo)\
+            .orderby(my_foo)
+
+        self.assertEqual('SELECT "q0"."foo" "my_foo","q0"."bar" '
+                         'FROM "abc" "q0" '
+                         'GROUP BY "my_foo" '
+                         'ORDER BY "my_foo"', str(q))
+
 
 class SubqueryTests(unittest.TestCase):
     maxDiff = None
