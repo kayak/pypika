@@ -2,19 +2,19 @@
 import unittest
 
 from pypika import (
+    Case,
+    Field as F,
+    MSSQLQuery,
+    MySQLQuery,
+    OracleQuery,
+    Order,
+    PostgreSQLQuery,
     Query,
+    RedshiftQuery,
     Table,
     Tables,
-    Field as F,
-    Case,
-    functions as fn,
-    Order,
-    MySQLQuery,
     VerticaQuery,
-    MSSQLQuery,
-    PostgreSQLQuery,
-    OracleQuery,
-    RedshiftQuery,
+    functions as fn,
 )
 
 __author__ = "Timothy Heys"
@@ -231,6 +231,7 @@ class WhereTests(unittest.TestCase):
 
 class GroupByTests(unittest.TestCase):
     t = Table('abc')
+    maxDiff = None
 
     def test_groupby__single(self):
         q = Query.from_(self.t).groupby(self.t.foo).select(self.t.foo)
@@ -263,15 +264,26 @@ class GroupByTests(unittest.TestCase):
         self.assertEqual('SELECT "foo",COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"', str(q))
 
     def test_groupby__alias(self):
-        q = Query.from_(self.t).select(
-            fn.Sum(self.t.foo).as_('bar'),
-        ).groupby(
-            fn.Sum(self.t.foo).as_('bar'),
-        )
+        bar = self.t.bar.as_('bar01')
+        q = Query.from_(self.t) \
+            .select(fn.Sum(self.t.foo), bar) \
+            .groupby(bar)
 
-        self.assertEqual('SELECT SUM("foo") "bar" FROM "abc" GROUP BY SUM("foo")', str(q))
+        self.assertEqual('SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar01"', str(q))
 
-    def test_groupby_with_case_does_not_show_an_alias(self):
+    def test_groupby__alias_with_join(self):
+        table1 = Table('table1', alias='t1')
+        bar = table1.bar.as_('bar01')
+        q = Query.from_(self.t) \
+            .join(table1).on(self.t.id == table1.t_ref) \
+            .select(fn.Sum(self.t.foo), bar) \
+            .groupby(bar)
+
+        self.assertEqual('SELECT SUM("abc"."foo"),"t1"."bar" "bar01" FROM "abc" '
+                         'JOIN "table1" "t1" ON "abc"."id"="t1"."t_ref" '
+                         'GROUP BY "bar01"', str(q))
+
+    def test_groupby_with_case_uses_the_alias(self):
         q = Query.from_(self.t).select(
             fn.Sum(self.t.foo).as_('bar'),
             Case()
@@ -287,8 +299,7 @@ class GroupByTests(unittest.TestCase):
                          "CASE WHEN \"fname\"='Tom' THEN 'It was Tom' "
                          "ELSE 'It was someone else.' END \"who_was_it\" "
                          "FROM \"abc\" "
-                         "GROUP BY "
-                         "CASE WHEN \"fname\"='Tom' THEN 'It was Tom' ELSE 'It was someone else.' END", str(q))
+                         "GROUP BY \"who_was_it\"", str(q))
 
     def test_mysql_query_uses_backtick_quote_chars(self):
         q = MySQLQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)

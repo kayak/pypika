@@ -629,10 +629,18 @@ class QueryBuilder(Selectable, Term):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
     def _group_sql(self, quote_char=None, with_alias=False, **kwargs):
-        return ' GROUP BY {groupby}'.format(
-            groupby=','.join(term.get_sql(quote_char=quote_char, with_alias=with_alias, **kwargs)
-                             for term in self._groupbys)
-        )
+        clauses = []
+        for term in self._groupbys:
+            selected_aliases = {s.alias for s in self._selects}
+            if term.alias is not None and term.alias in selected_aliases:
+                clauses.append("{quote}{alias}{quote}".format(
+                    alias=term.alias,
+                    quote=quote_char or '',
+                ))
+            else:
+                clauses.append(term.get_sql(quote_char=quote_char, with_alias=with_alias, **kwargs))
+
+        return ' GROUP BY {groupby}'.format(groupby=','.join(clauses))
 
     def _rollup_sql(self):
         return ' WITH ROLLUP'

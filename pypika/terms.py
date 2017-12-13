@@ -185,7 +185,7 @@ class Term(object):
         return self.get_sql(quote_char='"')
 
     def __hash__(self):
-        return hash(self.get_sql())
+        return hash(self.get_sql(with_alias=True))
 
     def get_sql(self):
         raise NotImplementedError()
