@@ -191,7 +191,9 @@ class QueryBuilder(Selectable, Term):
         self._ignore = False
 
         self._wheres = None
+        self._prewheres = None
         self._groupbys = []
+        self._with_totals = False
         self._havings = None
         self._orderbys = []
         self._joins = []
@@ -306,6 +308,15 @@ class QueryBuilder(Selectable, Term):
         self._ignore = True
 
     @builder
+    def prewhere(self, criterion):
+        self._validate_term(criterion)
+
+        if self._prewheres:
+            self._prewheres &= criterion
+        else:
+            self._prewheres = criterion
+
+    @builder
     def where(self, criterion):
         self._validate_term(criterion)
 
@@ -331,6 +342,10 @@ class QueryBuilder(Selectable, Term):
 
             self._validate_term(term)
             self._groupbys.append(term)
+
+    @builder
+    def with_totals(self):
+        self._with_totals = True
 
     @builder
     def rollup(self, *terms, **kwargs):
@@ -542,6 +557,9 @@ class QueryBuilder(Selectable, Term):
             querystring += " " + " ".join(join.get_sql(**kwargs)
                                           for join in self._joins)
 
+        if self._prewheres:
+            querystring += self._prewhere_sql(**kwargs)
+
         if self._wheres:
             querystring += self._where_sql(**kwargs)
 
@@ -625,6 +643,10 @@ class QueryBuilder(Selectable, Term):
             for clause in self._from
         ))
 
+    def _prewhere_sql(self, quote_char=None, **kwargs):
+        return ' PREWHERE {prewhere}'.format(
+            prewhere=self._prewheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
+
     def _where_sql(self, quote_char=None, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
@@ -647,7 +669,10 @@ class QueryBuilder(Selectable, Term):
             else:
                 clauses.append(field.get_sql(quote_char=quote_char, **kwargs))
 
-        return ' GROUP BY {groupby}'.format(groupby=','.join(clauses))
+        sql = ' GROUP BY {groupby}'.format(groupby=','.join(clauses))
+        if self._with_totals:
+            return sql + ' WITH TOTALS'
+        return sql
 
     def _orderby_sql(self, quote_char=None, **kwargs):
         """
