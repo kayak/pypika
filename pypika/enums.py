@@ -77,6 +77,7 @@ class SqlTypes(Enum):
 
 class Dialects(Enum):
     VERTICA = 'vertica'
+    CLICKHOUSE = 'clickhouse'
     ORACLE = 'oracle'
     MSSQL = 'mssql'
     MYSQL = 'mysql'

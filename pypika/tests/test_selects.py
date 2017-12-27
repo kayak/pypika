@@ -229,6 +229,22 @@ class WhereTests(unittest.TestCase):
         self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" REGEX '^b'", str(q))
 
 
+class PreWhereTests(WhereTests):
+    t = Table('abc')
+
+    def test_prewhere_field_equals(self):
+        q1 = Query.from_(self.t).select('*').prewhere(self.t.foo == self.t.bar)
+        q2 = Query.from_(self.t).select('*').prewhere(self.t.foo.eq(self.t.bar))
+
+        self.assertEqual('SELECT * FROM "abc" PREWHERE "foo"="bar"', str(q1))
+        self.assertEqual('SELECT * FROM "abc" PREWHERE "foo"="bar"', str(q2))
+
+    def test_where_and_prewhere(self):
+        q = Query.from_(self.t).select('*').prewhere(self.t.foo == self.t.bar).where(self.t.foo == self.t.bar)
+
+        self.assertEqual('SELECT * FROM "abc" PREWHERE "foo"="bar" WHERE "foo"="bar"', str(q))
+
+
 class GroupByTests(unittest.TestCase):
     t = Table('abc')
     maxDiff = None
@@ -330,6 +346,16 @@ class GroupByTests(unittest.TestCase):
         q = RedshiftQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
 
         self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
+
+    def test_group_by__single_with_totals(self):
+        q = Query.from_(self.t).groupby(self.t.foo).select(self.t.foo).with_totals()
+
+        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo" WITH TOTALS', str(q))
+
+    def test_groupby__multi_with_totals(self):
+        q = Query.from_(self.t).groupby(self.t.foo, self.t.bar).select(self.t.foo, self.t.bar).with_totals()
+
+        self.assertEqual('SELECT "foo","bar" FROM "abc" GROUP BY "foo","bar" WITH TOTALS', str(q))
 
 
 class HavingTests(unittest.TestCase):

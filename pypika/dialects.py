@@ -63,3 +63,13 @@ class MSSQLQuery(Query):
     @classmethod
     def _builder(cls):
         return QueryBuilder(dialect=Dialects.MSSQL)
+
+
+class ClickHouseQuery(Query):
+    """
+    Defines a query class for use with Yandex ClickHouse.
+    """
+
+    @classmethod
+    def _builder(cls):
+        return QueryBuilder(dialect=Dialects.CLICKHOUSE)
