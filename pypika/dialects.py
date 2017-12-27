@@ -72,4 +72,4 @@ class ClickHouseQuery(Query):
 
     @classmethod
     def _builder(cls):
-        return QueryBuilder(dialect=Dialects.CLICKHOUSE)
+        return QueryBuilder(dialect=Dialects.CLICKHOUSE, wrap_union_queries=False)
