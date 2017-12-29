@@ -407,7 +407,7 @@ class QueryBuilder(Selectable, Term):
     @builder
     def set(self, field, value):
         field = Field(field) if not isinstance(field, Field) else field
-        self._updates.append((field, ValueWrapper(value)))
+        self._updates.append((field, ValueWrapper(value if isinstance(value, Term) else self._wrap(value))))
 
     def __add__(self, other):
         return self.union(other)
