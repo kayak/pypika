@@ -211,6 +211,8 @@ class ValueWrapper(Term):
             return "'%s'" % self.value
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
+        if self.value is None:
+            return 'null'
 
         return str(self.value)
 

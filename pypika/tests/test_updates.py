@@ -25,3 +25,7 @@ class UpdateTests(unittest.TestCase):
         q = Query.update(table).set(table.foo, 1).where(table.foo == 0)
 
         self.assertEqual('UPDATE "schema1"."abc" SET "foo"=1 WHERE "foo"=0', str(q))
+
+    def test_update_with_none(self):
+        q = Query.update('abc').set('foo', None)
+        self.assertEqual('UPDATE "abc" SET "foo"=null', str(q))
