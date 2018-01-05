@@ -1,4 +1,3 @@
-# coding: utf8
 """
 PyPika is divided into a couple of modules, primarily the ``queries`` and ``terms`` modules.
 
@@ -68,4 +67,4 @@ from .utils import (
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.10.1"
+__version__ = "0.10.2"
