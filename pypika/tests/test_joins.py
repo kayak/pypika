@@ -2,16 +2,15 @@
 import unittest
 
 from pypika import (
+    Interval,
+    JoinException,
+    JoinType,
+    MySQLQuery,
     Query,
     Table,
     Tables,
-    JoinException,
-    functions as fn,
-    analytics as an,
-    JoinType,
     UnionException,
-    Interval,
-    MySQLQuery,
+    functions as fn,
 )
 
 __author__ = "Timothy Heys"
@@ -41,6 +40,30 @@ class JoinTypeTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query))
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query_explicit))
+
+    def test_outer_join(self):
+        q = Query.from_(self.table0).join(self.table1, how=JoinType.outer).on(
+              self.table0.foo == self.table1.bar).select('*')
+
+        self.assertEqual('SELECT * FROM "abc" OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
+
+    def test_left_outer_join(self):
+        q = Query.from_(self.table0).join(self.table1, how=JoinType.left_outer).on(
+              self.table0.foo == self.table1.bar).select('*')
+
+        self.assertEqual('SELECT * FROM "abc" LEFT OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
+
+    def test_right_outer_join(self):
+        q = Query.from_(self.table0).join(self.table1, how=JoinType.right_outer).on(
+              self.table0.foo == self.table1.bar).select('*')
+
+        self.assertEqual('SELECT * FROM "abc" RIGHT OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
+
+    def test_full_outer_join(self):
+        q = Query.from_(self.table0).join(self.table1, how=JoinType.full_outer).on(
+              self.table0.foo == self.table1.bar).select('*')
+
+        self.assertEqual('SELECT * FROM "abc" FULL OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
 
     def test_join_on_field_single(self):
         query = Query.from_(self.table0).join(self.table1).on_field("foo").select('*')

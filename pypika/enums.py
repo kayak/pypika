@@ -47,6 +47,9 @@ class JoinType(Enum):
     left = 'LEFT'
     right = 'RIGHT'
     outer = 'OUTER'
+    left_outer = 'LEFT OUTER'
+    right_outer = 'RIGHT OUTER'
+    full_outer = 'FULL OUTER'
 
 
 class UnionType(Enum):
