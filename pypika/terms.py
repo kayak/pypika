@@ -378,6 +378,10 @@ class ContainsCriterion(Criterion):
         self.container = container
         self._is_negated = False
 
+    @property
+    def tables_(self):
+        return self.term.tables_
+
     def fields(self):
         return self.term.fields() if self.term.fields else []
 
