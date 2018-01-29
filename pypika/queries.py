@@ -502,6 +502,9 @@ class QueryBuilder(Selectable, Term):
     def __str__(self):
         return self.get_sql(with_unions=True, quote_char=self.quote_char, dialect=self.dialect)
 
+    def __repr__(self):
+        return self.__str__()
+
     def __eq__(self, other):
         if not isinstance(other, QueryBuilder):
             return False
