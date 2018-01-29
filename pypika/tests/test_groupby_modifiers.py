@@ -41,7 +41,7 @@ class RollupTests(unittest.TestCase):
                 fn.Sum(self.table.bar)
             ).rollup(vendor='mysql')
 
-    def test_no_rollup_after_rollup(self):
+    def test_no_rollup_after_rollup_mysql(self):
         with self.assertRaises(AttributeError):
             Query.from_(self.table).select(
                 self.table.foo,
@@ -141,7 +141,7 @@ class RollupTests(unittest.TestCase):
             self.table.fiz,
         )
 
-        self.assertEqual('SELECT "foo","fiz",SUM("bar") FROM "abc" GROUP BY ROLLUP("foo"),ROLLUP("fiz")', str(q))
+        self.assertEqual('SELECT "foo","fiz",SUM("bar") FROM "abc" GROUP BY ROLLUP("foo","fiz")', str(q))
 
     def test_verticaoracle_rollups_with_parity(self):
         q = Query.from_(self.table).select(
@@ -152,3 +152,14 @@ class RollupTests(unittest.TestCase):
         )
 
         self.assertEqual('SELECT "buz" FROM "abc" GROUP BY ROLLUP(("foo","bar"),"fiz")', str(q))
+
+    def test_verticaoracle_rollups_with_multiple_rollups_and_parity(self):
+        q = Query.from_(self.table).select(
+            self.table.buz,
+        ).rollup(
+            [self.table.foo, self.table.bar],
+        ).rollup(
+            [self.table.fiz, self.table.buz],
+        )
+
+        self.assertEqual('SELECT "buz" FROM "abc" GROUP BY ROLLUP(("foo","bar"),("fiz","buz"))', str(q))

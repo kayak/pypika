@@ -359,12 +359,17 @@ class QueryBuilder(Selectable, Term):
                  for term in terms]
 
         if for_mysql:
+            # MySQL rolls up all of the dimensions always
             if not terms and not self._groupbys:
                 raise RollupException('At least one group is required. Call Query.groupby(term) or pass'
                                       'as parameter to rollup.')
 
             self._mysql_rollup = True
             self._groupbys += terms
+
+        elif 0 < len(self._groupbys) and isinstance(self._groupbys[-1], Rollup):
+            # If a rollup was added last, then append the new terms to the previous rollup
+            self._groupbys[-1].args += terms
 
         else:
             self._groupbys.append(Rollup(*terms))
