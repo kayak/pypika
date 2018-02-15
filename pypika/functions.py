@@ -191,12 +191,14 @@ class SplitPart(Function):
 
 
 class RegexpMatches(Function):
-    def __init__(self, term, pattern, modifiers, alias=None):
+    def __init__(self, term, pattern, modifiers=None, alias=None):
         super(RegexpMatches, self).__init__('REGEXP_MATCHES', term, pattern, modifiers, alias=alias)
 
+
 class RegexpLike(Function):
-    def __init__(self, term, pattern, modifiers, alias=None):
+    def __init__(self, term, pattern, modifiers=None, alias=None):
         super(RegexpLike, self).__init__('REGEXP_LIKE', term, pattern, modifiers, alias=alias)
+
 
 # Date Functions
 class Now(Function):
