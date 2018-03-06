@@ -85,7 +85,7 @@ class InsertIntoTests(unittest.TestCase):
     def test_insert_null(self):
         query = Query.into(self.table_abc).insert(None)
 
-        self.assertEqual('INSERT INTO "abc" VALUES (null)', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (NULL)', str(query))
 
 
 class InsertSelectFromTests(unittest.TestCase):

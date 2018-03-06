@@ -20,7 +20,6 @@ from pypika.utils import (
     resolve_is_aggregate,
 )
 
-
 try:
   basestring
 except NameError:
@@ -194,14 +193,20 @@ class Term(object):
 class ValueWrapper(Term):
     is_aggregate = None
 
-    def __init__(self, value):
-        super(ValueWrapper, self).__init__()
+    def __init__(self, value, alias=None):
+        super(ValueWrapper, self).__init__(alias)
         self.value = value
 
     def fields(self):
         return []
 
-    def get_sql(self, **kwargs):
+    def get_sql(self, quote_char=None, **kwargs):
+        sql = self._get_value_sql()
+        if self.alias is None:
+            return sql
+        return alias_sql(sql, self.alias, quote_char)
+
+    def _get_value_sql(self):
         # FIXME escape values
         if isinstance(self.value, Enum):
             return self.value.value
@@ -213,7 +218,6 @@ class ValueWrapper(Term):
             return str.lower(str(self.value))
         if self.value is None:
             return 'null'
-
         return str(self.value)
 
 
@@ -221,8 +225,11 @@ class NullValue(Term):
     def fields(self):
         return []
 
-    def get_sql(self, **kwargs):
-        return 'null'
+    def get_sql(self, quote_char=None, **kwargs):
+        sql = 'NULL'
+        if self.alias is None:
+            return sql
+        return alias_sql(sql, self.alias, quote_char)
 
 
 class Field(Term):
