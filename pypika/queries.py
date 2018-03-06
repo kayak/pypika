@@ -176,8 +176,7 @@ class UnionQuery(Selectable, Term):
     def __init__(self, base_query, union_query, union_type, alias=None):
         super(UnionQuery, self).__init__(alias)
         self.base_query = base_query
-        self.union_query = union_query
-        self.union_type = union_type
+        self._unions = [(union_type, union_query)]
         self._orderbys = []
 
     @builder
@@ -189,28 +188,34 @@ class UnionQuery(Selectable, Term):
 
             self._orderbys.append((field, kwargs.get('order')))
 
+    @builder
+    def union(self, other):
+        self._unions.append((UnionType.distinct, other))
+
+    @builder
+    def union_all(self, other):
+        self._unions.append((UnionType.all, other))
+
     def __str__(self):
         return self.get_sql()
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
-        template = '({base}) UNION{type} ({union})' \
-            if self.base_query.wrap_union_queries \
-            else '{base} UNION{type} {union}'
+        union_template = ' UNION{type} {union}'
 
         kwargs = {'quote_char': self.base_query.quote_char, 'dialect': self.base_query.dialect}
-        base_querystring = self.base_query.get_sql(**kwargs)
-        union_querystring = self.union_query.get_sql(**kwargs)
+        base_querystring = self.base_query.get_sql(subquery=self.base_query.wrap_union_queries, **kwargs)
 
-        if len(self.base_query._selects) != len(self.union_query._selects):
-            raise UnionException("Queries must have an equal number of select statements in a union."
-                                 "\n\nMain Query:\n{query1}\n\nUnion Query:\n{query2}"
-                                 .format(query1=base_querystring, query2=union_querystring))
+        querystring = base_querystring
+        for union_type, union_query in self._unions:
+            union_querystring = union_query.get_sql(subquery=self.base_query.wrap_union_queries, **kwargs)
 
-        querystring = template.format(
-              base=base_querystring,
-              type=self.union_type.value,
-              union=union_querystring
-        )
+            if len(self.base_query._selects) != len(union_query._selects):
+                raise UnionException("Queries must have an equal number of select statements in a union."
+                                     "\n\nMain Query:\n{query1}\n\nUnion Query:\n{query2}"
+                                     .format(query1=base_querystring, query2=union_querystring))
+
+            querystring += union_template.format(type=union_type.value,
+                                                 union=union_querystring)
 
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
