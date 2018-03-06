@@ -470,7 +470,7 @@ class QueryBuilder(Selectable, Term):
     def do_join(self, join):
         join.validate(self._from, self._joins)
 
-        if isinstance(join.item, QueryBuilder):
+        if isinstance(join.item, QueryBuilder) and join.item.alias is None:
             self._tag_subquery(join.item)
 
         table_in_from = any(isinstance(clause, Table)

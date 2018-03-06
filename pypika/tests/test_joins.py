@@ -313,6 +313,37 @@ class JoinBehaviorTests(unittest.TestCase):
                          'JOIN "efg" ON "abc"."efg_id"="efg"."id" '
                          'JOIN "hij" ON "efg"."hij_id"="hij"."id"', str(test_query))
 
+    def test_join_query_without_alias(self):
+        subquery = Query.from_(self.table_efg) \
+            .select(self.table_efg.base_id.as_('x'), self.table_efg.fizz, self.table_efg.buzz)
+
+        test_query = Query.from_(self.table_abc) \
+            .join(subquery) \
+            .on(subquery.x == self.table_abc.id) \
+            .select(self.table_abc.foo, subquery.fizz, subquery.buzz)
+
+        self.assertEqual('SELECT "abc"."foo","sq0"."fizz","sq0"."buzz" '
+                         'FROM "abc" JOIN ('
+                         'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
+                         ') "sq0" '
+                         'ON "sq0"."x"="abc"."id"', str(test_query))
+
+    def test_join_query_with_alias(self):
+        subquery = Query.from_(self.table_efg) \
+            .select(self.table_efg.base_id.as_('x'), self.table_efg.fizz, self.table_efg.buzz)\
+.as_('subq')
+
+        test_query = Query.from_(self.table_abc) \
+            .join(subquery) \
+            .on(subquery.x == self.table_abc.id) \
+            .select(self.table_abc.foo, subquery.fizz, subquery.buzz)
+
+        self.assertEqual('SELECT "abc"."foo","subq"."fizz","subq"."buzz" '
+                         'FROM "abc" JOIN ('
+                         'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
+                         ') "subq" '
+                         'ON "subq"."x"="abc"."id"', str(test_query))
+
 
 class UnionTests(unittest.TestCase):
     table1, table2 = Tables('abc', 'efg')
