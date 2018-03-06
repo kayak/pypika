@@ -362,6 +362,52 @@ class UnionTests(unittest.TestCase):
         self.assertEqual('(SELECT "foo" FROM "abc") UNION ALL (SELECT "bar" FROM "efg")', str(query1 * query2))
         self.assertEqual('(SELECT "foo" FROM "abc") UNION ALL (SELECT "bar" FROM "efg")', str(query1.union_all(query2)))
 
+    def test_union_with_order_by(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_('a'))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_('a'))
+
+        union_query = (query1 + query2).orderby(query1.field('a'))
+
+        self.assertEqual('(SELECT "foo" "a" FROM "abc") '
+                         'UNION ALL '
+                         '(SELECT "bar" "a" FROM "efg") '
+                         'ORDER BY "a"', union_query)
+
+    def test_union_with_order_by_use_union_query_field(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_('a'))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_('a'))
+
+        union_query = (query1 + query2)
+        union_query = union_query.orderby(union_query.field('a'))
+
+        self.assertEqual('(SELECT "foo" "a" FROM "abc") '
+                         'UNION ALL '
+                         '(SELECT "bar" "a" FROM "efg") '
+                         'ORDER BY "a"', union_query)
+
+    def test_union_with_order_by_with_aliases(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_('a')).as_('a')
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_('a')).as_('b')
+
+        union_query = (query1 + query2).orderby(query1.field('a'))
+
+        self.assertEqual('(SELECT "foo" "a" FROM "abc") "a" '
+                         'UNION ALL '
+                         '(SELECT "bar" "a" FROM "efg") "b" '
+                         'ORDER BY "a"."a"', union_query)
+
+    def test_union_with_order_by_use_union_query_field_with_aliases(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_('a'))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_('a'))
+
+        union_query = (query1 + query2).as_('x')
+        union_query = union_query.orderby(union_query.field('a'))
+
+        self.assertEqual('(SELECT "foo" "a" FROM "abc") '
+                         'UNION ALL '
+                         '(SELECT "bar" "a" FROM "efg") '
+                         'ORDER BY "a"', union_query)
+
     def test_require_equal_number_of_fields(self):
         query1 = Query.from_(self.table1).select(self.table1.foo)
         query2 = Query.from_(self.table2).select(self.table2.fiz, self.table2.buz)
