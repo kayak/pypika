@@ -20,7 +20,6 @@ from pypika.utils import (
     resolve_is_aggregate,
 )
 
-
 try:
   basestring
 except NameError:
@@ -226,8 +225,11 @@ class NullValue(Term):
     def fields(self):
         return []
 
-    def get_sql(self, **kwargs):
-        return 'null'
+    def get_sql(self, quote_char=None, **kwargs):
+        sql = 'NULL'
+        if self.alias is None:
+            return sql
+        return alias_sql(sql, self.alias, quote_char)
 
 
 class Field(Term):

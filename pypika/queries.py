@@ -179,6 +179,9 @@ class UnionQuery(Selectable, Term):
         self._unions = [(union_type, union_query)]
         self._orderbys = []
 
+        self._limit = None
+        self._offset = None
+
     @builder
     def orderby(self, *fields, **kwargs):
         for field in fields:
@@ -187,6 +190,14 @@ class UnionQuery(Selectable, Term):
                      else self.base_query._wrap(field))
 
             self._orderbys.append((field, kwargs.get('order')))
+
+    @builder
+    def limit(self, limit):
+        self._limit = limit
+
+    @builder
+    def offset(self, offset):
+        self._offset = offset
 
     @builder
     def union(self, other):
@@ -220,6 +231,12 @@ class UnionQuery(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
+        if self._limit:
+            querystring += self._limit_sql()
+
+        if self._offset:
+            querystring += self._offset_sql()
+
         if subquery:
             querystring = '({query})'.format(query=querystring)
 
@@ -248,6 +265,12 @@ class UnionQuery(Selectable, Term):
                            if directionality is not None else term)
 
         return ' ORDER BY {orderby}'.format(orderby=','.join(clauses))
+
+    def _offset_sql(self):
+        return " OFFSET {offset}".format(offset=self._offset)
+
+    def _limit_sql(self):
+        return " LIMIT {limit}".format(limit=self._limit)
 
 
 class QueryBuilder(Selectable, Term):
