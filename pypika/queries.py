@@ -172,9 +172,14 @@ class Query(object):
         return cls._builder().update(table)
 
 
-class UnionQuery(Selectable, Term):
+class _UnionQuery(Selectable, Term):
+    """
+    A Query class wrapper for a Union query, whether DISTINCT or ALL.
+
+    Created via the functionds `Query.union` or `Query.union_all`, this class should not be instantiated directly.
+    """
     def __init__(self, base_query, union_query, union_type, alias=None):
-        super(UnionQuery, self).__init__(alias)
+        super(_UnionQuery, self).__init__(alias)
         self.base_query = base_query
         self._unions = [(union_type, union_query)]
         self._orderbys = []
@@ -335,7 +340,7 @@ class QueryBuilder(Selectable, Term):
 
         self._from.append(Table(selectable) if isinstance(selectable, str) else selectable)
 
-        if isinstance(selectable, (QueryBuilder, UnionQuery)) and selectable.alias is None:
+        if isinstance(selectable, (QueryBuilder, _UnionQuery)) and selectable.alias is None:
             selectable.alias = 'sq%d' % self._subquery_count
             self._subquery_count += 1
 
@@ -506,10 +511,10 @@ class QueryBuilder(Selectable, Term):
 
     @builder
     def union(self, other):
-        return UnionQuery(self, other, UnionType.distinct)
+        return _UnionQuery(self, other, UnionType.distinct)
 
     def union_all(self, other):
-        return UnionQuery(self, other, UnionType.all)
+        return _UnionQuery(self, other, UnionType.all)
 
     @builder
     def set(self, field, value):
