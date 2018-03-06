@@ -307,7 +307,7 @@ class QueryBuilder(Selectable, Term):
 
         self._from.append(Table(selectable) if isinstance(selectable, str) else selectable)
 
-        if isinstance(selectable, (QueryBuilder, UnionQuery)):
+        if isinstance(selectable, (QueryBuilder, UnionQuery)) and selectable.alias is None:
             selectable.alias = 'sq%d' % self._subquery_count
             self._subquery_count += 1
 
