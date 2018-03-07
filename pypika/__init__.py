@@ -30,6 +30,7 @@ pypika.utils
 This contains all of the utility classes such as exceptions and decorators.
 
 """
+# noinspection PyUnresolvedReferences
 from .dialects import (
     Dialects,
     MSSQLQuery,
@@ -39,17 +40,20 @@ from .dialects import (
     RedshiftQuery,
     VerticaQuery,
 )
+# noinspection PyUnresolvedReferences
 from .enums import (
     DatePart,
     JoinType,
     Order,
 )
+# noinspection PyUnresolvedReferences
 from .queries import (
     Query,
     Table,
     Tuple,
     make_tables as Tables,
 )
+# noinspection PyUnresolvedReferences
 from .terms import (
     Case,
     Field,
@@ -57,6 +61,7 @@ from .terms import (
     Not,
     Rollup,
 )
+# noinspection PyUnresolvedReferences
 from .utils import (
     CaseException,
     GroupingException,
@@ -67,4 +72,4 @@ from .utils import (
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.10.5"
+__version__ = "0.10.6"
