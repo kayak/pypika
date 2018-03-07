@@ -65,8 +65,8 @@ class StdDev(AggregateFunction):
 
 
 class Coalesce(Function):
-    def __init__(self, term, default_value, alias=None):
-        super(Coalesce, self).__init__('COALESCE', term, default_value, alias=alias)
+    def __init__(self, term, *default_values, **kwargs):
+        super(Coalesce, self).__init__('COALESCE', term, *default_values, **kwargs)
 
 
 # Type Functions
