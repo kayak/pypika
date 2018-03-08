@@ -99,6 +99,9 @@ class Term(object):
     def like(self, expr):
         return BasicCriterion(Matching.like, self, self._wrap(expr))
 
+    def not_like(self, expr):
+        return BasicCriterion(Matching.not_like, self, self._wrap(expr))
+
     def regex(self, pattern):
         return BasicCriterion(Matching.regex, self, self._wrap(pattern))
 

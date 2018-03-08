@@ -223,6 +223,26 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" LIKE '___'", str(q))
 
+    def test_where_field_does_not_start_with(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.not_like('ab%'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" NOT LIKE 'ab%'", str(q))
+
+    def test_where_field_does_not_contain(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.not_like('%fg%'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" NOT LIKE '%fg%'", str(q))
+
+    def test_where_field_does_not_end_with(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.not_like('%yz'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" NOT LIKE '%yz'", str(q))
+
+    def test_where_field_is_not_n_chars_long(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.not_like('___'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" NOT LIKE '___'", str(q))
+
     def test_where_field_matches_regex(self):
         q = Query.from_(self.t).select(self.t.star).where(self.t.foo.regex(r'^b'))
 
