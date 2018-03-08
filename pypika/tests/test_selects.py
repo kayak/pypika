@@ -208,6 +208,21 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" LIKE 'ab%'", str(q))
 
+    def test_where_field_contains(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.like('%fg%'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" LIKE '%fg%'", str(q))
+
+    def test_where_field_ends_with(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.like('%yz'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" LIKE '%yz'", str(q))
+
+    def test_where_field_is_n_chars_long(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.like('___'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" LIKE '___'", str(q))
+
     def test_where_field_does_not_start_with(self):
         q = Query.from_(self.t).select(self.t.star).where(self.t.foo.not_like('ab%'))
 
@@ -227,6 +242,11 @@ class WhereTests(unittest.TestCase):
         q = Query.from_(self.t).select(self.t.star).where(self.t.foo.not_like('___'))
 
         self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" NOT LIKE '___'", str(q))
+
+    def test_where_field_matches_regex(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.regex(r'^b'))
+
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" REGEX '^b'", str(q))
 
 
 class PreWhereTests(WhereTests):
