@@ -26,6 +26,7 @@ class Equality(Comparator):
 
 
 class Matching(Comparator):
+    not_like = ' NOT LIKE '
     like = ' LIKE '
     regex = ' REGEX '
     bin_regex = ' REGEX BINARY '
