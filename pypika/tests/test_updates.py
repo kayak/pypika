@@ -27,6 +27,13 @@ class UpdateTests(unittest.TestCase):
 
         self.assertEqual('UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING id', str(q))
 
+    def test_update_returning_str(self):
+        q = Query.update(self.table_abc).where(
+            self.table_abc.foo == 0
+        ).set('foo', 'bar').returning('id')
+
+        self.assertEqual('UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING id', str(q))
+
     def test_update__table_schema(self):
         table = Table('abc', 'schema1')
         q = Query.update(table).set(table.foo, 1).where(table.foo == 0)

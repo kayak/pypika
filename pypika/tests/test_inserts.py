@@ -96,6 +96,11 @@ class InsertIntoReturningTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
 
+    def test_insert_returning_one_field_str(self):
+        query = Query.into(self.table_abc).insert(1).returning('id')
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
+
     def test_insert_returning_all_fields(self):
         query = Query.into(self.table_abc).insert(1).returning(self.table_abc.star)
 

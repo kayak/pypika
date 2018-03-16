@@ -590,7 +590,14 @@ class QueryBuilder(Selectable, Term):
             self._returns = [Star()]
             return
 
-        self._return_field(Field(term, table=self._insert_table))
+        if self._insert_table:
+            self._return_field(Field(term, table=self._insert_table))
+        elif self._update_table:
+            self._return_field(Field(term, table=self._update_table))
+        elif self._delete_from:
+            self._return_field(Field(term, table=self._from[0]))
+        else:
+            raise QueryException('Returning can\'t be used in this query')
 
     def _validate_returning_term(self, term):
         if not any([self._insert_table, self._update_table, self._delete_from]):
