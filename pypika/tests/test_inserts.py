@@ -88,6 +88,30 @@ class InsertIntoTests(unittest.TestCase):
         self.assertEqual('INSERT INTO "abc" VALUES (NULL)', str(query))
 
 
+class InsertIntoReturningTests(unittest.TestCase):
+    table_abc = Table('abc')
+
+    def test_insert_returning_one_field(self):
+        query = Query.into(self.table_abc).insert(1).returning(self.table_abc.id)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
+
+    def test_insert_returning_all_fields(self):
+        query = Query.into(self.table_abc).insert(1).returning(self.table_abc.star)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *', str(query))
+
+    def test_insert_all_columns_multi_rows_chained(self):
+        query = Query.into(self.table_abc).insert(1, 'a', True).insert(2, 'b', False).returning(self.table_abc.star)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
+
+    def test_insert_all_columns_single_element_arrays(self):
+        query = Query.into(self.table_abc).insert((1, 'a', True)).returning(self.table_abc.star)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true) RETURNING *', str(query))
+
+
 class InsertSelectFromTests(unittest.TestCase):
     table_abc, table_efg, table_hij = Tables('abc', 'efg', 'hij')
 

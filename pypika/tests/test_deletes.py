@@ -26,3 +26,10 @@ class DeleteTests(unittest.TestCase):
 
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar"', str(q1))
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar"', str(q2))
+
+    def test_delete_returning(self):
+        q1 = Query.from_(self.table_abc).where(
+            self.table_abc.foo == self.table_abc.bar
+        ).delete().returning(self.table_abc.id)
+
+        self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING id', str(q1))
