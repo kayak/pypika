@@ -102,6 +102,12 @@ class Term(object):
     def not_like(self, expr):
         return BasicCriterion(Matching.not_like, self, self._wrap(expr))
 
+    def ilike(self, expr):
+        return BasicCriterion(Matching.ilike, self, self._wrap(expr))
+
+    def not_ilike(self, expr):
+        return BasicCriterion(Matching.not_ilike, self, self._wrap(expr))
+
     def regex(self, pattern):
         return BasicCriterion(Matching.regex, self, self._wrap(pattern))
 

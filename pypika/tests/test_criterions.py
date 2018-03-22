@@ -407,6 +407,94 @@ class NotInTests(unittest.TestCase):
         self.assertEqual('COALESCE("notin"."foo",0) NOT IN (0,1)', str(c2))
 
 
+class LikeTests(unittest.TestCase):
+    t = Table('abc', alias='like')
+
+    def test_like_starts_with(self):
+        c1 = Field('foo').like('ab%')
+        c2 = Field('foo', table=self.t).like('ab%')
+
+        self.assertEqual('"foo" LIKE \'ab%\'', str(c1))
+        self.assertEqual('"like"."foo" LIKE \'ab%\'', str(c2))
+
+    def test_like_contains(self):
+        c1 = Field('foo').like('%ab%')
+        c2 = Field('foo', table=self.t).like('%ab%')
+
+        self.assertEqual('"foo" LIKE \'%ab%\'', str(c1))
+        self.assertEqual('"like"."foo" LIKE \'%ab%\'', str(c2))
+
+    def test_like_ends_with(self):
+        c1 = Field('foo').like('%ab')
+        c2 = Field('foo', table=self.t).like('%ab')
+
+        self.assertEqual('"foo" LIKE \'%ab\'', str(c1))
+        self.assertEqual('"like"."foo" LIKE \'%ab\'', str(c2))
+
+    def test_like_n_chars_long(self):
+        c1 = Field('foo').like('___')
+        c2 = Field('foo', table=self.t).like('___')
+
+        self.assertEqual('"foo" LIKE \'___\'', str(c1))
+        self.assertEqual('"like"."foo" LIKE \'___\'', str(c2))
+
+    def test_like_single_chars_and_various_chars(self):
+        c1 = Field('foo').like('a_b%c')
+        c2 = Field('foo', table=self.t).like('a_b%c')
+
+        self.assertEqual('"foo" LIKE \'a_b%c\'', str(c1))
+        self.assertEqual('"like"."foo" LIKE \'a_b%c\'', str(c2))
+
+    def test_not_like_single_chars_and_various_chars(self):
+        c1 = Field('foo').not_like('a_b%c')
+        c2 = Field('foo', table=self.t).not_like('a_b%c')
+
+        self.assertEqual('"foo" NOT LIKE \'a_b%c\'', str(c1))
+        self.assertEqual('"like"."foo" NOT LIKE \'a_b%c\'', str(c2))
+
+    def test_ilike_starts_with(self):
+        c1 = Field('foo').ilike('ab%')
+        c2 = Field('foo', table=self.t).ilike('ab%')
+
+        self.assertEqual('"foo" ILIKE \'ab%\'', str(c1))
+        self.assertEqual('"like"."foo" ILIKE \'ab%\'', str(c2))
+
+    def test_ilike_contains(self):
+        c1 = Field('foo').ilike('%ab%')
+        c2 = Field('foo', table=self.t).ilike('%ab%')
+
+        self.assertEqual('"foo" ILIKE \'%ab%\'', str(c1))
+        self.assertEqual('"like"."foo" ILIKE \'%ab%\'', str(c2))
+
+    def test_ilike_ends_with(self):
+        c1 = Field('foo').ilike('%ab')
+        c2 = Field('foo', table=self.t).ilike('%ab')
+
+        self.assertEqual('"foo" ILIKE \'%ab\'', str(c1))
+        self.assertEqual('"like"."foo" ILIKE \'%ab\'', str(c2))
+
+    def test_ilike_n_chars_long(self):
+        c1 = Field('foo').ilike('___')
+        c2 = Field('foo', table=self.t).ilike('___')
+
+        self.assertEqual('"foo" ILIKE \'___\'', str(c1))
+        self.assertEqual('"like"."foo" ILIKE \'___\'', str(c2))
+
+    def test_ilike_single_chars_and_various_chars(self):
+        c1 = Field('foo').ilike('a_b%c')
+        c2 = Field('foo', table=self.t).ilike('a_b%c')
+
+        self.assertEqual('"foo" ILIKE \'a_b%c\'', str(c1))
+        self.assertEqual('"like"."foo" ILIKE \'a_b%c\'', str(c2))
+
+    def test_not_ilike_single_chars_and_various_chars(self):
+        c1 = Field('foo').not_ilike('a_b%c')
+        c2 = Field('foo', table=self.t).not_ilike('a_b%c')
+
+        self.assertEqual('"foo" NOT ILIKE \'a_b%c\'', str(c1))
+        self.assertEqual('"like"."foo" NOT ILIKE \'a_b%c\'', str(c2))
+
+
 class ComplexCriterionTests(unittest.TestCase):
     table_abc, table_efg = Table('abc', alias='cx0'), Table('efg', alias='cx1')
 

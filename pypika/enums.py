@@ -28,6 +28,8 @@ class Equality(Comparator):
 class Matching(Comparator):
     not_like = ' NOT LIKE '
     like = ' LIKE '
+    not_ilike = ' NOT ILIKE '
+    ilike = ' ILIKE '
     regex = ' REGEX '
     bin_regex = ' REGEX BINARY '
 
