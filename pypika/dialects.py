@@ -1,3 +1,4 @@
+from .utils import builder
 from .enums import Dialects
 from .queries import (
     Query,
@@ -15,6 +16,26 @@ class MySQLQuery(Query):
         return QueryBuilder(quote_char='`', dialect=Dialects.MYSQL, wrap_union_queries=False)
 
 
+class VerticaQueryBuilder(QueryBuilder):
+    def __init__(self):
+        super(VerticaQueryBuilder, self).__init__(dialect=Dialects.VERTICA)
+        self._hint = None
+
+    @builder
+    def hint(self, label):
+        self._hint = label
+
+    def get_sql(self, *args, **kwargs):
+        sql = super(VerticaQueryBuilder, self).get_sql(*args, **kwargs)
+
+        if self._hint is not None:
+            sql = ''.join([sql[:7],
+                           '/*+label({hint})*/'.format(hint=self._hint),
+                           sql[6:]])
+
+        return sql
+
+
 class VerticaQuery(Query):
     """
     Defines a query class for use with Vertica.
@@ -22,7 +43,7 @@ class VerticaQuery(Query):
 
     @classmethod
     def _builder(cls):
-        return QueryBuilder(dialect=Dialects.VERTICA)
+        return VerticaQueryBuilder()
 
 
 class OracleQuery(Query):
