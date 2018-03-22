@@ -108,8 +108,36 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *', str(query))
 
-    def test_insert_all_columns_multi_rows_chained(self):
-        query = PostgreSQLQuery.into(self.table_abc).insert(1, 'a', True).insert(2, 'b', False).returning(self.table_abc.star)
+    def test_insert_returning_all_fields_and_arithmetics(self):
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(
+            self.table_abc.star,
+            self.table_abc.f1 + self.table_abc.f2
+        )
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *,f1+f2', str(query))
+
+    def test_insert_all_columns_multi_rows_chained_returning_star(self):
+        query = PostgreSQLQuery.into(
+            self.table_abc
+        ).insert(1, 'a', True).insert(2, 'b', False).returning(self.table_abc.star)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
+
+    def test_insert_all_columns_multi_rows_chained_returning_star_and_id(self):
+        query = PostgreSQLQuery.into(
+            self.table_abc
+        ).insert(1, 'a', True).insert(2, 'b', False).returning(
+            self.table_abc.name,
+            self.table_abc.star,
+            self.table_abc.id,
+        )
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
+
+    def test_insert_all_columns_multi_rows_chained_returning_star_str(self):
+        query = PostgreSQLQuery.into(
+            self.table_abc
+        ).insert(1, 'a', True).insert(2, 'b', False).returning('*')
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
 

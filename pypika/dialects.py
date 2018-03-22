@@ -87,6 +87,12 @@ class PostgreQueryBuilder(QueryBuilder):
             ):
                 raise QueryException('You can\'t return from other tables')
 
+    def _set_returns_for_star(self):
+        self._returns = [returning
+                         for returning in self._returns
+                         if not hasattr(returning, 'table')]
+        self._return_star = True
+
     def _return_field(self, term):
         if self._return_star:
             # Do not add select terms after a star is selected
@@ -95,16 +101,14 @@ class PostgreQueryBuilder(QueryBuilder):
         self._validate_returning_term(term)
 
         if isinstance(term, Star):
-            self._returns = [returning
-                             for returning in self._returns
-                             if not hasattr(returning, 'table')]
+            self._set_returns_for_star()
 
         self._returns.append(term)
 
     def _return_field_str(self, term):
         if term == '*':
-            self._return_star = True
-            self._returns = [Star()]
+            self._set_returns_for_star()
+            self._returns.append(Star())
             return
 
         if self._insert_table:
