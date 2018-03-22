@@ -1,7 +1,9 @@
 # coding: utf8
 import unittest
 
-from pypika import Table, Tables, Query
+from pypika import Table, Tables, Query, PostgreSQLQuery
+from pypika.functions import Avg
+from pypika.utils import QueryException
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -88,33 +90,57 @@ class InsertIntoTests(unittest.TestCase):
         self.assertEqual('INSERT INTO "abc" VALUES (NULL)', str(query))
 
 
-class InsertIntoReturningTests(unittest.TestCase):
+class PostgresInsertIntoReturningTests(unittest.TestCase):
     table_abc = Table('abc')
 
     def test_insert_returning_one_field(self):
-        query = Query.into(self.table_abc).insert(1).returning(self.table_abc.id)
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(self.table_abc.id)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
 
     def test_insert_returning_one_field_str(self):
-        query = Query.into(self.table_abc).insert(1).returning('id')
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning('id')
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
 
     def test_insert_returning_all_fields(self):
-        query = Query.into(self.table_abc).insert(1).returning(self.table_abc.star)
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(self.table_abc.star)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *', str(query))
 
     def test_insert_all_columns_multi_rows_chained(self):
-        query = Query.into(self.table_abc).insert(1, 'a', True).insert(2, 'b', False).returning(self.table_abc.star)
+        query = PostgreSQLQuery.into(self.table_abc).insert(1, 'a', True).insert(2, 'b', False).returning(self.table_abc.star)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
 
     def test_insert_all_columns_single_element_arrays(self):
-        query = Query.into(self.table_abc).insert((1, 'a', True)).returning(self.table_abc.star)
+        query = PostgreSQLQuery.into(self.table_abc).insert((1, 'a', True)).returning(self.table_abc.star)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true) RETURNING *', str(query))
+
+    def test_insert_returning_null(self):
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(None)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING NULL', str(query))
+
+    def test_insert_returning_tuple(self):
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning([1, 2, 3])
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING (1,2,3)', str(query))
+
+    def test_insert_returning_arithmetics(self):
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(self.table_abc.f1 + self.table_abc.f2)
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING f1+f2', str(query))
+
+    def test_insert_returning_aggregate(self):
+        with self.assertRaises(QueryException):
+            PostgreSQLQuery.into(self.table_abc).insert(1).returning(Avg(self.table_abc.views))
+
+    def test_insert_returning_from_other_table(self):
+        table_cba = Table('cba')
+        with self.assertRaises(QueryException):
+            PostgreSQLQuery.into(self.table_abc).insert(1).returning(table_cba.id)
 
 
 class InsertSelectFromTests(unittest.TestCase):

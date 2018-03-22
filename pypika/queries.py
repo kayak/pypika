@@ -301,7 +301,6 @@ class QueryBuilder(Selectable, Term):
         self._wheres = None
         self._prewheres = None
         self._groupbys = []
-        self._returns = []
         self._with_totals = False
         self._havings = None
         self._orderbys = []
@@ -314,7 +313,6 @@ class QueryBuilder(Selectable, Term):
         self._updates = []
 
         self._select_star = False
-        self._return_star = False
         self._select_star_tables = set()
         self._mysql_rollup = False
         self._select_into = False
@@ -445,18 +443,6 @@ class QueryBuilder(Selectable, Term):
             self._havings = criterion
 
     @builder
-    def returning(self, *terms):
-        for term in terms:
-            if isinstance(term, Field):
-                self._return_field(term)
-            elif isinstance(term, str):
-                self._return_field_str(term)
-            elif isinstance(term, (Function, ArithmeticExpression)):
-                self._return_other(term)
-            else:
-                self._return_other(self._wrap(term))
-
-    @builder
     def groupby(self, *terms):
         for term in terms:
             if isinstance(term, str):
@@ -584,49 +570,6 @@ class QueryBuilder(Selectable, Term):
         self._validate_term(function)
         self._selects.append(function)
 
-    def _return_field_str(self, term):
-        if term == '*':
-            self._return_star = True
-            self._returns = [Star()]
-            return
-
-        if self._insert_table:
-            self._return_field(Field(term, table=self._insert_table))
-        elif self._update_table:
-            self._return_field(Field(term, table=self._update_table))
-        elif self._delete_from:
-            self._return_field(Field(term, table=self._from[0]))
-        else:
-            raise QueryException('Returning can\'t be used in this query')
-
-    def _validate_returning_term(self, term):
-        if not any([self._insert_table, self._update_table, self._delete_from]):
-            QueryException('Returning can\'t be used in this query')
-        if (
-                term.table not in {self._insert_table, self._update_table}
-                and term not in self._from
-        ):
-            QueryException('You can\'t return from other tables')
-
-    def _return_field(self, term):
-        if self._return_star:
-            # Do not add select terms after a star is selected
-            return
-
-        self._validate_returning_term(term)
-
-        if isinstance(term, Star):
-            self._selects = [returning
-                             for returning in self._returns
-                             if not hasattr(returning, 'table') or term.table != returning.table]
-            self._select_star_tables.add(term.table)
-
-        self._returns.append(term)
-
-    def _return_other(self, function):
-        self._validate_term(function)
-        self._returns.append(function)
-
     def fields(self):
         # Don't return anything here. Subqueries have their own fields.
         return []
@@ -705,8 +648,6 @@ class QueryBuilder(Selectable, Term):
             if self._wheres:
                 querystring += self._where_sql(**kwargs)
 
-            if self._returns:
-                querystring += self._returning_sql()
             return querystring
         elif self._delete_from:
             querystring = self._delete_sql(**kwargs)
@@ -718,8 +659,6 @@ class QueryBuilder(Selectable, Term):
 
             if self._values:
                 querystring += self._values_sql(**kwargs)
-                if self._returns:
-                    querystring += self._returning_sql()
                 return querystring
             else:
                 querystring += ' ' + self._select_sql(**kwargs)
@@ -759,9 +698,6 @@ class QueryBuilder(Selectable, Term):
         if self._offset:
             querystring += self._offset_sql()
 
-        if self._returns:
-            querystring += self._returning_sql()
-
         if subquery:
             querystring = '({query})'.format(query=querystring)
 
@@ -775,12 +711,6 @@ class QueryBuilder(Selectable, Term):
               distinct='DISTINCT ' if self._distinct else '',
               select=','.join(term.get_sql(with_alias=True, **kwargs)
                               for term in self._selects),
-        )
-
-    def _returning_sql(self, **kwargs):
-        return ' RETURNING {returning}'.format(
-            returning=','.join(term.get_sql(with_alias=True, **kwargs)
-                               for term in self._returns),
         )
 
     def _insert_sql(self, **kwargs):
@@ -879,11 +809,6 @@ class QueryBuilder(Selectable, Term):
                            if directionality is not None else term)
 
         return ' ORDER BY {orderby}'.format(orderby=','.join(clauses))
-
-    def _returning_sql(self):
-        return ' RETURNING {fields}'.format(fields=','.join(
-            (term.get_sql(with_alias=True) for term in self._returns)
-        ))
 
     def _rollup_sql(self):
         return ' WITH ROLLUP'
