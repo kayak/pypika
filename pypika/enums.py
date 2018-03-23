@@ -78,6 +78,7 @@ class SqlTypes(Enum):
     utf8 = 'utf8'
     DATE = 'DATE'
     TIMESTAMP = 'TIMESTAMP'
+    CHAR = 'CHAR'
     VARCHAR = 'VARCHAR'
 
 
