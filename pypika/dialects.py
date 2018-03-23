@@ -1,10 +1,7 @@
 from pypika.terms import ArithmeticExpression, Function, Field, Star
 from pypika.utils import builder, QueryException
-from .enums import Dialects
-from .queries import (
-    Query,
-    QueryBuilder,
-)
+from pypika.enums import Dialects
+from pypika.queries import Query, QueryBuilder
 
 
 class MySQLQuery(Query):

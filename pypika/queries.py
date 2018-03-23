@@ -10,7 +10,7 @@ from pypika.utils import (
     alias_sql,
     builder,
     ignoredeepcopy,
-    QueryException)
+)
 from .terms import (
     ArithmeticExpression,
     Field,
