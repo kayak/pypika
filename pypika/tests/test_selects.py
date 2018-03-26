@@ -188,6 +188,11 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo"=1 AND "bar"="baz"', str(q))
 
+    def test_where_single_quote(self):
+        q1 = Query.from_(self.t).select('*').where(self.t.foo == "bar'foo")
+
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"=\'bar\'\'foo\'', str(q1))
+
     def test_where_field_equals_and(self):
         q = Query.from_(self.t).select('*').where((self.t.foo == 1) & (self.t.bar == self.t.baz))
 
