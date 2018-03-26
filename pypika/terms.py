@@ -222,7 +222,8 @@ class ValueWrapper(Term):
         if isinstance(self.value, date):
             return "'%s'" % self.value.isoformat()
         if isinstance(self.value, basestring):
-            return "'%s'" % self.value
+            value = self.value.replace("'", "''")
+            return "'%s'" % value
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
         if self.value is None:
