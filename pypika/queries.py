@@ -647,6 +647,7 @@ class QueryBuilder(Selectable, Term):
 
             if self._wheres:
                 querystring += self._where_sql(**kwargs)
+
             return querystring
         elif self._delete_from:
             querystring = self._delete_sql(**kwargs)
@@ -657,7 +658,8 @@ class QueryBuilder(Selectable, Term):
                 querystring += self._columns_sql(**kwargs)
 
             if self._values:
-                return querystring + self._values_sql(**kwargs)
+                querystring += self._values_sql(**kwargs)
+                return querystring
             else:
                 querystring += ' ' + self._select_sql(**kwargs)
         else:
