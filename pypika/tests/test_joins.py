@@ -355,6 +355,28 @@ class UnionTests(unittest.TestCase):
         self.assertEqual('(SELECT "foo" FROM "abc") UNION (SELECT "bar" FROM "efg")', str(query1 + query2))
         self.assertEqual('(SELECT "foo" FROM "abc") UNION (SELECT "bar" FROM "efg")', str(query1.union(query2)))
 
+    def test_union_multiple(self):
+        table3, table4 = Tables('hij', 'lmn')
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+        query3 = Query.from_(table3).select(table3.baz)
+        query4 = Query.from_(table4).select(table4.faz)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION '
+            '(SELECT "bar" FROM "efg") UNION '
+            '(SELECT "baz" FROM "hij") UNION '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1 + query2 + query3 + query4)
+        )
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION '
+            '(SELECT "bar" FROM "efg") UNION '
+            '(SELECT "baz" FROM "hij") UNION '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1.union(query2).union(query3).union(query4))
+        )
+
     def test_union_all(self):
         query1 = Query.from_(self.table1).select(self.table1.foo)
         query2 = Query.from_(self.table2).select(self.table2.bar)

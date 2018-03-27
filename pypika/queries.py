@@ -212,6 +212,12 @@ class _UnionQuery(Selectable, Term):
     def union_all(self, other):
         self._unions.append((UnionType.all, other))
 
+    def __add__(self, other):
+        return self.union(other)
+
+    def __mul__(self, other):
+        return self.union_all(other)
+
     def __str__(self):
         return self.get_sql()
 
