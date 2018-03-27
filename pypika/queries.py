@@ -519,6 +519,7 @@ class QueryBuilder(Selectable, Term):
     def union(self, other):
         return _UnionQuery(self, other, UnionType.distinct)
 
+    @builder
     def union_all(self, other):
         return _UnionQuery(self, other, UnionType.all)
 

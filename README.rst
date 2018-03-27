@@ -581,6 +581,25 @@ Multiple rows of data can be inserted either by chaining the ``insert`` function
     q = Query.into(customers).insert((1, 'Jane', 'Doe', 'jane@example.com'),
                                      (2, 'John', 'Doe', 'john@example.com'))
 
+Insert with on Duplicate Key Update
+"""""""""""""""""""""""""""""""""""
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers)\
+        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
+        .on_duplicate_key_update(customers.email, Values(customers.email))
+
+.. code-block:: sql
+
+    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com') ON DUPLICATE KEY UPDATE `email`=VALUES(`email`)
+
+``.on_duplicate_key_update`` works similar to ``.set`` for updating rows, additionally it provides the ``Values``
+wrapper to update to the value specified in the ``INSERT`` clause.
+
+
 Insert with a SELECT Query
 """"""""""""""""""""""""""
 

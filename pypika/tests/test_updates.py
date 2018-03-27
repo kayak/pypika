@@ -36,7 +36,7 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual('UPDATE "abc" SET "foo"=null', str(q))
 
 
-class PostgesUpdateTests(unittest.TestCase):
+class PostgresUpdateTests(unittest.TestCase):
     table_abc = Table('abc')
 
     def test_update_returning_str(self):
@@ -45,10 +45,6 @@ class PostgesUpdateTests(unittest.TestCase):
         ).set('foo', 'bar').returning('id')
 
         self.assertEqual('UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING id', str(q))
-
-
-class PostgresUpdateTests(unittest.TestCase):
-    table_abc = Table('abc')
 
     def test_update_returning(self):
         q = PostgreSQLQuery.update(self.table_abc).where(

@@ -210,13 +210,15 @@ class ValueWrapper(Term):
         return []
 
     def get_sql(self, quote_char=None, **kwargs):
-        sql = self._get_value_sql()
+        sql = self._get_value_sql(quote_char=quote_char, **kwargs)
         if self.alias is None:
             return sql
         return alias_sql(sql, self.alias, quote_char)
 
-    def _get_value_sql(self):
+    def _get_value_sql(self, quote_char=None, **kwargs):
         # FIXME escape values
+        if isinstance(self.value, Term):
+            return self.value.get_sql(quote_char=quote_char, **kwargs)
         if isinstance(self.value, Enum):
             return self.value.value
         if isinstance(self.value, date):
@@ -229,6 +231,15 @@ class ValueWrapper(Term):
         if self.value is None:
             return 'null'
         return str(self.value)
+
+
+class Values(Term):
+    def __init__(self, field,):
+        super(Values, self).__init__(None)
+        self.field = Field(field) if not isinstance(field, Field) else field
+
+    def get_sql(self, quote_char=None, **kwargs):
+        return 'VALUES({value})'.format(value=self.field.get_sql(quote_char=quote_char, **kwargs))
 
 
 class NullValue(Term):
