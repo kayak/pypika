@@ -1,8 +1,17 @@
 # coding: utf8
 import unittest
 
-from pypika import Table, Tables, Query, PostgreSQLQuery
+from pypika import (
+    Field as F,
+    MySQLQuery,
+    PostgreSQLQuery,
+    Query,
+    Table,
+    Tables,
+    functions as fn,
+)
 from pypika.functions import Avg
+from pypika.terms import Values
 from pypika.utils import QueryException
 
 __author__ = "Timothy Heys"
@@ -169,6 +178,135 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
         table_cba = Table('cba')
         with self.assertRaises(QueryException):
             PostgreSQLQuery.into(self.table_abc).insert(1).returning(table_cba.id)
+
+
+class InsertIntoOnDuplicateTests(unittest.TestCase):
+    table_abc = Table('abc')
+
+    def test_insert_one_column(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert(1)\
+            .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)
+        self.assertEqual('INSERT INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `foo`=`foo`', str(query))
+
+    def test_insert_one_column_using_values(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert(1)\
+            .on_duplicate_key_update(self.table_abc.foo, Values(self.table_abc.foo))
+        self.assertEqual('INSERT INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `foo`=VALUES(`foo`)', str(query))
+
+    def test_insert_one_column_single_element_array(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert((1,))\
+            .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)
+
+        self.assertEqual('INSERT INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `foo`=`foo`', str(query))
+
+    def test_insert_one_column_multi_element_array(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert((1,), (2,))\
+            .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)
+
+        self.assertEqual('INSERT INTO `abc` VALUES (1),(2) ON DUPLICATE KEY UPDATE `foo`=`foo`', str(query))
+
+    def test_insert_multiple_columns_on_duplicate_update_one_with_same_value(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert(1, 'a')\
+            .on_duplicate_key_update(self.table_abc.bar, Values(self.table_abc.bar))
+
+        self.assertEqual('INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=VALUES(`bar`)', str(query))
+
+    def test_insert_multiple_columns_on_duplicate_update_one_with_different_value(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert(1, 'a') \
+            .on_duplicate_key_update(self.table_abc.bar, 'b')
+
+        self.assertEqual('INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=\'b\'', str(query))
+
+    def test_insert_multiple_columns_on_duplicate_update_one_with_expression(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert(1, 2) \
+            .on_duplicate_key_update(self.table_abc.bar, 4+F('bar'))  # todo sql expression? not python
+
+        self.assertEqual('INSERT INTO `abc` VALUES (1,2) ON DUPLICATE KEY UPDATE `bar`=4+`bar`', str(query))
+
+    def test_insert_multiple_columns_on_duplicate_update_one_with_expression_using_original_field_value(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert(1, 'a')\
+            .on_duplicate_key_update(self.table_abc.bar, fn.Concat(self.table_abc.bar, 'update'))
+
+        self.assertEqual(
+            'INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=CONCAT(`bar`,\'update\')',
+            str(query)
+        )
+
+    def test_insert_multiple_columns_on_duplicate_update_one_with_expression_using_values(self):
+        query = MySQLQuery\
+            .into(self.table_abc).insert(1, 'a')\
+            .on_duplicate_key_update(self.table_abc.bar, fn.Concat(Values(self.table_abc.bar), 'update'))
+
+        self.assertEqual(
+            'INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=CONCAT(VALUES(`bar`),\'update\')',
+            str(query)
+        )
+
+    def test_insert_multiple_columns_on_duplicate_update_multiple(self):
+        query = MySQLQuery \
+            .into(self.table_abc).insert(1, 'a', 'b') \
+            .on_duplicate_key_update(self.table_abc.bar, 'b') \
+            .on_duplicate_key_update(self.table_abc.baz, 'c')
+
+        self.assertEqual(
+            'INSERT INTO `abc` VALUES (1,\'a\',\'b\') ON DUPLICATE KEY UPDATE `bar`=\'b\',`baz`=\'c\'',
+            str(query)
+        )
+
+    def test_insert_multi_rows_chained_mixed_on_duplicate_update_multiple(self):
+        query = MySQLQuery.into(self.table_abc)\
+            .insert((1, 'a', True), (2, 'b', False))\
+            .insert(3, 'c', True)\
+            .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)\
+            .on_duplicate_key_update(self.table_abc.bar, Values(self.table_abc.bar))
+
+        self.assertEqual(
+            'INSERT INTO `abc` VALUES (1,\'a\',true),(2,\'b\',false),(3,\'c\',true) '
+            'ON DUPLICATE KEY UPDATE `foo`=`foo`,`bar`=VALUES(`bar`)',
+            str(query)
+        )
+
+    def test_insert_selected_columns_on_duplicate_update_one(self):
+        query = MySQLQuery.into(self.table_abc)\
+            .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz)\
+            .insert(1, 'a', True)\
+            .on_duplicate_key_update(self.table_abc.baz, False)
+
+        self.assertEqual(
+            'INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,\'a\',true) ON DUPLICATE KEY UPDATE `baz`=false',
+            str(query)
+        )
+
+    def test_insert_selected_columns_on_duplicate_update_multiple(self):
+        query = MySQLQuery.into(self.table_abc)\
+            .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz)\
+            .insert(1, 'a', True)\
+            .on_duplicate_key_update(self.table_abc.baz, False)\
+            .on_duplicate_key_update(self.table_abc.bar, Values(self.table_abc.bar))
+
+        self.assertEqual(
+            'INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,\'a\',true) '
+            'ON DUPLICATE KEY UPDATE `baz`=false,`bar`=VALUES(`bar`)',
+            str(query)
+        )
+
+    def test_insert_none_skipped(self):
+        query = MySQLQuery.into(self.table_abc).insert().on_duplicate_key_update(self.table_abc.baz, False)
+
+        self.assertEqual('', str(query))
+
+    def test_insert_ignore(self):
+        query = MySQLQuery.into(self.table_abc).insert(1).ignore().on_duplicate_key_update(self.table_abc.baz, False)
+
+        self.assertEqual('INSERT IGNORE INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `baz`=false', str(query))
 
 
 class InsertSelectFromTests(unittest.TestCase):

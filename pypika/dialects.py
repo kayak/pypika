@@ -1,7 +1,39 @@
-from pypika.terms import ArithmeticExpression, Function, Field, Star
+from pypika.terms import (
+    ArithmeticExpression,
+    Function,
+    Field,
+    Star,
+    ValueWrapper,
+)
 from pypika.utils import builder, QueryException
 from pypika.enums import Dialects
 from pypika.queries import Query, QueryBuilder
+
+
+class MySQLQueryBuilder(QueryBuilder):
+    def __init__(self):
+        super(MySQLQueryBuilder, self).__init__(quote_char='`', dialect=Dialects.MYSQL, wrap_union_queries=False)
+        self._duplicate_updates = []
+
+    @builder
+    def on_duplicate_key_update(self, field, value):
+        field = Field(field) if not isinstance(field, Field) else field
+        self._duplicate_updates.append((field, ValueWrapper(value)))
+
+    def get_sql(self, with_alias=False, subquery=False, **kwargs):
+        querystring = super(MySQLQueryBuilder, self).get_sql(with_alias, subquery, **kwargs)
+        if querystring and self._duplicate_updates:
+            querystring += self._on_duplicate_key_update_sql(**kwargs)
+        return querystring
+
+    def _on_duplicate_key_update_sql(self, **kwargs):
+        return ' ON DUPLICATE KEY UPDATE {updates}'.format(
+            updates=','.join(
+                '{field}={value}'.format(
+                    field=field.get_sql(**kwargs),
+                    value=value.get_sql(**kwargs)) for field, value in self._duplicate_updates
+            )
+        )
 
 
 class MySQLQuery(Query):
@@ -11,7 +43,7 @@ class MySQLQuery(Query):
 
     @classmethod
     def _builder(cls):
-        return QueryBuilder(quote_char='`', dialect=Dialects.MYSQL, wrap_union_queries=False)
+        return MySQLQueryBuilder()
 
 
 class VerticaQueryBuilder(QueryBuilder):
