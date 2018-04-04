@@ -11,6 +11,7 @@ from pypika import (
     Table as T,
     VerticaQuery,
     functions as fn,
+    Query,
 )
 from pypika.enums import (
     Dialects,
@@ -601,3 +602,23 @@ class DateFunctionsTests(unittest.TestCase):
     def test_date_add(self):
         a = fn.DateAdd('year', 1, '2017-10-01')
         self.assertEqual(str(a), "DATE_ADD('year',1,'2017-10-01')")
+
+    def test_now(self):
+        query = Query.select(fn.Now())
+
+        self.assertEqual("SELECT NOW()", str(query))
+
+    def test_utc_timestamp(self):
+        query = Query.select(fn.UtcTimestamp())
+
+        self.assertEqual("SELECT UTC_TIMESTAMP()", str(query))
+
+    def test_current_date(self):
+        query = Query.select(fn.CurDate())
+
+        self.assertEqual("SELECT CURRENT_DATE()", str(query))
+
+    def test_current_time(self):
+        query = Query.select(fn.CurTime())
+
+        self.assertEqual("SELECT CURRENT_TIME()", str(query))
