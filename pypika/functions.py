@@ -200,10 +200,15 @@ class RegexpLike(Function):
         super(RegexpLike, self).__init__('REGEXP_LIKE', term, pattern, modifiers, alias=alias)
 
 
-# Date Functions
+# Date/Time Functions
 class Now(Function):
     def __init__(self, alias=None):
         super(Now, self).__init__('NOW', alias=alias)
+
+
+class UtcTimestamp(Function):
+    def __init__(self, alias=None):
+        super(UtcTimestamp, self).__init__('UTC_TIMESTAMP', alias=alias)
 
 
 class CurDate(Function):
