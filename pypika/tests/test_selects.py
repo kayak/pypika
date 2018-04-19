@@ -188,6 +188,18 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo"=1 AND "bar"="baz"', str(q))
 
+    def test_where_field_equals_where_not(self):
+        q = Query.from_(self.t).select('*').where((self.t.foo == 1).negate()).where(self.t.bar == self.t.baz)
+
+        self.assertEqual('SELECT * FROM "abc" WHERE NOT "foo"=1 AND "bar"="baz"', str(q))
+
+    def test_where_field_equals_where_two_not(self):
+        q = Query.from_(self.t).select('*').where(
+            (self.t.foo == 1).negate()
+        ).where((self.t.bar == self.t.baz).negate())
+
+        self.assertEqual('SELECT * FROM "abc" WHERE NOT "foo"=1 AND NOT "bar"="baz"', str(q))
+
     def test_where_single_quote(self):
         q1 = Query.from_(self.t).select('*').where(self.t.foo == "bar'foo")
 

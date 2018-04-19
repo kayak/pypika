@@ -622,7 +622,7 @@ class Case(Term):
         return fields
 
 
-class Not(object):
+class Not(Criterion):
     def __init__(self, term):
         self.term = term
 
