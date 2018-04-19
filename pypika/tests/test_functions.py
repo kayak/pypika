@@ -362,6 +362,12 @@ class StringTests(unittest.TestCase):
 
         self.assertEqual("SELECT LENGTH(\"foo\") FROM \"abc\"", str(q))
 
+    def test__substring(self):
+        q = Q.from_(self.t).select(fn.Substring(self.t.foo, 2, 6))
+
+        self.assertEqual("SELECT SUBSTRING(\"foo\",2,6) FROM \"abc\"", str(q))
+
+
 
 class SplitPartFunctionTests(unittest.TestCase):
     t = T('abc')
