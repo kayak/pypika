@@ -171,8 +171,8 @@ class Lower(Function):
 
 
 class Substring(Function):
-    def __init__(self, term, alias=None):
-        super(Substring, self).__init__('SUBSTRING', term, alias=alias)
+    def __init__(self, term, start, stop, alias=None):
+        super(Substring, self).__init__('SUBSTRING', term, start, stop, alias=alias)
 
 
 class Reverse(Function):
