@@ -1,6 +1,7 @@
 import unittest
 
 from pypika import (
+    Field,
     Interval,
     JoinException,
     JoinType,
@@ -115,6 +116,12 @@ class JoinTypeTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" '
                          'RIGHT JOIN "efg" ON "abc"."foo"="efg"."fiz" AND "abc"."bar"="efg"."buz"', str(q))
+
+    def test_use_different_table_objects_for_same_table(self):
+        table = Table("t")
+        q = Query.from_(table).select('*').where(Field('id', table=table) == 1)
+
+        self.assertEqual('SELECT * FROM "t" WHERE "id"=1', str(q))
 
     def test_join_second_table_in_from_clause(self):
         table_a, table_b, table_c = Tables("a", "b", "c")
