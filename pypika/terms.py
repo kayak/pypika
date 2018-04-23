@@ -279,7 +279,7 @@ class Field(Term):
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
             field_sql = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
-                namespace=self.table.alias or self.table.table_name,
+                namespace=self.table.alias or self.table._table_name,
                 name=self.name,
                 quote=quote_char or '',
             )
@@ -303,7 +303,7 @@ class Star(Field):
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         if self.table and (with_namespace or self.table.alias):
             return "{quote}{namespace}{quote}.*".format(
-                namespace=self.table.alias or self.table.table_name,
+                namespace=self.table.alias or self.table._table_name,
                 quote=quote_char or ''
             )
 
