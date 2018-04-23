@@ -1,4 +1,3 @@
-# coding: utf8
 import unittest
 
 from pypika import (
@@ -92,12 +91,6 @@ class JoinTypeTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" USING ("foo","bar")', str(query))
 
-    def test_outer_join(self):
-        query = Query.from_(self.table0).join(self.table1, how=JoinType.outer).on(
-            self.table0.foo == self.table1.bar).select('*')
-
-        self.assertEqual('SELECT * FROM "abc" OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query))
-
     def test_join_arithmetic_field(self):
         q = Query.from_(self.table0).join(self.table1).on(
             self.table0.dt == (self.table1.dt - Interval(weeks=1))).select('*')
@@ -122,6 +115,15 @@ class JoinTypeTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" '
                          'RIGHT JOIN "efg" ON "abc"."foo"="efg"."fiz" AND "abc"."bar"="efg"."buz"', str(q))
+
+    def test_join_second_table_in_from_clause(self):
+        table_a, table_b, table_c = Tables("a", "b", "c")
+        q = Query.from_(table_a).from_(table_b).select('*') \
+            .join(table_c).on(table_b.c_id == table_c.id)
+
+        self.assertEqual('SELECT * '
+                         'FROM "a","b" '
+                         'JOIN "c" ON "b"."c_id"="c"."id"', str(q))
 
 
 class JoinBehaviorTests(unittest.TestCase):

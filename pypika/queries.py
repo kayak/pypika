@@ -45,22 +45,22 @@ class Selectable(object):
 class Table(Selectable):
     def __init__(self, name, schema=None, alias=None):
         super(Table, self).__init__(alias)
-        self.table_name = name
-        self.schema = schema
+        self._table_name = name
+        self._schema = schema
 
     def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape
 
-        if self.schema:
+        if self._schema:
             table_sql = "{quote}{schema}{quote}.{quote}{name}{quote}".format(
-                  schema=self.schema,
-                  name=self.table_name,
+                  schema=self._schema,
+                  name=self._table_name,
                   quote=quote_char or ''
             )
 
         else:
             table_sql = "{quote}{name}{quote}".format(
-                  name=self.table_name,
+                  name=self._table_name,
                   quote=quote_char or ''
             )
 
@@ -75,16 +75,22 @@ class Table(Selectable):
         if not isinstance(other, Table):
             return False
 
-        if self.table_name != other.table_name:
+        if self._table_name != other._table_name:
             return False
 
-        if self.schema != other.schema:
+        if self._schema != other._schema:
             return False
 
         if self.alias != other.alias:
             return False
 
         return True
+
+    def __repr__(self):
+        if self._schema:
+            return "Table('{}', schema='{}')".format(self._table_name, self._schema)
+        return "Table('{}')".format(self._table_name)
+
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -252,7 +258,7 @@ class _UnionQuery(Selectable, Term):
             querystring = '({query})'.format(query=querystring)
 
         if with_alias:
-            return alias_sql(querystring, self.alias or self.table_name, kwargs.get('quote_char'))
+            return alias_sql(querystring, self.alias or self._table_name, kwargs.get('quote_char'))
 
         return querystring
 
@@ -588,12 +594,12 @@ class QueryBuilder(Selectable, Term):
             self._tag_subquery(join.item)
 
         table_in_from = any(isinstance(clause, Table)
-                            and join.item.table_name == self._from[0].table_name
+                            and join.item in self._from
                             for clause in self._from)
         if isinstance(join.item, Table) and join.item.alias is None and table_in_from:
             # On the odd chance that we join the same table as the FROM table and don't set an alias
             # FIXME only works once
-            join.item.alias = join.item.table_name + '2'
+            join.item.alias = join.item._table_name + '2'
 
         self._joins.append(join)
 
@@ -601,10 +607,10 @@ class QueryBuilder(Selectable, Term):
         for field in term.fields():
             table_in_froms = field.table in self._from
             table_in_joins = field.table in [join.item for join in self._joins]
-            if field.table is not None and \
-                  not table_in_froms and \
-                  not table_in_joins and \
-                        field.table != self._update_table:
+            if field.table is not None \
+                  and not table_in_froms \
+                  and not table_in_joins \
+                  and field.table != self._update_table:
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
                                     'its fields can be used' % field.table)
@@ -709,7 +715,7 @@ class QueryBuilder(Selectable, Term):
             querystring = '({query})'.format(query=querystring)
 
         if with_alias:
-            return alias_sql(querystring, self.alias or self.table_name, kwargs.get('quote_char'))
+            return alias_sql(querystring, self.alias or self._table_name, kwargs.get('quote_char'))
 
         return querystring
 
