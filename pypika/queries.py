@@ -353,8 +353,14 @@ class QueryBuilder(Selectable, Term):
         self._from.append(Table(selectable) if isinstance(selectable, str) else selectable)
 
         if isinstance(selectable, (QueryBuilder, _UnionQuery)) and selectable.alias is None:
-            selectable.alias = 'sq%d' % self._subquery_count
-            self._subquery_count += 1
+            if isinstance(selectable, QueryBuilder):
+                sub_query_count = selectable._subquery_count
+            else:
+                sub_query_count = 0
+
+            sub_query_count = max(self._subquery_count, sub_query_count)
+            selectable.alias = 'sq%d' % sub_query_count
+            self._subquery_count = sub_query_count + 1
 
     @builder
     def into(self, table):

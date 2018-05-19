@@ -107,6 +107,21 @@ class SelectTests(unittest.TestCase):
                          'FROM (SELECT "foo" FROM "abc") "sq0",'
                          '(SELECT "bar" FROM "efg") "sq1"', str(q))
 
+    def test_select__nested_subquery(self):
+        subquery0 = Query.from_(self.table_abc).select("*")
+        subquery1 = Query.from_(subquery0) \
+            .select(subquery0.foo, subquery0.bar)
+        subquery2 = Query.from_(subquery1) \
+            .select(subquery1.foo)
+
+        q = Query.from_(subquery2) \
+            .select(subquery2.foo)
+
+        self.assertEqual('SELECT "sq2"."foo" '
+                         'FROM (SELECT "sq1"."foo" '
+                         'FROM (SELECT "sq0"."foo","sq0"."bar" '
+                         'FROM (SELECT * FROM "abc") "sq0") "sq1") "sq2"', str(q))
+
     def test_select__no_table(self):
         q = Query.select(1, 2, 3)
 
