@@ -1,8 +1,16 @@
 # coding: utf8
 import unittest
-from datetime import date, datetime
 
-from pypika import Field, Table, functions as fn
+from datetime import (
+    date,
+    datetime,
+)
+
+from pypika import (
+    Field,
+    Table,
+    functions as fn,
+)
 from pypika.terms import Mod
 
 __author__ = "Timothy Heys"
@@ -538,6 +546,33 @@ class ComplexCriterionTests(unittest.TestCase):
         c = Field('foo').isin([1, 2, 3]) & Field('bar').between(0, 1)
 
         self.assertEqual('"foo" IN (1,2,3) AND "bar" BETWEEN 0 AND 1', str(c))
+
+    def test__between_and_field(self):
+        c1 = Field('foo').between(0, 1)
+        c2 = Field('bool_field')
+
+        self.assertEqual('"foo" BETWEEN 0 AND 1 AND "bool_field"', str(c1 & c2))
+        self.assertEqual('"bool_field" AND "foo" BETWEEN 0 AND 1', str(c2 & c1))
+
+
+class FieldsAsCriterionTests(unittest.TestCase):
+    def test__field_and_field(self):
+        c1 = Field('a')
+        c2 = Field('b')
+
+        self.assertEqual('"a" AND "b"', str(c1 & c2))
+
+    def test__field_or_field(self):
+        c1 = Field('a')
+        c2 = Field('b')
+
+        self.assertEqual('"a" OR "b"', str(c1 | c2))
+
+    def test__field_xor_field(self):
+        c1 = Field('a')
+        c2 = Field('b')
+
+        self.assertEqual('"a" XOR "b"', str(c1 ^ c2))
 
 
 class CriterionOperationsTests(unittest.TestCase):
