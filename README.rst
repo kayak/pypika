@@ -65,6 +65,12 @@ To convert the query into raw SQL, it can be cast to a string.
 
     str(q)
 
+Alternatively, you can use the `Query.get_sql()` function:
+
+.. code-block:: python
+
+    q.get_sql()
+
 Using ``pypika.Table``
 
 .. code-block:: python
