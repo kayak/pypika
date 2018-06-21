@@ -69,6 +69,17 @@ class Term(object):
 
         return ValueWrapper(val)
 
+    def for_(self, table):
+        """
+        Replaces the tables of this term for the table parameter provided.  The base implementation returns self because not all terms have a table property.
+
+        :param table:
+            The table to replace with.
+        :return:
+            Self.
+        """
+        return self
+
     def fields(self):
         return [self]
 
@@ -687,9 +698,7 @@ class Function(Term):
         :return:
             A copy of the field with it's table value replaced.
         """
-        self.args = [param.for_(table) if hasattr(param, 'for_')
-                     else param
-                     for param in self.args]
+        self.args = [param.for_(table) for param in self.args]
 
     def get_special_params_sql(self, **kwargs):
         pass

@@ -245,6 +245,11 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"foo">=1', str(c1))
         self.assertEqual('"crit"."foo">=-1', str(c2))
 
+    def test__criterion_for_with_value(self):
+        c = (Field('foo') > 1).for_(self.t)
+        self.assertEqual(c.left, self.t)
+        self.assertEqual(c.tables_, {self.t})
+
 
 class NotTests(unittest.TestCase):
     table_abc = Table('abc', alias='cx0')
