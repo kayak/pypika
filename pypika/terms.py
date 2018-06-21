@@ -259,6 +259,15 @@ class Field(Term):
         self.name = name
         self.table = table
 
+    def __and__(self, other):
+        return ComplexCriterion(Boolean.and_, self, other)
+
+    def __or__(self, other):
+        return ComplexCriterion(Boolean.or_, self, other)
+
+    def __xor__(self, other):
+        return ComplexCriterion(Boolean.xor_, self, other)
+
     @property
     def tables_(self):
         return {self.table}
