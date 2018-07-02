@@ -92,6 +92,14 @@ class JoinTypeTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" USING ("foo","bar")', str(query))
 
+    def test_join_using_without_fields_raises_exception(self):
+        with self.assertRaises(JoinException):
+            query = Query.from_(self.table0).join(self.table1).using()
+
+    def test_join_on_field_without_fields_raises_exception(self):
+        with self.assertRaises(JoinException):
+            query = Query.from_(self.table0).join(self.table1).on_field()
+
     def test_join_arithmetic_field(self):
         q = Query.from_(self.table0).join(self.table1).on(
             self.table0.dt == (self.table1.dt - Interval(weeks=1))).select('*')
@@ -132,6 +140,21 @@ class JoinTypeTests(unittest.TestCase):
                          'FROM "a","b" '
                          'JOIN "c" ON "b"."c_id"="c"."id"', str(q))
 
+    def test_cross_join_on_table(self):
+        table_a, table_b = Tables('a', 'b')
+        q = Query.from_(table_a).join(table_b).cross().select('*')
+
+        self.assertEqual('SELECT * FROM "a" CROSS JOIN "b"', str(q))
+
+    def test_cross_join_on_subquery(self):
+        table_a, table_b = Tables('a', 'b')
+        q_a = Query.from_(table_a).select('*')
+        q_b = Query.from_(table_b).select('*').join(q_a).cross().select('*')
+
+        self.assertEqual(
+            'SELECT * FROM "b" CROSS JOIN (SELECT * FROM "a") "sq0"',
+            str(q_b)
+        )
 
 class JoinBehaviorTests(unittest.TestCase):
     table_abc, table_efg, table_hij, table_klm = Tables('abc', 'efg', 'hij', 'klm')

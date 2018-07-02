@@ -887,6 +887,11 @@ class Joiner(object):
         self.query.do_join(JoinUsing(self.item, self.how, [Field(field) for field in fields]))
         return self.query
 
+    def cross(self):
+        """Return cross join"""
+        self.query.do_join(Join(self.item, JoinType.cross))
+
+        return self.query
 
 class Join(object):
     def __init__(self, item, how):
@@ -901,6 +906,9 @@ class Join(object):
         if self.how.value:
             return '{type} {join}'.format(join=sql, type=self.how.value)
         return sql
+
+    def validate(self, _from, _joins):
+        pass
 
 
 class JoinOn(Join):
