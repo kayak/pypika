@@ -53,6 +53,7 @@ class JoinType(Enum):
     left_outer = 'LEFT OUTER'
     right_outer = 'RIGHT OUTER'
     full_outer = 'FULL OUTER'
+    cross = 'CROSS'
 
 
 class UnionType(Enum):
