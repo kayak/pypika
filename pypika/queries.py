@@ -907,6 +907,9 @@ class Join(object):
             return '{type} {join}'.format(join=sql, type=self.how.value)
         return sql
 
+    def validate(self, _from, _joins):
+        pass
+
 
 class JoinOn(Join):
     def __init__(self, item, how, criteria):
