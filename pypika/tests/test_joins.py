@@ -92,6 +92,14 @@ class JoinTypeTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" USING ("foo","bar")', str(query))
 
+    def test_join_using_without_fields_raises_exception(self):
+        with self.assertRaises(JoinException):
+            query = Query.from_(self.table0).join(self.table1).using()
+
+    def test_join_on_field_without_fields_raises_exception(self):
+        with self.assertRaises(JoinException):
+            query = Query.from_(self.table0).join(self.table1).on_field()
+
     def test_join_arithmetic_field(self):
         q = Query.from_(self.table0).join(self.table1).on(
             self.table0.dt == (self.table1.dt - Interval(weeks=1))).select('*')
