@@ -64,8 +64,6 @@ class Table(Selectable):
                   quote=quote_char or ''
             )
 
-        if self.alias is None:
-            return table_sql
         return alias_sql(table_sql, self.alias, quote_char)
 
     def __str__(self):

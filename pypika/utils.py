@@ -92,4 +92,6 @@ def resolve_is_aggregate(values):
 
 
 def alias_sql(sql, alias, quote_char=None):
+    if alias is None:
+        return sql
     return '{sql} {quote}{alias}{quote}'.format(sql=sql, alias=alias, quote=quote_char or '')

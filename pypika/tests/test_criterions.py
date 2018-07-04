@@ -281,6 +281,13 @@ class NotTests(unittest.TestCase):
         self.assertEqual('NOT "foo" IS NULL', str(c1))
         self.assertEqual('NOT "cx0"."foo" IS NULL', str(c2))
 
+    def test_not_null_with_alias(self):
+        c1 = Field('foo').notnull().as_('something')
+        c2 = Field('foo', table=self.table_abc).notnull().as_('something')
+
+        self.assertEqual('NOT "foo" IS NULL "something"', str(c1))
+        self.assertEqual('NOT "cx0"."foo" IS NULL "something"', str(c2))
+
     def test_notnullcriterion_for_table(self):
         f = self.table_abc.foo.notnull().for_(self.table_abc)
 
