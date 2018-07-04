@@ -222,8 +222,6 @@ class ValueWrapper(Term):
 
     def get_sql(self, quote_char=None, **kwargs):
         sql = self._get_value_sql(quote_char=quote_char, **kwargs)
-        if self.alias is None:
-            return sql
         return alias_sql(sql, self.alias, quote_char)
 
     def _get_value_sql(self, quote_char=None, **kwargs):
@@ -643,14 +641,16 @@ class Case(Term):
 
 
 class Not(Criterion):
-    def __init__(self, term):
+    def __init__(self, term, alias=None):
+        super(Not, self).__init__(alias=alias)
         self.term = term
 
     def fields(self):
         return self.term.fields() if self.term.fields else []
 
-    def get_sql(self, **kwargs):
-        return "NOT {term}".format(term=self.term.get_sql(**kwargs))
+    def get_sql(self, quote_char=None, **kwargs):
+        sql = "NOT {term}".format(term=self.term.get_sql(quote_char=quote_char, **kwargs))
+        return alias_sql(sql, self.alias, quote_char=quote_char)
 
     def __str__(self):
         return self.get_sql(quote_char='"')
