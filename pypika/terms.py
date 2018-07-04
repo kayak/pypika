@@ -959,3 +959,15 @@ class Mod(Function):
 class Rollup(Function):
     def __init__(self, *terms):
         super(Rollup, self).__init__('ROLLUP', *terms)
+
+
+class Psuedocolumn(Term):
+    """
+    Represents a pseudocolumn
+    """
+
+    def __init__(self, name):
+        self.name = name
+
+    def to_sql(self, **kwargs):
+        return self.name
