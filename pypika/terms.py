@@ -674,6 +674,10 @@ class Not(Criterion):
 
         return inner
 
+    @property
+    def tables_(self):
+        return self.term.tables_
+
 
 class Function(Term):
     def __init__(self, name, *args, **kwargs):
