@@ -72,4 +72,4 @@ from .utils import (
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.14.7"
+__version__ = "0.14.8"
