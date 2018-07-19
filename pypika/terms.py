@@ -139,6 +139,9 @@ class Term(object):
     def negate(self):
         return Not(self)
 
+    def __invert__(self):
+        return Not(self)
+
     def __add__(self, other):
         return ArithmeticExpression(Arithmetic.add, self, self._wrap(other))
 
@@ -666,7 +669,9 @@ class Not(Criterion):
         return self.term.fields() if self.term.fields else []
 
     def get_sql(self, quote_char=None, **kwargs):
-        sql = "NOT {term}".format(term=self.term.get_sql(quote_char=quote_char, **kwargs))
+        kwargs['subcriterion'] = True
+        sql = "NOT {term}".format(term=self.term.get_sql(quote_char=quote_char,
+                                                         **kwargs))
         return alias_sql(sql, self.alias, quote_char=quote_char)
 
     def __str__(self):
