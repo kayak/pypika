@@ -293,6 +293,16 @@ class NotTests(unittest.TestCase):
 
         self.assertEqual('NOT "cx0"."foo" IS NULL', str(f))
 
+    def test_not_with_or_criterion(self):
+        self.assertEqual('NOT ("foo" OR "bar")', str(~(Field('foo') | Field('bar'))))
+
+    def test_not_with_and_criterion(self):
+        self.assertEqual('NOT ("foo" AND "bar")', str(~(Field('foo') & Field('bar'))))
+
+    def test_not_with_complex_criterion(self):
+        self.assertEqual('NOT ("foo" AND "bar" AND "fizz" AND "buzz")',
+                         str(~(Field('foo') & Field('bar') & Field('fizz') & Field('buzz'))))
+
 
 class BetweenTests(unittest.TestCase):
     t = Table('abc', alias='btw')
