@@ -606,8 +606,8 @@ Insert with on Duplicate Key Update
 wrapper to update to the value specified in the ``INSERT`` clause.
 
 
-Insert with a SELECT Query
-""""""""""""""""""""""""""
+Insert from a SELECT Sub-query
+""""""""""""""""""""""""""""""
 
 .. code-block:: sql
 
@@ -640,6 +640,34 @@ builder chain.
 
     INSERT INTO customers_backup SELECT * FROM customers
 
+.. code-block:: python
+
+    customers, customers_backup = Tables('customers', 'customers_backup')
+
+    q = Query.into(customers_backup).columns('id', 'fname', 'lname')
+        .from_(customers).select(customers.id, customers.fname, customers.lname)
+
+.. code-block:: sql
+
+    INSERT INTO customers_backup SELECT "id", "fname", "lname" FROM customers
+
+The syntax for joining tables is the same as when selecting data
+
+.. code-block:: python
+
+    customers, orders, orders_backup = Tables('customers', 'orders', 'orders_backup')
+
+    q = Query.into(orders_backup).columns('id', 'address', 'customer_fname', 'customer_lname')
+        .from_(customers)
+        .join(orders).on(orders.customer_id == customers.id)
+        .select(orders.id, customers.fname, customers.lname)
+
+.. code-block:: sql
+
+   INSERT INTO "orders_backup" ("id","address","customer_fname","customer_lname")
+   SELECT "orders"."id","customers"."fname","customers"."lname" FROM "customers"
+   JOIN "orders" ON "orders"."customer_id"="customers"."id"
+
 Updating Data
 ^^^^^^^^^^^^^^
 PyPika allows update queries to be constructed with or without where clauses.
@@ -648,15 +676,31 @@ PyPika allows update queries to be constructed with or without where clauses.
 
     customers = Table('customers')
 
-    Query.update(customers).set('last_login', '2017-01-01 10:00:00')
+    Query.update(customers).set(customers.last_login, '2017-01-01 10:00:00')
 
-    Query.update(customers).set('lname', 'smith').where(customers.id == 10)
+    Query.update(customers).set(customers.lname, smith).where(customers.id == 10)
 
 .. code-block:: sql
 
     UPDATE "customers" SET "last_login"='2017-01-01 10:00:00'
 
     UPDATE "customers" SET "lname"='smith' WHERE "id"=10
+
+The syntax for joining tables is the same as when selecting data
+
+.. code-block:: python
+
+    customers, profiles = Tables('customers', 'profiles')
+
+    Query.update(customers)
+         .join(profiles).on(profiles.customer_id == customers.id)
+         .set(customers.lname, profiles.lname)
+
+.. code-block:: sql
+
+   UPDATE "customers"
+   JOIN "profiles" ON "profiles"."customer_id"="customers"."id"
+   SET "customers"."lname"="profiles"."lname"
 
 .. _tutorial_end:
 
