@@ -507,4 +507,8 @@ class UpdateQueryJoinTests(unittest.TestCase):
             .where(b.foo == 1) \
             .set('adwords_batch_job_id', 1)
 
-        self.assertEqual('UPDATE "a" SET "adwords_batch_job_id"=1 WHERE "b"."foo"=1', str(q))
+        self.assertEqual('UPDATE "a" '
+                         'JOIN "b" '
+                         'ON "a"."fkey_id"="b"."id" '
+                         'SET "adwords_batch_job_id"=1 '
+                         'WHERE "b"."foo"=1', str(q))

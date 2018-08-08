@@ -6,5 +6,5 @@ Tutorial
    :end-before:  _tutorial_end:
 
 .. include:: ../README.rst
-    :start-after: _appendix_start:
-    :end-before:  _appendix_end:
+   :start-after: _appendix_start:
+   :end-before:  _appendix_end:

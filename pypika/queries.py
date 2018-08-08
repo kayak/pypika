@@ -664,14 +664,21 @@ class QueryBuilder(Selectable, Term):
 
         if self._update_table:
             querystring = self._update_sql(**kwargs)
+
+            if self._joins:
+                querystring += " " + " ".join(join.get_sql(**kwargs)
+                                              for join in self._joins)
+
             querystring += self._set_sql(**kwargs)
 
             if self._wheres:
                 querystring += self._where_sql(**kwargs)
 
             return querystring
-        elif self._delete_from:
+
+        if self._delete_from:
             querystring = self._delete_sql(**kwargs)
+
         elif not self._select_into and self._insert_table:
             querystring = self._insert_sql(**kwargs)
 
@@ -683,6 +690,7 @@ class QueryBuilder(Selectable, Term):
                 return querystring
             else:
                 querystring += ' ' + self._select_sql(**kwargs)
+
         else:
             querystring = self._select_sql(**kwargs)
 
