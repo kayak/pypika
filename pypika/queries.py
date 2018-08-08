@@ -592,15 +592,17 @@ class QueryBuilder(Selectable, Term):
         return []
 
     def do_join(self, join):
-        join.validate(self._from, self._joins)
+        base_tables = self._from + [self._update_table]
+
+        join.validate(base_tables, self._joins)
 
         if isinstance(join.item, QueryBuilder) and join.item.alias is None:
             self._tag_subquery(join.item)
 
-        table_in_from = any(isinstance(clause, Table)
-                            and join.item in self._from
-                            for clause in self._from)
-        if isinstance(join.item, Table) and join.item.alias is None and table_in_from:
+        table_in_query = any(isinstance(clause, Table)
+                             and join.item in base_tables
+                             for clause in base_tables)
+        if isinstance(join.item, Table) and join.item.alias is None and table_in_query:
             # On the odd chance that we join the same table as the FROM table and don't set an alias
             # FIXME only works once
             join.item.alias = join.item._table_name + '2'
@@ -608,11 +610,13 @@ class QueryBuilder(Selectable, Term):
         self._joins.append(join)
 
     def _validate_term(self, term):
+        base_tables = self._from + [self._update_table]
+
         for field in term.fields():
-            table_in_froms = field.table in self._from
+            table_in_base_tables = field.table in base_tables
             table_in_joins = field.table in [join.item for join in self._joins]
             if field.table is not None \
-                  and not table_in_froms \
+                  and not table_in_base_tables \
                   and not table_in_joins \
                   and field.table != self._update_table:
                 raise JoinException('Table [%s] missing from query.  '
