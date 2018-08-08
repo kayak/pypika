@@ -362,8 +362,8 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_join_query_with_alias(self):
         subquery = Query.from_(self.table_efg) \
-            .select(self.table_efg.base_id.as_('x'), self.table_efg.fizz, self.table_efg.buzz)\
-.as_('subq')
+            .select(self.table_efg.base_id.as_('x'), self.table_efg.fizz, self.table_efg.buzz) \
+            .as_('subq')
 
         test_query = Query.from_(self.table_abc) \
             .join(subquery) \
