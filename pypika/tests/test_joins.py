@@ -17,7 +17,7 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class JoinTypeTests(unittest.TestCase):
+class SelectQueryJoinTests(unittest.TestCase):
     table0, table1, hij = Tables('abc', 'efg', 'hij')
 
     def test_left_join(self):
@@ -482,3 +482,29 @@ class UnionTests(unittest.TestCase):
 
         self.assertEqual('SELECT AVG("sq0"."t") FROM ((SELECT "t" FROM "abc") UNION (SELECT "t" FROM "efg")) "sq0"',
                          str(q))
+
+
+class InsertQueryJoinTests(unittest.TestCase):
+    def test_join_table_on_insert_query(self):
+        a, b, c = Tables('a', 'b', 'c')
+        q = Query.into(c).from_(a) \
+            .join(b).on(a.fkey_id == b.id) \
+            .where(b.foo == 1) \
+            .select('a.*', 'b.*')
+
+        self.assertEqual('INSERT INTO "c" '
+                         'SELECT "a"."a.*","a"."b.*" '
+                         'FROM "a" JOIN "b" '
+                         'ON "a"."fkey_id"="b"."id" '
+                         'WHERE "b"."foo"=1', str(q))
+
+
+class UpdateQueryJoinTests(unittest.TestCase):
+    def test_join_table_on_update_query(self):
+        a, b = Tables('a', 'b')
+        q = Query.update(a) \
+            .join(b).on(a.fkey_id == b.id) \
+            .where(b.foo == 1) \
+            .set('adwords_batch_job_id', 1)
+
+        self.assertEqual('UPDATE "a" SET "adwords_batch_job_id"=1 WHERE "b"."foo"=1', str(q))
