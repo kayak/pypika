@@ -36,28 +36,35 @@ class InsertIntoTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" VALUES (1),(2)', str(query))
 
-    def test_insert_array_value(self):
-        query = Query.into(self.table_abc).insert((1,), )
+    def test_insert_single_row_with_array_value(self):
+        query = Query.into(self.table_abc).insert(1, ['a', 'b', 'c'])
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1),(2)', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1,[\'a\',\'b\',\'c\'])', str(query))
+
+    def test_insert_multiple_rows_with_array_value(self):
+        query = Query.into(self.table_abc).insert((1, ['a', 'b', 'c']),
+                                                  (2, ['c', 'd', 'e']), )
+
+        self.assertEqual('INSERT INTO "abc" '
+                         'VALUES (1,[\'a\',\'b\',\'c\']),(2,[\'c\',\'d\',\'e\'])', str(query))
 
     def test_insert_all_columns(self):
         query = Query.into(self.table_abc).insert(1, 'a', True)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true)', str(query))
 
-    def test_insert_all_columns_multi_rows_chained(self):
-        query = Query.into(self.table_abc).insert(1, 'a', True).insert(2, 'b', False)
-
-        self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false)', str(query))
-
-    def test_insert_all_columns_single_element_arrays(self):
+    def test_insert_all_columns_single_element(self):
         query = Query.into(self.table_abc).insert((1, 'a', True))
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true)', str(query))
 
-    def test_insert_all_columns_multi_rows_arrays(self):
+    def test_insert_all_columns_multi_rows(self):
         query = Query.into(self.table_abc).insert((1, 'a', True), (2, 'b', False))
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false)', str(query))
+
+    def test_insert_all_columns_multi_rows_chained(self):
+        query = Query.into(self.table_abc).insert(1, 'a', True).insert(2, 'b', False)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false)', str(query))
 
@@ -70,12 +77,12 @@ class InsertIntoTests(unittest.TestCase):
                          '(1,\'a\',true),(2,\'b\',false),'
                          '(3,\'c\',true)', str(query))
 
-    def test_insert_all_columns_multi_rows_chained_arrays(self):
-        query = Query.into(self.table_abc).insert(
-            (1, 'a', True), (2, 'b', False)
-        ).insert(
-            (3, 'c', True), (4, 'd', False)
-        )
+    def test_insert_all_columns_multi_rows_chained_multiple_rows(self):
+        query = Query.into(self.table_abc) \
+            .insert((1, 'a', True),
+                    (2, 'b', False)) \
+            .insert((3, 'c', True),
+                    (4, 'd', False))
 
         self.assertEqual('INSERT INTO "abc" VALUES '
                          '(1,\'a\',true),(2,\'b\',false),'
@@ -166,7 +173,7 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING NULL', str(query))
 
     def test_insert_returning_tuple(self):
-        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning([1, 2, 3])
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning((1, 2, 3))
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING (1,2,3)', str(query))
 

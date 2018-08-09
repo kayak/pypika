@@ -64,7 +64,9 @@ class Term(object):
             return val
         if val is None:
             return NullValue()
-        if isinstance(val, (list, tuple)):
+        if isinstance(val, list):
+            return Array(*val)
+        if isinstance(val, tuple):
             return Tuple(*val)
 
         return ValueWrapper(val)
@@ -344,8 +346,16 @@ class Tuple(Term):
 
     def get_sql(self, **kwargs):
         return '({})'.format(
-            ','.join(term.get_sql(**kwargs)
-                     for term in self.values)
+              ','.join(term.get_sql(**kwargs)
+                       for term in self.values)
+        )
+
+
+class Array(Tuple):
+    def get_sql(self, **kwargs):
+        return '[{}]'.format(
+              ','.join(term.get_sql(**kwargs)
+                       for term in self.values)
         )
 
 
