@@ -719,3 +719,28 @@ class SubqueryTests(unittest.TestCase):
                          '"foo" "foo_two","bar" '
                          'FROM "efg"'
                          ') "sq1" ON "sq0"."foo"="sq1"."foo_two"', str(query))
+
+    def test_from_subquery_without_alias(self):
+        subquery = Query.from_(self.table_efg) \
+            .select(self.table_efg.base_id.as_('x'), self.table_efg.fizz, self.table_efg.buzz)
+
+        test_query = Query.from_(subquery) \
+            .select(subquery.x, subquery.fizz, subquery.buzz)
+
+        self.assertEqual('SELECT "sq0"."x","sq0"."fizz","sq0"."buzz" '
+                         'FROM ('
+                         'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
+                         ') "sq0"', str(test_query))
+
+    def test_join_query_with_alias(self):
+        subquery = Query.from_(self.table_efg) \
+            .select(self.table_efg.base_id.as_('x'), self.table_efg.fizz, self.table_efg.buzz) \
+            .as_('subq')
+
+        test_query = Query.from_(subquery) \
+            .select(subquery.x, subquery.fizz, subquery.buzz)
+
+        self.assertEqual('SELECT "subq"."x","subq"."fizz","subq"."buzz" '
+                         'FROM ('
+                         'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
+                         ') "subq"', str(test_query))
