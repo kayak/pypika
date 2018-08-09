@@ -36,6 +36,11 @@ class InsertIntoTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" VALUES (1),(2)', str(query))
 
+    def test_insert_array_value(self):
+        query = Query.into(self.table_abc).insert((1,), )
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1),(2)', str(query))
+
     def test_insert_all_columns(self):
         query = Query.into(self.table_abc).insert(1, 'a', True)
 
