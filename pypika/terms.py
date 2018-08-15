@@ -216,7 +216,7 @@ class Term(object):
 
 
 class ValueWrapper(Term):
-    is_aggregate = None
+    is_aggregate = True
 
     def __init__(self, value, alias=None):
         super(ValueWrapper, self).__init__(alias)
