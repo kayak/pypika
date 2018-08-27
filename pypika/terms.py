@@ -654,17 +654,17 @@ class Case(Term):
 
     @property
     def tables_(self):
-        tables = []
+        tables = {}
         if self._cases:
-            tables += [table
+            tables &= {table
                        for case in self._cases
                        for part in case
                        for table in part.tables_
-                       if hasattr(part, 'tables_')]
+                       if hasattr(part, 'tables_')}
 
         if self._else and hasattr(self._else, 'tables_'):
-            tables += [table
-                       for table in self._else.tables_]
+            tables &= {table
+                       for table in self._else.tables_}
 
         return tables
 
