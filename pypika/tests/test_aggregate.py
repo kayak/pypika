@@ -1,7 +1,11 @@
 # coding: utf-8
 import unittest
 
-from pypika import Case , Field, functions as fn
+from pypika import (
+    Case,
+    Field,
+    functions as fn,
+)
 from pypika.terms import ValueWrapper
 
 
@@ -73,10 +77,26 @@ class IsAggregateTests(unittest.TestCase):
 
         self.assertTrue(v.is_aggregate)
 
-    def test__case_all_constants_is_aggregate_none(self):
+    def test__case_with_field_is_not_aggregate(self):
         v = Case() \
             .when(Field('foo') == 1, 1) \
             .when(Field('foo') == 2, 2) \
+            .else_(3)
+
+        self.assertFalse(v.is_aggregate)
+
+    def test__case_with_single_aggregate_field_is_not_aggregate(self):
+        v = Case() \
+            .when(Field('foo') == 1, 1) \
+            .when(fn.Sum(Field('foo')) == 2, 2) \
+            .else_(3)
+
+        self.assertFalse(v.is_aggregate)
+
+    def test__case_all_constants_is_aggregate_none(self):
+        v = Case() \
+            .when(True, 1) \
+            .when(False, 2) \
             .else_(3)
 
         self.assertIsNone(v.is_aggregate)

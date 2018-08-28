@@ -397,6 +397,10 @@ class BasicCriterion(Criterion):
         self.right = right
 
     @property
+    def is_aggregate(self):
+        return resolve_is_aggregate([term.is_aggregate for term in [self.left, self.right]])
+
+    @property
     def tables_(self):
         return self.left.tables_ | self.right.tables_
 
