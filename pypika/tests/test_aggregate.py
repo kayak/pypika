@@ -10,13 +10,13 @@ class IsAggregateTests(unittest.TestCase):
         v = Field('foo')
         self.assertFalse(v.is_aggregate)
 
-    def test__constant_is_aggregate(self):
+    def test__constant_is_aggregate_none(self):
         v = ValueWrapper(100)
-        self.assertTrue(v.is_aggregate)
+        self.assertIsNone(v.is_aggregate)
 
-    def test__constant_arithmetic_is_aggregate(self):
+    def test__constant_arithmetic_is_aggregate_none(self):
         v = ValueWrapper(100) + ValueWrapper(100)
-        self.assertTrue(v.is_aggregate)
+        self.assertIsNone(v.is_aggregate)
 
     def test__field_arithmetic_is_not_aggregate(self):
         v = Field('foo') + Field('bar')
@@ -73,10 +73,10 @@ class IsAggregateTests(unittest.TestCase):
 
         self.assertTrue(v.is_aggregate)
 
-    def test__case_all_constants_is_aggregate(self):
+    def test__case_all_constants_is_aggregate_none(self):
         v = Case() \
             .when(Field('foo') == 1, 1) \
             .when(Field('foo') == 2, 2) \
             .else_(3)
 
-        self.assertTrue(v.is_aggregate)
+        self.assertIsNone(v.is_aggregate)
