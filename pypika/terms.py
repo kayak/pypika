@@ -216,7 +216,7 @@ class Term(object):
 
 
 class ValueWrapper(Term):
-    is_aggregate = True
+    is_aggregate = None
 
     def __init__(self, value, alias=None):
         super(ValueWrapper, self).__init__(alias)
@@ -667,7 +667,6 @@ class Case(Term):
                        for table in self._else.tables_}
 
         return tables
-
 
 
 class Not(Criterion):
