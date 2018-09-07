@@ -73,14 +73,46 @@ class DatePart(Enum):
     microsecond = 'MICROSECOND'
 
 
-class SqlTypes(Enum):
+class SqlType:
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, length):
+        return SqlTypeLength(self.name, length)
+
+    def get_sql(self, **kwargs):
+        return '{name}'.format(name=self.name)
+
+
+class SqlTypeLength:
+    def __init__(self, name, length):
+        self.name = name
+        self.length = length
+
+    def get_sql(self, **kwargs):
+        return '{name}({length})'.format(name=self.name,
+                                         length=self.length)
+
+
+class SqlTypes:
+    BOOLEAN = 'BOOLEAN'
+    INTEGER = 'INTEGER'
+    FLOAT = 'FLOAT'
+    NUMERIC = 'NUMERIC'
     SIGNED = 'SIGNED'
     UNSIGNED = 'UNSIGNED'
-    utf8 = 'utf8'
+
     DATE = 'DATE'
+    TIME = 'TIME'
     TIMESTAMP = 'TIMESTAMP'
-    CHAR = 'CHAR'
-    VARCHAR = 'VARCHAR'
+
+    CHAR = SqlType('CHAR')
+    VARCHAR = SqlType('VARCHAR')
+    LONG_VARCHAR = SqlType('LONG VARCHAR')
+    BINARY = SqlType('BINARY')
+    VARBINARY = SqlType('VARBINARY')
+    LONG_VARBINARY = SqlType('LONG VARBINARY')
+
 
 
 class Dialects(Enum):
