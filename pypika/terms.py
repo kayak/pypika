@@ -144,6 +144,12 @@ class Term(object):
     def __invert__(self):
         return Not(self)
 
+    def __pos__(self):
+        return self
+
+    def __neg__(self):
+        return Negative(self)
+
     def __add__(self, other):
         return ArithmeticExpression(Arithmetic.add, self, self._wrap(other))
 
@@ -215,6 +221,15 @@ class Term(object):
         raise NotImplementedError()
 
 
+class Negative(Term):
+    def __init__(self, term):
+        super(Negative, self).__init__()
+        self.term = term
+
+    def get_sql(self, **kwargs):
+        return '-{term}'.format(term=self.term.get_sql(**kwargs))
+
+
 class ValueWrapper(Term):
     is_aggregate = None
 
@@ -245,7 +260,6 @@ class ValueWrapper(Term):
         if self.value is None:
             return 'null'
         return str(self.value)
-
 
 class Values(Term):
     def __init__(self, field,):

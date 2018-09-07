@@ -16,16 +16,18 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class Count(AggregateFunction):
-    def __init__(self, param, alias=None):
-        is_star = isinstance(param, str) and '*' == param
-        super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)
+class DistinctOptionFunction(AggregateFunction):
+    def __init__(self, name, *args, **kwargs):
+        alias = kwargs.get('alias')
+        super(DistinctOptionFunction, self).__init__(name, *args, alias=alias)
         self._distinct = False
 
     def get_function_sql(self, **kwargs):
-        s = super(Count, self).get_function_sql(**kwargs)
+        s = super(DistinctOptionFunction, self).get_function_sql(**kwargs)
+
+        n = len(self.name) + 1
         if self._distinct:
-            return s[:6] + 'DISTINCT ' + s[6:]
+            return s[:n] + 'DISTINCT ' + s[n:]
         return s
 
     @builder
@@ -33,8 +35,14 @@ class Count(AggregateFunction):
         self._distinct = True
 
 
+class Count(DistinctOptionFunction):
+    def __init__(self, param, alias=None):
+        is_star = isinstance(param, str) and '*' == param
+        super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)
+
+
 # Arithmetic Functions
-class Sum(AggregateFunction):
+class Sum(DistinctOptionFunction):
     def __init__(self, term, alias=None):
         super(Sum, self).__init__('SUM', term, alias=alias)
 
@@ -76,7 +84,11 @@ class Cast(Function):
         self.as_type = as_type
 
     def get_special_params_sql(self, **kwargs):
-        return 'AS {type}'.format(type=self.as_type.value)
+        type_sql = self.as_type.get_sql(**kwargs) \
+            if hasattr(self.as_type, 'get_sql') \
+            else str(self.as_type).upper()
+
+        return 'AS {type}'.format(type=type_sql)
 
 
 class Convert(Function):

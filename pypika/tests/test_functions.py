@@ -7,11 +7,11 @@ from pypika import (
     DatePart,
     Field as F,
     Interval,
+    Query,
     Query as Q,
     Table as T,
     VerticaQuery,
     functions as fn,
-    Query,
 )
 from pypika.enums import (
     Dialects,
@@ -410,11 +410,6 @@ class CastTests(unittest.TestCase):
         self.assertEqual("SELECT CAST(\"foo\" AS UNSIGNED) FROM \"abc\"", str(q1))
         self.assertEqual("SELECT CAST(\"foo\" AS UNSIGNED) FROM \"abc\"", str(q2))
 
-    def test__convert__utf8(self):
-        q = Q.from_(self.t).select(fn.Convert(self.t.foo, SqlTypes.utf8))
-
-        self.assertEqual("SELECT CONVERT(\"foo\" USING utf8) FROM \"abc\"", str(q))
-
     def test__cast__date(self):
         q1 = Q.from_(self.t).select(fn.Date(self.t.foo))
         q2 = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.DATE))
@@ -429,10 +424,85 @@ class CastTests(unittest.TestCase):
         self.assertEqual("SELECT TIMESTAMP(\"foo\") FROM \"abc\"", str(q1))
         self.assertEqual("SELECT CAST(\"foo\" AS TIMESTAMP) FROM \"abc\"", str(q2))
 
+    def test__cast__char(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.CHAR))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS CHAR) FROM \"abc\"", str(q))
+
+    def test__cast__char_with_arg(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.VARCHAR(24)))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS VARCHAR(24)) FROM \"abc\"", str(q))
+
     def test__cast__varchar(self):
         q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.VARCHAR))
 
         self.assertEqual("SELECT CAST(\"foo\" AS VARCHAR) FROM \"abc\"", str(q))
+
+    def test__cast__varchar_with_arg(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.VARCHAR(24)))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS VARCHAR(24)) FROM \"abc\"", str(q))
+
+    def test__cast__long_varchar(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.LONG_VARCHAR))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS LONG VARCHAR) FROM \"abc\"", str(q))
+
+    def test__cast__long_varchar_with_arg(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.LONG_VARCHAR(24)))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS LONG VARCHAR(24)) FROM \"abc\"", str(q))
+
+    def test__cast__binary(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.BINARY))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS BINARY) FROM \"abc\"", str(q))
+
+    def test__cast__binary_with_arg(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.BINARY(24)))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS BINARY(24)) FROM \"abc\"", str(q))
+
+    def test__cast__varbinary(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.VARBINARY))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS VARBINARY) FROM \"abc\"", str(q))
+
+    def test__cast__varbinary_with_arg(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.VARBINARY(24)))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS VARBINARY(24)) FROM \"abc\"", str(q))
+
+    def test__cast__long_varbinary(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.LONG_VARBINARY))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS LONG VARBINARY) FROM \"abc\"", str(q))
+
+    def test__cast__long_varbinary_with_arg(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.LONG_VARBINARY(24)))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS LONG VARBINARY(24)) FROM \"abc\"", str(q))
+
+    def test__cast__boolean(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.BOOLEAN))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS BOOLEAN) FROM \"abc\"", str(q))
+
+    def test__cast__integer(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.INTEGER))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS INTEGER) FROM \"abc\"", str(q))
+
+    def test__cast__float(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.FLOAT))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS FLOAT) FROM \"abc\"", str(q))
+
+    def test__cast__numeric(self):
+        q = Q.from_(self.t).select(fn.Cast(self.t.foo, SqlTypes.NUMERIC))
+
+        self.assertEqual("SELECT CAST(\"foo\" AS NUMERIC) FROM \"abc\"", str(q))
 
     def test__tochar__(self):
         q = Q.from_(self.t).select(fn.ToChar(self.t.foo, "SomeFormat"))
