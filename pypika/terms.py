@@ -16,7 +16,7 @@ from pypika.utils import (
     CaseException,
     alias_sql,
     builder,
-    ignoredeepcopy,
+    ignore_copy,
     resolve_is_aggregate,
 )
 
@@ -704,7 +704,7 @@ class Not(Criterion):
     def __str__(self):
         return self.get_sql(quote_char='"')
 
-    @ignoredeepcopy
+    @ignore_copy
     def __getattr__(self, name):
         """
         Delegate method calls to the class wrapped by Not().

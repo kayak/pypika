@@ -9,7 +9,7 @@ from pypika.utils import (
     UnionException,
     alias_sql,
     builder,
-    ignoredeepcopy,
+    ignore_copy,
 )
 from .terms import (
     ArithmeticExpression,
@@ -37,7 +37,7 @@ class Selectable(object):
     def star(self):
         return Star(self)
 
-    @ignoredeepcopy
+    @ignore_copy
     def __getattr__(self, name):
         return self.field(name)
 
@@ -332,6 +332,14 @@ class QueryBuilder(Selectable, Term):
         self.quote_char = quote_char
         self.dialect = dialect
         self.wrap_union_queries = wrap_union_queries
+
+    def __copy__(self):
+        newone = type(self)()
+        newone.__dict__.update(self.__dict__)
+        for key, value in self.__dict__.items():
+            if isinstance(value, (set, list)):
+                newone.__dict__[key] = type(value)(x for x in value)
+        return newone
 
     @builder
     def from_(self, selectable):
