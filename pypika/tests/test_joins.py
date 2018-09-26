@@ -264,19 +264,12 @@ class JoinBehaviorTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Query.from_(self.table_abc).join('this is a string')
 
-    def test_immutable__queries_after_join(self):
-        query1 = Query.from_(self.table_abc).select(self.table_abc.foo)
-        query2 = query1.join(self.table_efg).on(self.table_abc.foo == self.table_efg.bar).select(self.table_efg.buz)
-
-        self.assertEqual('SELECT "foo" FROM "abc"', str(query1))
-        self.assertEqual('SELECT "abc"."foo","efg"."buz" FROM "abc" '
-                         'JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query2))
-
     def test_immutable__tables(self):
-        query1 = Query.from_(self.table_abc).select(self.table_abc.foo)
-        query2 = Query.from_(self.table_abc).join(self.table_efg).on(self.table_abc.foo == self.table_efg.bar).select(
-            self.table_abc.foo,
-            self.table_efg.buz)
+        query1 = Query.from_(self.table_abc)\
+            .select(self.table_abc.foo)
+        query2 = Query.from_(self.table_abc) \
+            .join(self.table_efg).on(self.table_abc.foo == self.table_efg.bar) \
+            .select(self.table_abc.foo, self.table_efg.buz)
 
         self.assertEqual('SELECT "abc"."foo","efg"."buz" FROM "abc" '
                          'JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query2))

@@ -42,7 +42,7 @@ def builder(func):
     import copy
 
     def _copy(self, *args, **kwargs):
-        self_copy = copy.deepcopy(self)
+        self_copy = copy.copy(self)
         result = func(self_copy, *args, **kwargs)
 
         # Return self if the inner function returns None.  This way the inner function can return something
@@ -55,7 +55,7 @@ def builder(func):
     return _copy
 
 
-def ignoredeepcopy(func):
+def ignore_copy(func):
     """
     Decorator for wrapping the __getattr__ function for classes that are copied via deepcopy.  This prevents infinite
     recursion caused by deepcopy looking for magic functions in the class. Any class implementing __getattr__ that is
@@ -66,7 +66,7 @@ def ignoredeepcopy(func):
     """
 
     def _getattr(self, name):
-        if name in ['__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
+        if name in ['__copy__','__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
 
         return func(self, name)
