@@ -72,6 +72,11 @@ class StdDev(AggregateFunction):
         super(StdDev, self).__init__('STDDEV', term, alias=alias)
 
 
+class Abs(AggregateFunction):
+    def __init__(self, term, alias=None):
+        super(Abs, self).__init__('ABS', term, alias=alias)
+
+
 class Coalesce(Function):
     def __init__(self, term, *default_values, **kwargs):
         super(Coalesce, self).__init__('COALESCE', term, *default_values, **kwargs)
