@@ -4,6 +4,7 @@ import unittest
 from pypika import (
     Case,
     Field,
+    Table,
     functions as fn,
 )
 from pypika.terms import ValueWrapper
@@ -100,3 +101,31 @@ class IsAggregateTests(unittest.TestCase):
             .else_(3)
 
         self.assertIsNone(v.is_aggregate)
+
+    def test__non_aggregate_function_with_aggregated_arg(self):
+        t = Table('abc')
+        expr = fn.Sqrt(fn.Sum(t.a))
+
+        self.assertTrue(expr.is_aggregate)
+
+    def test_complicated(self):
+        t = Table('abc')
+        is_placebo = t.campaign_extra_info == 'placebo'
+
+        pixel_mobile_search = Case().when(is_placebo, t.action_fb_pixel_search + t.action_fb_mobile_search)
+        unique_impressions = Case().when(is_placebo, t.unique_impressions)
+
+        v = (fn.Sum(pixel_mobile_search)
+             / fn.Sum(unique_impressions)
+             - 1.96
+             * fn.Sqrt(
+                    1
+                    / fn.Sum(unique_impressions)
+                    * fn.Sum(pixel_mobile_search)
+                    / fn.Sum(unique_impressions)
+                    * (
+                          1
+                          - fn.Sum(pixel_mobile_search)
+                          / fn.Sum(unique_impressions))))
+
+        self.assertTrue(v.is_aggregate)
