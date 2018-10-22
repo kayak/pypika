@@ -1,4 +1,4 @@
-# coding: utf8
+# coding: utf-8
 from aenum import Enum
 
 __author__ = "Timothy Heys"
