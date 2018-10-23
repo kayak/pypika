@@ -741,6 +741,16 @@ class Function(Term):
                 for param in self.args
                 for table in param.tables_}
 
+    @property
+    def is_aggregate(self):
+        """
+        This is a shortcut thst assumes if a function has a single argument and that argument is aggregated, then this
+        function is also aggregated. A more sophisticated approach is needed, however it is unclear how that might work.
+        :returns:
+            True if the function accepts one argument and that argument is aggregate.
+        """
+        return len(self.args) == 1 and self.args[0].is_aggregate
+
     @builder
     def for_(self, table):
         """

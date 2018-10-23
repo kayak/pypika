@@ -77,6 +77,11 @@ class Abs(AggregateFunction):
         super(Abs, self).__init__('ABS', term, alias=alias)
 
 
+class Sqrt(Function):
+    def __init__(self, term, alias=None):
+        super(Sqrt, self).__init__('SQRT', term, alias=alias)
+
+
 class Coalesce(Function):
     def __init__(self, term, *default_values, **kwargs):
         super(Coalesce, self).__init__('COALESCE', term, *default_values, **kwargs)
