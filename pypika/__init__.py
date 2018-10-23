@@ -48,6 +48,7 @@ from .enums import (
 )
 # noinspection PyUnresolvedReferences
 from .queries import (
+    AliasedQuery,
     Query,
     Table,
     Tuple,

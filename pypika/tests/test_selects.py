@@ -1,21 +1,12 @@
 # coding: utf8
 import unittest
 
-from pypika import (
-    Case,
-    Field as F,
-    MSSQLQuery,
-    MySQLQuery,
-    OracleQuery,
-    Order,
-    PostgreSQLQuery,
-    Query,
-    RedshiftQuery,
-    Table,
-    Tables,
-    VerticaQuery,
-    functions as fn,
-)
+from pypika import AliasedQuery, Case
+from pypika import Field as F
+from pypika import (MSSQLQuery, MySQLQuery, OracleQuery, Order,
+                    PostgreSQLQuery, Query, RedshiftQuery, Table, Tables,
+                    VerticaQuery)
+from pypika import functions as fn
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -749,3 +740,31 @@ class SubqueryTests(unittest.TestCase):
                          'FROM ('
                          'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
                          ') "subq"', str(test_query))
+
+    def test_with(self):
+        sub_query = (Query
+                     .from_(self.table_efg)
+                     .select('fizz'))
+        test_query = (Query
+                      .with_(sub_query, "an_alias")
+                      .from_(AliasedQuery("an_alias"))
+                      .select('*'))
+
+        self.assertEqual(
+            'WITH an_alias AS (SELECT "fizz" FROM "efg") SELECT * FROM an_alias',
+            str(test_query))
+
+    def test_join_with_with(self):
+        sub_query = (Query
+                     .from_(self.table_efg)
+                     .select('fizz'))
+        test_query = (Query
+                      .with_(sub_query, "an_alias")
+                      .from_(self.table_abc)
+                      .join(AliasedQuery('an_alias'))
+                      .on(AliasedQuery('an_alias').fizz == self.table_abc.buzz)
+                      .select('*'))
+        self.assertEqual(
+            'WITH an_alias AS (SELECT "fizz" FROM "efg") '
+            'SELECT * FROM "abc" JOIN an_alias ON "an_alias"."fizz"="abc"."buzz"',
+            str(test_query))
