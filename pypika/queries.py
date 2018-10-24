@@ -11,6 +11,7 @@ from pypika.utils import (
     builder,
     ignore_copy,
 )
+
 from .terms import (
     ArithmeticExpression,
     Field,
@@ -41,6 +42,28 @@ class Selectable(object):
     def __getattr__(self, name):
         return self.field(name)
 
+class AliasedQuery(Selectable):
+    def __init__(self, name, query=None):
+        super(AliasedQuery, self).__init__(alias=name)
+        self.name = name
+        self.query = query
+
+    def get_sql(self, **kwargs):
+        if self.query == None:
+            return self.name
+        else:
+            return self.query.get_sql(**kwargs)
+
+    def __eq__(self, other):
+        if not isinstance(other, AliasedQuery):
+            return False
+        if self.name == other.name:
+            return True
+        else:
+            return False
+
+    def __hash__(self):
+        return hash(str(self.name))
 
 class Table(Selectable):
     def __init__(self, name, schema=None, alias=None):
@@ -143,6 +166,10 @@ class Query(object):
         :returns QueryBuilder
         """
         return cls._builder().into(table)
+
+    @classmethod
+    def with_(cls, table, name):
+        return cls._builder().with_(table, name)
 
     @classmethod
     def select(cls, *terms):
@@ -302,6 +329,7 @@ class QueryBuilder(Selectable, Term):
         self._update_table = None
         self._delete_from = False
 
+        self._with = []
         self._selects = []
         self._columns = []
         self._values = []
@@ -367,6 +395,11 @@ class QueryBuilder(Selectable, Term):
             sub_query_count = max(self._subquery_count, sub_query_count)
             selectable.alias = 'sq%d' % sub_query_count
             self._subquery_count = sub_query_count + 1
+
+    @builder
+    def with_(self, selectable, name):
+        t = AliasedQuery(name, selectable)
+        self._with.append(t)
 
     @builder
     def into(self, table):
@@ -523,6 +556,9 @@ class QueryBuilder(Selectable, Term):
         elif isinstance(item, QueryBuilder):
             return Joiner(self, item, how, type_label='subquery')
 
+        elif isinstance(item, AliasedQuery):
+            return Joiner(self, item, how, type_label='table')
+
         raise ValueError("Cannot join on type '%s'" % type(item))
 
     @builder
@@ -600,7 +636,7 @@ class QueryBuilder(Selectable, Term):
         return []
 
     def do_join(self, join):
-        base_tables = self._from + [self._update_table]
+        base_tables = self._from + [self._update_table] + self._with
 
         join.validate(base_tables, self._joins)
 
@@ -700,7 +736,12 @@ class QueryBuilder(Selectable, Term):
                 querystring += ' ' + self._select_sql(**kwargs)
 
         else:
-            querystring = self._select_sql(**kwargs)
+            if self._with:
+                querystring = self._with_sql(**kwargs)
+            else:
+                querystring = ''
+
+            querystring += self._select_sql(**kwargs)
 
             if self._insert_table:
                 querystring += self._into_sql(**kwargs)
@@ -742,6 +783,15 @@ class QueryBuilder(Selectable, Term):
             return alias_sql(querystring, self.alias or self._table_name, kwargs.get('quote_char'))
 
         return querystring
+
+    def _with_sql(self, with_namespace=False, **kwargs):
+        return 'WITH ' + ','.join(
+            clause.name + ' AS (' + clause.get_sql(
+                subquery=False,
+                with_alias=False,
+                **kwargs) +
+            ') '
+            for clause in self._with)
 
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{select}'.format(
