@@ -657,6 +657,8 @@ class QueryBuilder(Selectable, Term):
         return hash(self.alias) + sum(hash(clause) for clause in self._from)
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
+        kwargs.setdefault('quote_char', self.quote_char)
+
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
             return ''
         if self._insert_table and not (self._selects or self._values):

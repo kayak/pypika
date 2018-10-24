@@ -749,3 +749,15 @@ class SubqueryTests(unittest.TestCase):
                          'FROM ('
                          'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
                          ') "subq"', str(test_query))
+
+
+class QuoteTests(unittest.TestCase):
+    def test_extraneous_quotes(self):
+        t1 = Table('table1', alias='t1')
+        t2 = Table('table2', alias='t2')
+
+        query = Query.from_(t1).join(t2).on(t1.Value.between(t2.start, t2.end)).select(t1.value)
+
+        self.assertEqual('SELECT t1.value FROM table1 t1 '
+                         'JOIN table2 t2 ON t1.Value '
+                         'BETWEEN t2.start AND t2.end', query.get_sql(quote_char=None))
