@@ -1,10 +1,27 @@
 # coding: utf8
-from pypika.enums import JoinType, UnionType
-from pypika.utils import (JoinException, RollupException, UnionException,
-                          alias_sql, builder, ignore_copy)
+from pypika.enums import (
+    JoinType,
+    UnionType,
+)
+from pypika.utils import (
+    JoinException,
+    RollupException,
+    UnionException,
+    alias_sql,
+    builder,
+    ignore_copy,
+)
 
-from .terms import (ArithmeticExpression, Field, Function, Rollup, Star, Term,
-                    Tuple, ValueWrapper)
+from .terms import (
+    ArithmeticExpression,
+    Field,
+    Function,
+    Rollup,
+    Star,
+    Term,
+    Tuple,
+    ValueWrapper,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -24,7 +41,7 @@ class Selectable(object):
     @ignore_copy
     def __getattr__(self, name):
         return self.field(name)
-    
+
 class AliasedQuery(Selectable):
     def __init__(self, name, query=None):
         super(AliasedQuery, self).__init__(alias=name)
@@ -153,7 +170,7 @@ class Query(object):
     @classmethod
     def with_(cls, table, name):
         return cls._builder().with_(table, name)
-    
+
     @classmethod
     def select(cls, *terms):
         """
@@ -383,7 +400,7 @@ class QueryBuilder(Selectable, Term):
     def with_(self, selectable, name):
         t = AliasedQuery(name, selectable)
         self._with.append(t)
-    
+
     @builder
     def into(self, table):
         if self._insert_table is not None:
@@ -540,7 +557,7 @@ class QueryBuilder(Selectable, Term):
             return Joiner(self, item, how, type_label='subquery')
 
         elif isinstance(item, AliasedQuery):
-            return Joiner(self, item, how, type_label='table') 
+            return Joiner(self, item, how, type_label='table')
 
         raise ValueError("Cannot join on type '%s'" % type(item))
 
@@ -723,7 +740,7 @@ class QueryBuilder(Selectable, Term):
                 querystring = self._with_sql(**kwargs)
             else:
                 querystring = ''
-                
+
             querystring += self._select_sql(**kwargs)
 
             if self._insert_table:
@@ -766,16 +783,16 @@ class QueryBuilder(Selectable, Term):
             return alias_sql(querystring, self.alias or self._table_name, kwargs.get('quote_char'))
 
         return querystring
-    
+
     def _with_sql(self, with_namespace=False, **kwargs):
         return 'WITH ' + ','.join(
             clause.name + ' AS (' + clause.get_sql(
                 subquery=False,
                 with_alias=False,
                 **kwargs) +
-            ') ' 
+            ') '
             for clause in self._with)
-    
+
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{select}'.format(
               distinct='DISTINCT ' if self._distinct else '',

@@ -1,12 +1,22 @@
 # coding: utf8
 import unittest
 
-from pypika import AliasedQuery, Case
-from pypika import Field as F
-from pypika import (MSSQLQuery, MySQLQuery, OracleQuery, Order,
-                    PostgreSQLQuery, Query, RedshiftQuery, Table, Tables,
-                    VerticaQuery)
-from pypika import functions as fn
+from pypika import (
+    AliasedQuery,
+    Case,
+    Field as F,
+    MSSQLQuery,
+    MySQLQuery,
+    OracleQuery,
+    Order,
+    PostgreSQLQuery,
+    Query,
+    RedshiftQuery,
+    Table,
+    Tables,
+    VerticaQuery,
+    functions as fn,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
