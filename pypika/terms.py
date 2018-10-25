@@ -1,4 +1,4 @@
-# coding: utf8
+# coding: utf-8
 import inspect
 import re
 from datetime import date
