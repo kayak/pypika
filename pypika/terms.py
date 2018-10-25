@@ -494,8 +494,8 @@ class BetweenCriterion(Criterion):
         # FIXME escape
         return "{term} BETWEEN {start} AND {end}".format(
             term=self.term.get_sql(**kwargs),
-            start=self.start,
-            end=self.end,
+            start=self.start.get_sql(**kwargs),
+            end=self.end.get_sql(**kwargs),
         )
 
     def fields(self):
