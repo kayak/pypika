@@ -261,6 +261,7 @@ class ValueWrapper(Term):
             return 'null'
         return str(self.value)
 
+
 class Values(Term):
     def __init__(self, field,):
         super(Values, self).__init__(None)
@@ -281,7 +282,24 @@ class NullValue(Term):
         return alias_sql(sql, self.alias, quote_char)
 
 
-class Field(Term):
+class Criterion(Term):
+    def __and__(self, other):
+        return ComplexCriterion(Boolean.and_, self, other)
+
+    def __or__(self, other):
+        return ComplexCriterion(Boolean.or_, self, other)
+
+    def __xor__(self, other):
+        return ComplexCriterion(Boolean.xor_, self, other)
+
+    def fields(self):
+        raise NotImplementedError()
+
+    def get_sql(self):
+        raise NotImplementedError()
+
+
+class Field(Criterion):
     def __init__(self, name, alias=None, table=None):
         super(Field, self).__init__(alias)
         self.name = name
@@ -295,6 +313,9 @@ class Field(Term):
 
     def __xor__(self, other):
         return ComplexCriterion(Boolean.xor_, self, other)
+
+    def fields(self):
+        return [self]
 
     @property
     def tables_(self):
@@ -371,23 +392,6 @@ class Array(Tuple):
               ','.join(term.get_sql(**kwargs)
                        for term in self.values)
         )
-
-
-class Criterion(Term):
-    def __and__(self, other):
-        return ComplexCriterion(Boolean.and_, self, other)
-
-    def __or__(self, other):
-        return ComplexCriterion(Boolean.or_, self, other)
-
-    def __xor__(self, other):
-        return ComplexCriterion(Boolean.xor_, self, other)
-
-    def fields(self):
-        raise NotImplementedError()
-
-    def get_sql(self):
-        raise NotImplementedError()
 
 
 class BasicCriterion(Criterion):
@@ -728,7 +732,7 @@ class Not(Criterion):
         return self.term.tables_
 
 
-class Function(Term):
+class Function(Criterion):
     def __init__(self, name, *args, **kwargs):
         super(Function, self).__init__(kwargs.get('alias'))
         self.name = name
@@ -740,6 +744,9 @@ class Function(Term):
         return {table
                 for param in self.args
                 for table in param.tables_}
+
+    def fields(self):
+        return self.args
 
     @property
     def is_aggregate(self):

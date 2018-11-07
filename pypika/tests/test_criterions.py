@@ -523,26 +523,41 @@ class LikeTests(unittest.TestCase):
 class ComplexCriterionTests(unittest.TestCase):
     table_abc, table_efg = Table('abc', alias='cx0'), Table('efg', alias='cx1')
 
-    def test__and(self):
+    def test_and(self):
         c1 = (Field('foo') == 1) & (Field('bar') == 2)
         c2 = (Field('foo', table=self.table_abc) == 1) & (Field('bar', table=self.table_efg) == 2)
 
         self.assertEqual('"foo"=1 AND "bar"=2', str(c1))
         self.assertEqual('"cx0"."foo"=1 AND "cx1"."bar"=2', str(c2))
 
-    def test__or(self):
+    def test_or(self):
         c1 = (Field('foo') == 1) | (Field('bar') == 2)
         c2 = (Field('foo', table=self.table_abc) == 1) | (Field('bar', table=self.table_efg) == 2)
 
         self.assertEqual('"foo"=1 OR "bar"=2', str(c1))
         self.assertEqual('"cx0"."foo"=1 OR "cx1"."bar"=2', str(c2))
 
-    def test__xor(self):
+    def test_xor(self):
         c1 = (Field('foo') == 1) ^ (Field('bar') == 2)
         c2 = (Field('foo', table=self.table_abc) == 1) ^ (Field('bar', table=self.table_efg) == 2)
 
         self.assertEqual('"foo"=1 XOR "bar"=2', str(c1))
         self.assertEqual('"cx0"."foo"=1 XOR "cx1"."bar"=2', str(c2))
+
+    def test_function_and(self):
+        c1 = fn.IsNull(Field('foo')) & (Field('bar') == 2)
+
+        self.assertEqual('ISNULL("foo") AND "bar"=2', str(c1))
+
+    def test_function_or(self):
+        c1 = fn.IsNull(Field('foo')) | (Field('bar') == 2)
+
+        self.assertEqual('ISNULL("foo") OR "bar"=2', str(c1))
+
+    def test_function_xor(self):
+        c1 = fn.IsNull(Field('foo')) ^ (Field('bar') == 2)
+
+        self.assertEqual('ISNULL("foo") XOR "bar"=2', str(c1))
 
     def test__nested__and(self):
         c = (Field('foo') == 1) & (Field('bar') == 2) & (Field('buz') == 3)

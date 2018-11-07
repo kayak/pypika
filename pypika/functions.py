@@ -82,11 +82,6 @@ class Sqrt(Function):
         super(Sqrt, self).__init__('SQRT', term, alias=alias)
 
 
-class Coalesce(Function):
-    def __init__(self, term, *default_values, **kwargs):
-        super(Coalesce, self).__init__('COALESCE', term, *default_values, **kwargs)
-
-
 # Type Functions
 class Cast(Function):
     def __init__(self, term, as_type, alias=None):
@@ -157,8 +152,8 @@ class Ascii(Function):
 
 
 class NullIf(Function):
-    def __init__(self, term, criterion, alias=None):
-        super(NullIf, self).__init__('NULLIF', term, criterion, alias=alias)
+    def __init__(self, criterion, alias=None):
+        super(NullIf, self).__init__('NULLIF', criterion, alias=alias)
 
 
 class Bin(Function):
@@ -252,3 +247,24 @@ class Extract(Function):
         return 'FROM {field}'.format(
             field=self.field,
         )
+
+
+# Null Functions
+class IsNull(Function):
+    def __init__(self, term, alias=None):
+        super(IsNull, self).__init__('ISNULL', term, alias=alias)
+
+
+class Coalesce(Function):
+    def __init__(self, term, *default_values, **kwargs):
+        super(Coalesce, self).__init__('COALESCE', term, *default_values, **kwargs)
+
+
+class IfNull(Function):
+    def __init__(self, condition, term, **kwargs):
+        super(IfNull, self).__init__('IFNULL', condition, term, **kwargs)
+
+
+class NVL(Function):
+    def __init__(self, condition, term, alias=None):
+        super(NVL, self).__init__('NVL', condition, term, alias=alias)
