@@ -44,8 +44,7 @@ class Term(object):
     def tables_(self):
         return set()
 
-    @staticmethod
-    def _wrap(val):
+    def wrap_constant(self, val):
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
@@ -69,7 +68,8 @@ class Term(object):
         if isinstance(val, tuple):
             return Tuple(*val)
 
-        return ValueWrapper(val)
+        _ValueWrapper = getattr(self, '_wrapper_cls', ValueWrapper)
+        return _ValueWrapper(val)
 
     def for_(self, table):
         """
@@ -110,33 +110,33 @@ class Term(object):
         return self != other
 
     def like(self, expr):
-        return BasicCriterion(Matching.like, self, self._wrap(expr))
+        return BasicCriterion(Matching.like, self, self.wrap_constant(expr))
 
     def not_like(self, expr):
-        return BasicCriterion(Matching.not_like, self, self._wrap(expr))
+        return BasicCriterion(Matching.not_like, self, self.wrap_constant(expr))
 
     def ilike(self, expr):
-        return BasicCriterion(Matching.ilike, self, self._wrap(expr))
+        return BasicCriterion(Matching.ilike, self, self.wrap_constant(expr))
 
     def not_ilike(self, expr):
-        return BasicCriterion(Matching.not_ilike, self, self._wrap(expr))
+        return BasicCriterion(Matching.not_ilike, self, self.wrap_constant(expr))
 
     def regex(self, pattern):
-        return BasicCriterion(Matching.regex, self, self._wrap(pattern))
+        return BasicCriterion(Matching.regex, self, self.wrap_constant(pattern))
 
     def between(self, lower, upper):
-        return BetweenCriterion(self, self._wrap(lower), self._wrap(upper))
+        return BetweenCriterion(self, self.wrap_constant(lower), self.wrap_constant(upper))
 
     def isin(self, arg):
         if isinstance(arg, (list, tuple, set)):
-            return ContainsCriterion(self, Tuple(*[self._wrap(value) for value in arg]))
+            return ContainsCriterion(self, Tuple(*[self.wrap_constant(value) for value in arg]))
         return ContainsCriterion(self, arg)
 
     def notin(self, arg):
         return self.isin(arg).negate()
 
     def bin_regex(self, pattern):
-        return BasicCriterion(Matching.bin_regex, self, self._wrap(pattern))
+        return BasicCriterion(Matching.bin_regex, self, self.wrap_constant(pattern))
 
     def negate(self):
         return Not(self)
@@ -151,20 +151,20 @@ class Term(object):
         return Negative(self)
 
     def __add__(self, other):
-        return ArithmeticExpression(Arithmetic.add, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.add, self, self.wrap_constant(other))
 
     def __sub__(self, other):
-        return ArithmeticExpression(Arithmetic.sub, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.sub, self, self.wrap_constant(other))
 
     def __mul__(self, other):
-        return ArithmeticExpression(Arithmetic.mul, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.mul, self, self.wrap_constant(other))
 
     def __div__(self, other):
         # Required for Python2
         return self.__truediv__(other)
 
     def __truediv__(self, other):
-        return ArithmeticExpression(Arithmetic.div, self, self._wrap(other))
+        return ArithmeticExpression(Arithmetic.div, self, self.wrap_constant(other))
 
     def __pow__(self, other):
         return Pow(self, other)
@@ -173,38 +173,38 @@ class Term(object):
         return Mod(self, other)
 
     def __radd__(self, other):
-        return ArithmeticExpression(Arithmetic.add, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.add, self.wrap_constant(other), self)
 
     def __rsub__(self, other):
-        return ArithmeticExpression(Arithmetic.sub, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.sub, self.wrap_constant(other), self)
 
     def __rmul__(self, other):
-        return ArithmeticExpression(Arithmetic.mul, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.mul, self.wrap_constant(other), self)
 
     def __rdiv__(self, other):
         # Required for Python2
         return self.__rtruediv__(other)
 
     def __rtruediv__(self, other):
-        return ArithmeticExpression(Arithmetic.div, self._wrap(other), self)
+        return ArithmeticExpression(Arithmetic.div, self.wrap_constant(other), self)
 
     def __eq__(self, other):
-        return BasicCriterion(Equality.eq, self, self._wrap(other))
+        return BasicCriterion(Equality.eq, self, self.wrap_constant(other))
 
     def __ne__(self, other):
-        return BasicCriterion(Equality.ne, self, self._wrap(other))
+        return BasicCriterion(Equality.ne, self, self.wrap_constant(other))
 
     def __gt__(self, other):
-        return BasicCriterion(Equality.gt, self, self._wrap(other))
+        return BasicCriterion(Equality.gt, self, self.wrap_constant(other))
 
     def __ge__(self, other):
-        return BasicCriterion(Equality.gte, self, self._wrap(other))
+        return BasicCriterion(Equality.gte, self, self.wrap_constant(other))
 
     def __lt__(self, other):
-        return BasicCriterion(Equality.lt, self, self._wrap(other))
+        return BasicCriterion(Equality.lt, self, self.wrap_constant(other))
 
     def __le__(self, other):
-        return BasicCriterion(Equality.lte, self, self._wrap(other))
+        return BasicCriterion(Equality.lte, self, self.wrap_constant(other))
 
     def __getitem__(self, item):
         if not isinstance(item, slice):
@@ -371,7 +371,7 @@ class Star(Field):
 class Tuple(Term):
     def __init__(self, *values):
         super(Tuple, self).__init__()
-        self.values = [self._wrap(value) for value in values]
+        self.values = [self.wrap_constant(value) for value in values]
 
     def __str__(self):
         return self.get_sql()
@@ -637,11 +637,11 @@ class Case(Term):
 
     @builder
     def when(self, criterion, term):
-        self._cases.append((criterion, self._wrap(term)))
+        self._cases.append((criterion, self.wrap_constant(term)))
 
     @builder
     def else_(self, term):
-        self._else = self._wrap(term)
+        self._else = self.wrap_constant(term)
         return self
 
     def get_sql(self, with_alias=False, **kwargs):
@@ -736,7 +736,7 @@ class Function(Criterion):
     def __init__(self, name, *args, **kwargs):
         super(Function, self).__init__(kwargs.get('alias'))
         self.name = name
-        self.args = [self._wrap(param)
+        self.args = [self.wrap_constant(param)
                      for param in args]
 
     @property
