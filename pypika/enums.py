@@ -123,3 +123,4 @@ class Dialects(Enum):
     MYSQL = 'mysql'
     POSTGRESQL = 'postgressql'
     REDSHIFT = 'redshift'
+    SQLLITE = 'sqllite'

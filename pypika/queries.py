@@ -209,7 +209,8 @@ class _UnionQuery(Selectable, Term):
 
     Created via the functionds `Query.union` or `Query.union_all`, this class should not be instantiated directly.
     """
-    def __init__(self, base_query, union_query, union_type, alias=None):
+
+    def __init__(self, base_query, union_query, union_type, alias=None, wrapper_cls=ValueWrapper):
         super(_UnionQuery, self).__init__(alias)
         self.base_query = base_query
         self._unions = [(union_type, union_query)]
@@ -218,12 +219,14 @@ class _UnionQuery(Selectable, Term):
         self._limit = None
         self._offset = None
 
+        self._wrapper_cls = wrapper_cls
+
     @builder
     def orderby(self, *fields, **kwargs):
         for field in fields:
             field = (Field(field, table=self.base_query._from[0])
                      if isinstance(field, str)
-                     else self.base_query._wrap(field))
+                     else self.base_query.wrap_constant(field))
 
             self._orderbys.append((field, kwargs.get('order')))
 
@@ -321,7 +324,7 @@ class QueryBuilder(Selectable, Term):
     state to be branched immutably.
     """
 
-    def __init__(self, quote_char='"', dialect=None, wrap_union_queries=True):
+    def __init__(self, quote_char='"', dialect=None, wrap_union_queries=True, wrapper_cls=ValueWrapper):
         super(QueryBuilder, self).__init__(None)
 
         self._from = []
@@ -360,6 +363,8 @@ class QueryBuilder(Selectable, Term):
         self.quote_char = quote_char
         self.dialect = dialect
         self.wrap_union_queries = wrap_union_queries
+
+        self._wrapper_cls = wrapper_cls
 
     def __copy__(self):
         newone = type(self)()
@@ -421,7 +426,7 @@ class QueryBuilder(Selectable, Term):
             elif isinstance(term, (Function, ArithmeticExpression)):
                 self._select_other(term)
             else:
-                self._select_other(self._wrap(term))
+                self._select_other(self.wrap_constant(term))
 
     @builder
     def delete(self):
@@ -461,7 +466,7 @@ class QueryBuilder(Selectable, Term):
         for values in terms:
             self._values.append([value
                                  if isinstance(value, Term)
-                                 else self._wrap(value)
+                                 else self.wrap_constant(value)
                                  for value in values])
 
     @builder
@@ -544,7 +549,7 @@ class QueryBuilder(Selectable, Term):
         for field in fields:
             field = (Field(field, table=self._from[0])
                      if isinstance(field, str)
-                     else self._wrap(field))
+                     else self.wrap_constant(field))
 
             self._orderbys.append((field, kwargs.get('order')))
 
@@ -571,11 +576,11 @@ class QueryBuilder(Selectable, Term):
 
     @builder
     def union(self, other):
-        return _UnionQuery(self, other, UnionType.distinct)
+        return _UnionQuery(self, other, UnionType.distinct, wrapper_cls=self._wrapper_cls)
 
     @builder
     def union_all(self, other):
-        return _UnionQuery(self, other, UnionType.all)
+        return _UnionQuery(self, other, UnionType.all, wrapper_cls=self._wrapper_cls)
 
     @builder
     def set(self, field, value):
