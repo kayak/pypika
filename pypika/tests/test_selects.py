@@ -40,6 +40,16 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "schema1"."abc"', str(q))
 
+    def test_select__table_schema_with_multiple_levels_as_tuple(self):
+        q = Query.from_(Table('abc', ('schema1', 'schema2'))).select('*')
+
+        self.assertEqual('SELECT * FROM "schema1"."schema2"."abc"', str(q))
+
+    def test_select__table_schema_with_multiple_levels_as_list(self):
+        q = Query.from_(Table('abc', ['schema1', 'schema2'])).select('*')
+
+        self.assertEqual('SELECT * FROM "schema1"."schema2"."abc"', str(q))
+
     def test_select__star__replacement(self):
         q = Query.from_('abc').select('foo').select('*')
 
