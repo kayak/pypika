@@ -65,6 +65,7 @@ class AliasedQuery(Selectable):
     def __hash__(self):
         return hash(str(self.name))
 
+
 class Table(Selectable):
     def __init__(self, name, schema=None, alias=None):
         super(Table, self).__init__(alias)
@@ -74,18 +75,19 @@ class Table(Selectable):
     def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape
 
+        parts = []
         if self._schema:
-            table_sql = "{quote}{schema}{quote}.{quote}{name}{quote}".format(
-                  schema=self._schema,
-                  name=self._table_name,
-                  quote=quote_char or ''
-            )
+            schema = (self._schema,) \
+                if not isinstance(self._schema, (list, tuple)) \
+                else self._schema
 
-        else:
-            table_sql = "{quote}{name}{quote}".format(
-                  name=self._table_name,
-                  quote=quote_char or ''
-            )
+            parts += [s for s in schema]
+
+        parts.append(self._table_name)
+
+        table_sql = '.'.join("{quote}{part}{quote}".format(part=part,
+                                                           quote=quote_char or '')
+                             for part in parts)
 
         return alias_sql(table_sql, self.alias, quote_char)
 
