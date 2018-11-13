@@ -938,10 +938,23 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
 
 
 class Interval(object):
+    templates = {
+        # MySQL requires no single quotes around the expr and unit
+        Dialects.MYSQL: 'INTERVAL {expr} {unit}',
+
+        # PostgreSQL, Redshift and Vertica require quotes around the expr and unit e.g. INTERVAL '1 week'
+        Dialects.POSTGRESQL: 'INTERVAL \'{expr} {unit}\'',
+        Dialects.REDSHIFT: 'INTERVAL \'{expr} {unit}\'',
+        Dialects.VERTICA: 'INTERVAL \'{expr} {unit}\'',
+
+        # Oracle requires just single quotes around the expr
+        Dialects.ORACLE: 'INTERVAL \'{expr}\' {unit}'
+    }
+
     units = ['years', 'months', 'days', 'hours', 'minutes', 'seconds', 'microseconds']
     labels = ['YEAR', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND', 'MICROSECOND']
 
-    trim_pattern = re.compile(r'^[0\-\.: ]+|[0\-\.: ]+$')
+    trim_pattern = re.compile(r'(^0+\.)|(\.0+$)|(^[0\-.: ]+[\-: ])|([\-:. ][0\-.: ]+$)')
 
     def __init__(self, years=0, months=0, days=0, hours=0, minutes=0, seconds=0, microseconds=0, quarters=0, weeks=0,
                  dialect=None):
@@ -973,7 +986,11 @@ class Interval(object):
     def get_sql(self, **kwargs):
         dialect = self.dialect or kwargs.get('dialect')
 
-        if hasattr(self, 'quarters'):
+        if self.largest == 'MICROSECOND':
+            expr = getattr(self, 'microseconds')
+            unit = 'MICROSECOND'
+
+        elif hasattr(self, 'quarters'):
             expr = getattr(self, 'quarters')
             unit = 'QUARTER'
 
@@ -983,9 +1000,7 @@ class Interval(object):
 
         else:
             # Create the whole expression but trim out the unnecessary fields
-            expr = self.trim_pattern.sub(
-                '',
-                "{years}-{months}-{days} {hours}:{minutes}:{seconds}.{microseconds}".format(
+            expr = "{years}-{months}-{days} {hours}:{minutes}:{seconds}.{microseconds}".format(
                     years=getattr(self, 'years', 0),
                     months=getattr(self, 'months', 0),
                     days=getattr(self, 'days', 0),
@@ -994,26 +1009,15 @@ class Interval(object):
                     seconds=getattr(self, 'seconds', 0),
                     microseconds=getattr(self, 'microseconds', 0),
                 )
-            )
+            expr = self.trim_pattern.sub('', expr)
+
             unit = '{largest}_{smallest}'.format(
                 largest=self.largest,
                 smallest=self.smallest,
             ) if self.largest != self.smallest else self.largest
 
-        interval_templates = {
-            # MySQL requires no single quotes around the expr and unit
-            Dialects.MYSQL: 'INTERVAL {expr} {unit}',
-
-            # PostgreSQL, Redshift and Vertica require quotes around the expr and unit e.g. INTERVAL '1 week'
-            Dialects.POSTGRESQL: 'INTERVAL \'{expr} {unit}\'',
-            Dialects.REDSHIFT: 'INTERVAL \'{expr} {unit}\'',
-            Dialects.VERTICA: 'INTERVAL \'{expr} {unit}\'',
-
-            # Oracle requires just single quotes around the expr
-            Dialects.ORACLE: 'INTERVAL \'{expr}\' {unit}'
-        }
-
-        return interval_templates.get(dialect, 'INTERVAL \'{expr} {unit}\'').format(expr=expr, unit=unit)
+        return self.templates.get(dialect, 'INTERVAL \'{expr} {unit}\'') \
+            .format(expr=expr, unit=unit)
 
 
 class Pow(Function):

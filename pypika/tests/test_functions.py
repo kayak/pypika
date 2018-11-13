@@ -1,4 +1,3 @@
-# coding: utf-8
 import unittest
 
 from pypika import (
@@ -6,7 +5,6 @@ from pypika import (
     CaseException,
     DatePart,
     Field as F,
-    Interval,
     Query,
     Query as Q,
     Table as T,
@@ -14,7 +12,6 @@ from pypika import (
     functions as fn,
 )
 from pypika.enums import (
-    Dialects,
     SqlTypes,
 )
 
@@ -508,131 +505,6 @@ class CastTests(unittest.TestCase):
 class DateFunctionsTests(unittest.TestCase):
     dt = F('dt')
     t = T('abc')
-
-    def test_add_microsecond(self):
-        c = self.dt + Interval(microseconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 MICROSECOND\'", str(c))
-
-    def test_add_second(self):
-        c = self.dt + Interval(seconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 SECOND\'", str(c))
-
-    def test_add_minute(self):
-        c = self.dt + Interval(minutes=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 MINUTE\'", str(c))
-
-    def test_add_day(self):
-        c = self.dt + Interval(days=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 DAY\'", str(c))
-
-    def test_add_week(self):
-        c = self.dt + Interval(weeks=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 WEEK\'", str(c))
-
-    def test_add_month(self):
-        c = self.dt + Interval(months=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 MONTH\'", str(c))
-
-    def test_add_quarter(self):
-        c = self.dt + Interval(quarters=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 QUARTER\'", str(c))
-
-    def test_add_year(self):
-        c = self.dt + Interval(years=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 YEAR\'", str(c))
-
-    def test_add_second_microsecond(self):
-        c = self.dt + Interval(seconds=1, microseconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1.1 SECOND_MICROSECOND\'", str(c))
-
-    def test_add_minute_microsecond(self):
-        c = self.dt + Interval(minutes=1, microseconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1:0.1 MINUTE_MICROSECOND\'", str(c))
-
-    def test_add_minute_second(self):
-        c = self.dt + Interval(minutes=1, seconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1:1 MINUTE_SECOND\'", str(c))
-
-    def test_add_hour_microsecond(self):
-        c = self.dt + Interval(hours=1, microseconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1:0:0.1 HOUR_MICROSECOND\'", str(c))
-
-    def test_add_hour_second(self):
-        c = self.dt + Interval(hours=1, seconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1:0:1 HOUR_SECOND\'", str(c))
-
-    def test_add_hour_minute(self):
-        c = self.dt + Interval(hours=1, minutes=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1:1 HOUR_MINUTE\'", str(c))
-
-    def test_add_day_microsecond(self):
-        c = self.dt + Interval(days=1, microseconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 0:0:0.1 DAY_MICROSECOND\'", str(c))
-
-    def test_add_day_second(self):
-        c = self.dt + Interval(days=1, seconds=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 0:0:1 DAY_SECOND\'", str(c))
-
-    def test_add_day_minute(self):
-        c = self.dt + Interval(days=1, minutes=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 0:1 DAY_MINUTE\'", str(c))
-
-    def test_add_day_hour(self):
-        c = self.dt + Interval(days=1, hours=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 1 DAY_HOUR\'", str(c))
-
-    def test_add_year_month(self):
-        c = self.dt + Interval(years=1, months=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1-1 YEAR_MONTH\'", str(c))
-
-    def test_add_value_right(self):
-        c = Interval(microseconds=1) - self.dt
-
-        self.assertEqual("INTERVAL \'1 MICROSECOND\'-\"dt\"", str(c))
-
-    def test_add_value_complex_expressions(self):
-        c = self.dt + Interval(quarters=1) + Interval(weeks=1)
-
-        self.assertEqual("\"dt\"+INTERVAL \'1 QUARTER\'+INTERVAL \'1 WEEK\'", str(c))
-
-    def test_mysql_dialect_does_not_use_quotes_around_interval(self):
-        c = Interval(days=1).get_sql(dialect=Dialects.MYSQL)
-        self.assertEqual("INTERVAL 1 DAY", str(c))
-
-    def test_oracle_dialect_uses_single_quotes_around_expression_in_an_interval(self):
-        c = Interval(days=1).get_sql(dialect=Dialects.ORACLE)
-        self.assertEqual("INTERVAL '1' DAY", str(c))
-
-    def test_vertica_dialect_uses_single_quotes_around_interval(self):
-        c = Interval(days=1).get_sql(dialect=Dialects.VERTICA)
-        self.assertEqual("INTERVAL '1 DAY'", str(c))
-
-    def test_redshift_dialect_uses_single_quotes_around_interval(self):
-        c = Interval(days=1).get_sql(dialect=Dialects.REDSHIFT)
-        self.assertEqual("INTERVAL '1 DAY'", str(c))
-
-    def test_postgresql_dialect_uses_single_quotes_around_interval(self):
-        c = Interval(days=1).get_sql(dialect=Dialects.POSTGRESQL)
-        self.assertEqual("INTERVAL '1 DAY'", str(c))
 
     def _test_extract_datepart(self, date_part):
         q = Q.from_(self.t).select(fn.Extract(date_part, self.t.foo))
