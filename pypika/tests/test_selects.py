@@ -668,6 +668,34 @@ class SubqueryTests(unittest.TestCase):
                          'JOIN (SELECT "fiz","buz" FROM "efg" WHERE "buz"=0) "sq0" '
                          'ON "abc"."bar"="sq0"."buz"', str(q))
 
+    def test_select_subquery(self):
+        subq = Query \
+            .from_(self.table_efg) \
+            .select('fizzbuzz') \
+            .where(self.table_efg.id == 1)
+
+        q = Query \
+            .from_(self.table_abc) \
+            .select('foo', 'bar') \
+            .select(subq)
+
+        self.assertEqual('SELECT "foo","bar",(SELECT "fizzbuzz" FROM "efg" WHERE "id"=1) '
+                         'FROM "abc"', str(q))
+
+    def test_select_subquery_with_alias(self):
+        subq = Query \
+            .from_(self.table_efg) \
+            .select('fizzbuzz') \
+            .where(self.table_efg.id == 1)
+
+        q = Query \
+            .from_(self.table_abc) \
+            .select('foo', 'bar') \
+            .select(subq.as_('sq'))
+
+        self.assertEqual('SELECT "foo","bar",(SELECT "fizzbuzz" FROM "efg" WHERE "id"=1) "sq" '
+                         'FROM "abc"', str(q))
+
     def test_where__equality(self):
         subquery = Query.from_('efg').select('fiz').where(F('buz') == 0)
         query = Query.from_(self.table_abc).select(
@@ -779,7 +807,7 @@ class SubqueryTests(unittest.TestCase):
             'SELECT * FROM "abc" JOIN an_alias ON "an_alias"."fizz"="abc"."buzz"',
             str(test_query))
 
-        
+
 class QuoteTests(unittest.TestCase):
     def test_extraneous_quotes(self):
         t1 = Table('table1', alias='t1')

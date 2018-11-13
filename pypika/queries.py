@@ -787,11 +787,11 @@ class QueryBuilder(Selectable, Term):
             querystring = '({query})'.format(query=querystring)
 
         if with_alias:
-            return alias_sql(querystring, self.alias or self._table_name, kwargs.get('quote_char'))
+            return alias_sql(querystring, self.alias, kwargs.get('quote_char'))
 
         return querystring
 
-    def _with_sql(self, with_namespace=False, **kwargs):
+    def _with_sql(self, **kwargs):
         return 'WITH ' + ','.join(
             clause.name + ' AS (' + clause.get_sql(
                 subquery=False,
@@ -803,7 +803,7 @@ class QueryBuilder(Selectable, Term):
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{select}'.format(
               distinct='DISTINCT ' if self._distinct else '',
-              select=','.join(term.get_sql(with_alias=True, **kwargs)
+              select=','.join(term.get_sql(with_alias=True, subquery=True, **kwargs)
                               for term in self._selects),
         )
 
