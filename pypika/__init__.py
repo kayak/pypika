@@ -68,6 +68,7 @@ from .utils import (
     CaseException,
     GroupingException,
     JoinException,
+    QueryException,
     RollupException,
     UnionException,
 )

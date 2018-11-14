@@ -1,18 +1,9 @@
 # coding: utf-8
 from functools import reduce
 
-from pypika.enums import (
+from .enums import (
     JoinType,
     UnionType,
-)
-from pypika.utils import (
-    JoinException,
-    RollupException,
-    UnionException,
-    alias_sql,
-    builder,
-    format_quotes,
-    ignore_copy,
 )
 from .terms import (
     ArithmeticExpression,
@@ -23,6 +14,16 @@ from .terms import (
     Term,
     Tuple,
     ValueWrapper,
+)
+from .utils import (
+    JoinException,
+    QueryException,
+    RollupException,
+    UnionException,
+    alias_sql,
+    builder,
+    format_quotes,
+    ignore_copy,
 )
 
 __author__ = "Timothy Heys"
@@ -636,6 +637,10 @@ class QueryBuilder(Selectable, Term):
                 for field in field_set]
 
     def _select_field_str(self, term):
+        if 0 == len(self._from):
+            raise QueryException('Cannot select {term}, no FROM table specified.'
+                                 .format(term=term))
+
         if term == '*':
             self._select_star = True
             self._selects = [Star()]
