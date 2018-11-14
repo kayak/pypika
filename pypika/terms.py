@@ -733,11 +733,12 @@ class Not(Criterion):
 
 
 class Function(Criterion):
-    def __init__(self, name, *args, **kwargs):
+    def __init__(self, name, *args, schema=None, **kwargs):
         super(Function, self).__init__(kwargs.get('alias'))
         self.name = name
         self.args = [self.wrap_constant(param)
                      for param in args]
+        self.schema = schema
 
     @property
     def tables_(self):
@@ -787,8 +788,12 @@ class Function(Criterion):
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         # FIXME escape
-
         function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char)
+
+        if self.schema is not None:
+            function_sql = '{schema}.{function}' \
+                .format(schema=self.schema.get_sql(quote_char=quote_char, **kwargs),
+                        function=function_sql)
 
         if not with_alias or self.alias is None:
             return function_sql

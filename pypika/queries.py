@@ -1,4 +1,6 @@
 # coding: utf-8
+from functools import reduce
+
 from pypika.enums import (
     JoinType,
     UnionType,
@@ -9,9 +11,9 @@ from pypika.utils import (
     UnionException,
     alias_sql,
     builder,
+    format_quotes,
     ignore_copy,
 )
-
 from .terms import (
     ArithmeticExpression,
     Field,
@@ -42,6 +44,7 @@ class Selectable(object):
     def __getattr__(self, name):
         return self.field(name)
 
+
 class AliasedQuery(Selectable):
     def __init__(self, name, query=None):
         super(AliasedQuery, self).__init__(alias=name)
@@ -66,29 +69,54 @@ class AliasedQuery(Selectable):
         return hash(str(self.name))
 
 
-class Table(Selectable):
-    def __init__(self, name, schema=None, alias=None):
-        super(Table, self).__init__(alias)
-        self._table_name = name
-        self._schema = schema
+class Schema:
+    def __init__(self, name, parent=None):
+        self._name = name
+        self._parent = parent
+
+    def __eq__(self, other):
+        return isinstance(other, Schema) \
+               and self._name == other._name \
+               and self._parent == other._parent
 
     def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape
+        schema_sql = format_quotes(self._name, quote_char)
 
-        parts = []
-        if self._schema:
-            schema = (self._schema,) \
-                if not isinstance(self._schema, (list, tuple)) \
-                else self._schema
+        if self._parent is not None:
+            return '{parent}.{schema}' \
+                .format(parent=self._parent.get_sql(quote_char=quote_char, **kwargs),
+                        schema=schema_sql)
 
-            parts += [s for s in schema]
+        return schema_sql
 
-        parts.append(self._table_name)
 
-        table_sql = '.'.join("{quote}{part}{quote}".format(part=part,
-                                                           quote=quote_char or '')
-                             for part in parts)
+class Table(Selectable):
+    @staticmethod
+    def _init_schema(schema):
+        # This is a bit complicated in order to support backwards compatibility. It should probably be cleaned up for
+        # the next major release. Schema is accepted as a string, list/tuple, Schema instance, or None
+        if isinstance(schema, Schema):
+            return schema
+        if isinstance(schema, (list, tuple)):
+            return reduce(lambda obj, s: Schema(s, parent=obj), schema[1:], Schema(schema[0]))
+        if schema is not None:
+            return Schema(schema)
+        return None
 
+    def __init__(self, name, schema=None, alias=None):
+        super(Table, self).__init__(alias)
+        self._table_name = name
+        self._schema = self._init_schema(schema)
+
+    def get_sql(self, quote_char=None, **kwargs):
+        # FIXME escape
+        table_sql = format_quotes(self._table_name, quote_char)
+
+        if self._schema is not None:
+            return '{schema}.{table}' \
+                .format(schema=self._schema.get_sql(quote_char=quote_char, **kwargs),
+                        table=table_sql)
         return alias_sql(table_sql, self.alias, quote_char)
 
     def __str__(self):
