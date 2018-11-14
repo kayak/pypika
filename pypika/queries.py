@@ -92,19 +92,22 @@ class Schema:
 
 
 class Table(Selectable):
+    @staticmethod
+    def _init_schema(schema):
+        # This is a bit complicated in order to support backwards compatibility. It should probably be cleaned up for
+        # the next major release. Schema is accepted as a string, list/tuple, Schema instance, or None
+        if isinstance(schema, Schema):
+            return schema
+        if isinstance(schema, (list, tuple)):
+            return reduce(lambda obj, s: Schema(s, parent=obj), schema[1:], Schema(schema[0]))
+        if schema is not None:
+            return Schema(schema)
+        return None
+
     def __init__(self, name, schema=None, alias=None):
         super(Table, self).__init__(alias)
         self._table_name = name
-
-        # This is a bit complicated in order to support backwards compatibility. It should probably be cleaned up for
-        # the next major release. Schema is accepted as a string, list/tuple, Schema instance, or None
-        self._schema = schema \
-            if isinstance(schema, Schema) \
-            else reduce(lambda obj, s: Schema(s, parent=obj), schema[1:], Schema(schema[0])) \
-            if isinstance(schema, (list, tuple)) \
-            else Schema(schema) \
-            if schema is not None \
-            else None
+        self._schema = self._init_schema(schema)
 
     def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape
