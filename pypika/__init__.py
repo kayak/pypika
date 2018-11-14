@@ -50,6 +50,7 @@ from .enums import (
 from .queries import (
     AliasedQuery,
     Query,
+    Schema,
     Table,
     Tuple,
     make_tables as Tables,

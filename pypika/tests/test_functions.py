@@ -7,16 +7,28 @@ from pypika import (
     Field as F,
     Query,
     Query as Q,
+    Schema,
     Table as T,
     VerticaQuery,
     functions as fn,
 )
-from pypika.enums import (
-    SqlTypes,
-)
+from pypika.enums import SqlTypes
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
+
+
+class SchemaTests(unittest.TestCase):
+    def test_schema_no_schema_in_sql_when_none_set(self):
+        func = fn.Function('my_proc', 1, 2, 3)
+
+        self.assertEqual('my_proc(1,2,3)', func.get_sql(quote_char='"'))
+
+    def test_schema_included_in_function_sql(self):
+        a = Schema('a')
+        func = fn.Function('my_proc', 1, 2, 3, schema=a)
+
+        self.assertEqual('"a".my_proc(1,2,3)', func.get_sql(quote_char='"'))
 
 
 class ArithmeticTests(unittest.TestCase):
