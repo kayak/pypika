@@ -11,6 +11,7 @@ from pypika import (
     Order,
     PostgreSQLQuery,
     Query,
+    QueryException,
     RedshiftQuery,
     Table,
     Tables,
@@ -29,6 +30,15 @@ class SelectTests(unittest.TestCase):
         q = Query.from_('abc')
 
         self.assertEqual('', str(q))
+
+    def test_select_no_from(self):
+        q = Query.select(1)
+
+        self.assertEqual('SELECT 1', str(q))
+
+    def test_select_no_from_with_field_raises_exception(self):
+        with self.assertRaises(QueryException):
+            Query.select('asdf')
 
     def test_select__star(self):
         q = Query.from_('abc').select('*')
