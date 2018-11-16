@@ -53,18 +53,13 @@ class AliasedQuery(Selectable):
         self.query = query
 
     def get_sql(self, **kwargs):
-        if self.query == None:
+        if self.query is None:
             return self.name
-        else:
-            return self.query.get_sql(**kwargs)
+        return self.query.get_sql(**kwargs)
 
     def __eq__(self, other):
-        if not isinstance(other, AliasedQuery):
-            return False
-        if self.name == other.name:
-            return True
-        else:
-            return False
+        return isinstance(other, AliasedQuery) \
+               and self.name == other.name
 
     def __hash__(self):
         return hash(str(self.name))
@@ -79,6 +74,9 @@ class Schema:
         return isinstance(other, Schema) \
                and self._name == other._name \
                and self._parent == other._parent
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape

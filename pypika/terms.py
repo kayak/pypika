@@ -733,12 +733,12 @@ class Not(Criterion):
 
 
 class Function(Criterion):
-    def __init__(self, name, *args, schema=None, **kwargs):
+    def __init__(self, name, *args, **kwargs):
         super(Function, self).__init__(kwargs.get('alias'))
         self.name = name
         self.args = [self.wrap_constant(param)
                      for param in args]
-        self.schema = schema
+        self.schema = kwargs.get('schema')
 
     @property
     def tables_(self):
