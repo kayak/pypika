@@ -113,7 +113,7 @@ class Table(Selectable):
         table_sql = format_quotes(self._table_name, quote_char)
 
         if self._schema is not None:
-            return '{schema}.{table}' \
+            table_sql = '{schema}.{table}' \
                 .format(schema=self._schema.get_sql(quote_char=quote_char, **kwargs),
                         table=table_sql)
         return alias_sql(table_sql, self.alias, quote_char)
