@@ -664,6 +664,10 @@ class AliasTests(unittest.TestCase):
                          'GROUP BY "my_foo" '
                          'ORDER BY "my_foo"', str(q))
 
+    def test_table_with_schema_and_alias(self):
+        table = Table('abc', schema='schema', alias='alias')
+        self.assertEqual('"schema"."abc" "alias"', str(table))
+
 
 class SubqueryTests(unittest.TestCase):
     maxDiff = None
