@@ -892,7 +892,7 @@ class QueryBuilder(Selectable, Term):
     def _where_sql(self, quote_char=None, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
-    def _group_sql(self, quote_char=None, **kwargs):
+    def _group_sql(self, quote_char=None, groupby_alias=False, **kwargs):
         """
         Produces the GROUP BY part of the query.  This is a list of fields. The clauses are stored in the query under
         self._groupbys as a list fields.
@@ -903,7 +903,7 @@ class QueryBuilder(Selectable, Term):
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
         for field in self._groupbys:
-            if field.alias and field.alias in selected_aliases:
+            if groupby_alias and field.alias and field.alias in selected_aliases:
                 clauses.append("{quote}{alias}{quote}".format(
                       alias=field.alias,
                       quote=quote_char or '',
