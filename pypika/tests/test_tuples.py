@@ -1,8 +1,11 @@
-# coding: utf-8
-
 import unittest
 
-from pypika import Query, Tables, Tuple
+from pypika import (
+    Bracket,
+    Query,
+    Tables,
+    Tuple,
+)
 
 
 class TupleTests(unittest.TestCase):
@@ -66,3 +69,14 @@ class TupleTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar" '
                          'WHERE ("abc"."foo","efg"."bar") IN ((1,1),(2,2),(3,3))', str(query))
+
+
+class BracketTests(unittest.TestCase):
+    table_abc, table_efg = Tables('abc', 'efg')
+
+    def test_arithmetic_with_brackets(self):
+        q = Query \
+            .from_(self.table_abc) \
+            .select(Bracket(self.table_abc.foo / 2) / 2)
+
+        self.assertEqual('SELECT ("foo"/2)/2 FROM "abc"', str(q))

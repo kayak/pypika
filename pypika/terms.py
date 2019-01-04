@@ -368,7 +368,7 @@ class Star(Field):
         return '*'
 
 
-class Tuple(Term):
+class Tuple(Criterion):
     def __init__(self, *values):
         super(Tuple, self).__init__()
         self.values = [self.wrap_constant(value) for value in values]
@@ -392,6 +392,11 @@ class Array(Tuple):
               ','.join(term.get_sql(**kwargs)
                        for term in self.values)
         )
+
+
+class Bracket(Tuple):
+    def __init__(self, term):
+        super(Bracket, self).__init__(term)
 
 
 class BasicCriterion(Criterion):

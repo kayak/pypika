@@ -52,16 +52,18 @@ from .queries import (
     Query,
     Schema,
     Table,
-    Tuple,
     make_tables as Tables,
 )
 # noinspection PyUnresolvedReferences
 from .terms import (
+    Array,
+    Bracket,
     Case,
     Field,
     Interval,
     Not,
     Rollup,
+    Tuple,
 )
 # noinspection PyUnresolvedReferences
 from .utils import (
