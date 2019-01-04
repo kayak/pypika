@@ -257,6 +257,33 @@ XOR
     SELECT id,fname,lname,phone FROM customers WHERE age>=18 XOR is_registered
 
 
+Convenience Methods
+"""""""""""""""""""
+
+In the `Criterion` class, there are static methods that allow building chains AND and OR expressions with a list of
+terms.
+
+.. code-block:: python
+
+    from pypika import Criterion
+
+    customers = Table('customers')
+    q = Query.from_(customers).select(
+        customers.id,
+        customers.fname
+    ).where(
+        Criterion.all(
+            customers.is_registered,
+            customers.age >= 18,
+            customers.lname == "Jones",
+        )
+    )
+
+.. code-block:: sql
+
+    SELECT id,fname FROM customers WHERE is_registered AND age>=18 AND lname = "Jones"
+
+
 Grouping and Aggregating
 """"""""""""""""""""""""
 
