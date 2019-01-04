@@ -293,7 +293,7 @@ class Criterion(Term):
         return ComplexCriterion(Boolean.xor_, self, other)
 
     @staticmethod
-    def any(*terms):
+    def any(terms=()):
         crit = EmptyCriterion()
 
         for term in terms:
@@ -302,14 +302,13 @@ class Criterion(Term):
         return crit
 
     @staticmethod
-    def all(*terms):
+    def all(terms=()):
         crit = EmptyCriterion()
 
         for term in terms:
             crit &= term
 
         return crit
-
 
     def fields(self):
         raise NotImplementedError()

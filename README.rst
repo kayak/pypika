@@ -260,8 +260,7 @@ XOR
 Convenience Methods
 """""""""""""""""""
 
-In the `Criterion` class, there are static methods that allow building chains AND and OR expressions with a list of
-terms.
+In the `Criterion` class, there are the static methods `any` and `all` that allow building chains AND and OR expressions with a list of terms.
 
 .. code-block:: python
 
@@ -272,11 +271,11 @@ terms.
         customers.id,
         customers.fname
     ).where(
-        Criterion.all(
+        Criterion.all([
             customers.is_registered,
             customers.age >= 18,
             customers.lname == "Jones",
-        )
+        ])
     )
 
 .. code-block:: sql

@@ -659,11 +659,16 @@ class AnyTests(unittest.TestCase):
 
     def test_single_arg_returns_self(self):
         f = Field('a')
-        crit = Criterion.any(f)
+        crit = Criterion.any([f])
         self.assertEqual(str(f), str(crit))
 
     def test_multiple_args_returned_in_chain_of_ors(self):
-        crit = Criterion.any(Field('a'), Field('b'), Field('c'), Field('d'))
+        crit = Criterion.any([Field('a'), Field('b'), Field('c'), Field('d')])
+        self.assertEqual(str(crit), '"a" OR "b" OR "c" OR "d"')
+
+    def test_with_generator(self):
+        crit = Criterion.any(Field(letter)
+                             for letter in 'abcd')
         self.assertEqual(str(crit), '"a" OR "b" OR "c" OR "d"')
 
 
@@ -674,9 +679,14 @@ class AllTests(unittest.TestCase):
 
     def test_single_arg_returns_self(self):
         f = Field('a')
-        crit = Criterion.all(f)
+        crit = Criterion.all([f])
         self.assertEqual(str(f), str(crit))
 
     def test_multiple_args_returned_in_chain_of_ors(self):
-        crit = Criterion.all(Field('a'), Field('b'), Field('c'), Field('d'))
+        crit = Criterion.all([Field('a'), Field('b'), Field('c'), Field('d')])
+        self.assertEqual(str(crit), '"a" AND "b" AND "c" AND "d"')
+
+    def test_with_generator(self):
+        crit = Criterion.all(Field(letter)
+                             for letter in 'abcd')
         self.assertEqual(str(crit), '"a" AND "b" AND "c" AND "d"')
