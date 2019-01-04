@@ -58,6 +58,8 @@ from .queries import (
 # noinspection PyUnresolvedReferences
 from .terms import (
     Case,
+    Criterion,
+    EmptyCriterion,
     Field,
     Interval,
     Not,
