@@ -1,5 +1,5 @@
-# coding: utf-8
 import inspect
+import itertools
 import re
 from datetime import date
 
@@ -382,7 +382,7 @@ class Star(Field):
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         if self.table and (with_namespace or self.table.alias):
             return "{quote}{namespace}{quote}.*".format(
-                namespace=self.table.alias or self.table._table_name,
+                  namespace=self.table.alias or getattr(self.table, '_table_name'),
                 quote=quote_char or ''
             )
 
@@ -392,19 +392,26 @@ class Star(Field):
 class Tuple(Criterion):
     def __init__(self, *values):
         super(Tuple, self).__init__()
-        self.values = [self.wrap_constant(value) for value in values]
+        self.values = [self.wrap_constant(value)
+                       for value in values]
 
     def __str__(self):
         return self.get_sql()
 
     def fields(self):
-        return sum([value.fields() for value in self.values], [])
+        return list(itertools.chain(*[value.fields()
+                                      for value in self.values]))
 
     def get_sql(self, **kwargs):
         return '({})'.format(
               ','.join(term.get_sql(**kwargs)
                        for term in self.values)
         )
+
+    @property
+    def is_aggregate(self):
+        return all([value.is_aggregate
+                    for value in self.values])
 
 
 class Array(Tuple):
