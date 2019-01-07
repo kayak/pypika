@@ -1,7 +1,6 @@
 import inspect
 import itertools
 import re
-from datetime import date
 
 from aenum import Enum
 
@@ -18,13 +17,9 @@ from pypika.utils import (
     builder,
     ignore_copy,
     resolve_is_aggregate,
+    format_value,
+    BELCHR,
 )
-
-try:
-  basestring
-except NameError:
-  basestring = str
-
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -241,25 +236,15 @@ class ValueWrapper(Term):
         return []
 
     def get_sql(self, quote_char=None, **kwargs):
-        sql = self._get_value_sql(quote_char=quote_char, **kwargs)
-        return alias_sql(sql, self.alias, quote_char)
-
-    def _get_value_sql(self, quote_char=None, **kwargs):
-        # FIXME escape values
         if isinstance(self.value, Term):
             return self.value.get_sql(quote_char=quote_char, **kwargs)
         if isinstance(self.value, Enum):
             return self.value.value
-        if isinstance(self.value, date):
-            return "'%s'" % self.value.isoformat()
-        if isinstance(self.value, basestring):
-            value = self.value.replace("'", "''")
-            return "'%s'" % value
-        if isinstance(self.value, bool):
-            return str.lower(str(self.value))
-        if self.value is None:
-            return 'null'
-        return str(self.value)
+        # FIXME params should always exist
+        if 'params' in kwargs:
+            kwargs['params'].append(self.value)
+            return BELCHR
+        return format_value(self.value)
 
 
 class Values(Term):
