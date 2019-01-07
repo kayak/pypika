@@ -1,12 +1,12 @@
-# coding: utf-8
 import unittest
-
 from datetime import (
     date,
     datetime,
 )
 
 from pypika import (
+    Criterion,
+    EmptyCriterion,
     Field,
     Table,
     functions as fn,
@@ -650,3 +650,43 @@ class CriterionOperationsTests(unittest.TestCase):
         f = self.table_abc.foo.isnull().for_(self.table_efg)
 
         self.assertEqual('"cx1"."foo" IS NULL', str(f))
+
+
+class AnyTests(unittest.TestCase):
+    def test_zero_args_returns_empty_criterion(self):
+        crit = Criterion.any()
+        self.assertIsInstance(crit, EmptyCriterion)
+
+    def test_single_arg_returns_self(self):
+        f = Field('a')
+        crit = Criterion.any([f])
+        self.assertEqual(str(f), str(crit))
+
+    def test_multiple_args_returned_in_chain_of_ors(self):
+        crit = Criterion.any([Field('a'), Field('b'), Field('c'), Field('d')])
+        self.assertEqual(str(crit), '"a" OR "b" OR "c" OR "d"')
+
+    def test_with_generator(self):
+        crit = Criterion.any(Field(letter)
+                             for letter in 'abcd')
+        self.assertEqual(str(crit), '"a" OR "b" OR "c" OR "d"')
+
+
+class AllTests(unittest.TestCase):
+    def test_zero_args_returns_empty_criterion(self):
+        crit = Criterion.all()
+        self.assertIsInstance(crit, EmptyCriterion)
+
+    def test_single_arg_returns_self(self):
+        f = Field('a')
+        crit = Criterion.all([f])
+        self.assertEqual(str(f), str(crit))
+
+    def test_multiple_args_returned_in_chain_of_ors(self):
+        crit = Criterion.all([Field('a'), Field('b'), Field('c'), Field('d')])
+        self.assertEqual(str(crit), '"a" AND "b" AND "c" AND "d"')
+
+    def test_with_generator(self):
+        crit = Criterion.all(Field(letter)
+                             for letter in 'abcd')
+        self.assertEqual(str(crit), '"a" AND "b" AND "c" AND "d"')

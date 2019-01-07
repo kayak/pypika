@@ -292,6 +292,24 @@ class Criterion(Term):
     def __xor__(self, other):
         return ComplexCriterion(Boolean.xor_, self, other)
 
+    @staticmethod
+    def any(terms=()):
+        crit = EmptyCriterion()
+
+        for term in terms:
+            crit |= term
+
+        return crit
+
+    @staticmethod
+    def all(terms=()):
+        crit = EmptyCriterion()
+
+        for term in terms:
+            crit &= term
+
+        return crit
+
     def fields(self):
         raise NotImplementedError()
 
@@ -299,20 +317,23 @@ class Criterion(Term):
         raise NotImplementedError()
 
 
+class EmptyCriterion:
+    def __and__(self, other):
+        return other
+
+    def __or__(self, other):
+        return other
+
+    def __xor__(self, other):
+        return other
+
+
+
 class Field(Criterion):
     def __init__(self, name, alias=None, table=None):
         super(Field, self).__init__(alias)
         self.name = name
         self.table = table
-
-    def __and__(self, other):
-        return ComplexCriterion(Boolean.and_, self, other)
-
-    def __or__(self, other):
-        return ComplexCriterion(Boolean.or_, self, other)
-
-    def __xor__(self, other):
-        return ComplexCriterion(Boolean.xor_, self, other)
 
     def fields(self):
         return [self]
@@ -752,7 +773,10 @@ class Function(Criterion):
                 for table in param.tables_}
 
     def fields(self):
-        return self.args
+        return [field
+                for param in self.args
+                if hasattr(param, 'fields')
+                for field in param.fields()]
 
     @property
     def is_aggregate(self):
@@ -804,12 +828,6 @@ class Function(Criterion):
             return function_sql
 
         return alias_sql(function_sql, self.alias, quote_char)
-
-    def fields(self):
-        return [field
-                for param in self.args
-                if hasattr(param, 'fields')
-                for field in param.fields()]
 
 
 class AggregateFunction(Function):

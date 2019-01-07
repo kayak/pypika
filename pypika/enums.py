@@ -38,6 +38,8 @@ class Boolean(Comparator):
     and_ = 'AND'
     or_ = 'OR'
     xor_ = 'XOR'
+    true = 'TRUE'
+    false = 'FALSE'
 
 
 class Order(Enum):

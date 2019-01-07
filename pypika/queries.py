@@ -1,4 +1,3 @@
-# coding: utf-8
 from functools import reduce
 
 from .enums import (
@@ -7,6 +6,7 @@ from .enums import (
 )
 from .terms import (
     ArithmeticExpression,
+    EmptyCriterion,
     Field,
     Function,
     Rollup,
@@ -517,6 +517,9 @@ class QueryBuilder(Selectable, Term):
 
     @builder
     def where(self, criterion):
+        if isinstance(criterion, EmptyCriterion):
+            return
+
         self._validate_term(criterion)
 
         if self._wheres:

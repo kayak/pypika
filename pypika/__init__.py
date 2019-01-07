@@ -59,6 +59,8 @@ from .terms import (
     Array,
     Bracket,
     Case,
+    Criterion,
+    EmptyCriterion,
     Field,
     Interval,
     Not,

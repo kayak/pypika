@@ -4,6 +4,7 @@ import unittest
 from pypika import (
     AliasedQuery,
     Case,
+    EmptyCriterion,
     Field as F,
     MSSQLQuery,
     MySQLQuery,
@@ -300,6 +301,11 @@ class WhereTests(unittest.TestCase):
         q = Query.from_(self.t).select(self.t.star).where(self.t.foo.regex(r'^b'))
 
         self.assertEqual("SELECT * FROM \"abc\" WHERE \"foo\" REGEX '^b'", str(q))
+
+    def test_ignore_empty_criterion(self):
+        q1 = Query.from_(self.t).select('*').where(EmptyCriterion())
+
+        self.assertEqual('SELECT * FROM "abc"', str(q1))
 
 
 class PreWhereTests(WhereTests):
