@@ -365,6 +365,16 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar01"', str(q))
 
+    def test_groupby__no_alias(self):
+        bar = self.t.bar.as_('bar01')
+        q = Query.from_(self.t) \
+            .select(fn.Sum(self.t.foo), bar) \
+            .groupby(bar)
+
+        self.assertEqual(
+            'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
+            q.get_sql(groupby_alias=False))
+
     def test_groupby__alias_with_join(self):
         table1 = Table('table1', alias='t1')
         bar = table1.bar.as_('bar01')
@@ -571,6 +581,25 @@ class OrderByTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" ORDER BY "foo" DESC', str(q))
 
+    def test_orderby_no_alias(self):
+        bar = self.t.bar.as_('bar01')
+        q = Query.from_(self.t) \
+            .select(fn.Sum(self.t.foo), bar) \
+            .orderby(bar)
+
+        self.assertEqual(
+            'SELECT SUM("foo"),"bar" "bar01" FROM "abc" ORDER BY "bar"',
+            q.get_sql(orderby_alias=False))
+
+    def test_orderby_alias(self):
+        bar = self.t.bar.as_('bar01')
+        q = Query.from_(self.t) \
+            .select(fn.Sum(self.t.foo), bar) \
+            .orderby(bar)
+
+        self.assertEqual(
+            'SELECT SUM("foo"),"bar" "bar01" FROM "abc" ORDER BY "bar01"',
+            q.get_sql())
 
 class AliasTests(unittest.TestCase):
     t = Table('abc')
