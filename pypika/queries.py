@@ -895,18 +895,20 @@ class QueryBuilder(Selectable, Term):
     def _where_sql(self, quote_char=None, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
-    def _group_sql(self, quote_char=None, **kwargs):
+    def _group_sql(self, quote_char=None, groupby_alias=True, **kwargs):
         """
         Produces the GROUP BY part of the query.  This is a list of fields. The clauses are stored in the query under
         self._groupbys as a list fields.
 
-        If an groupby field is used in the select clause, determined by a matching alias, then the GROUP BY clause will
-        use the alias, otherwise the entire field will be rendered as SQL.
+        If an groupby field is used in the select clause,
+        determined by a matching alias, and the groupby_alias is set True
+        then the GROUP BY clause will use the alias,
+        otherwise the entire field will be rendered as SQL.
         """
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
         for field in self._groupbys:
-            if field.alias and field.alias in selected_aliases:
+            if groupby_alias and field.alias and field.alias in selected_aliases:
                 clauses.append("{quote}{alias}{quote}".format(
                       alias=field.alias,
                       quote=quote_char or '',
@@ -919,20 +921,22 @@ class QueryBuilder(Selectable, Term):
             return sql + ' WITH TOTALS'
         return sql
 
-    def _orderby_sql(self, quote_char=None, **kwargs):
+    def _orderby_sql(self, quote_char=None, orderby_alias=True, **kwargs):
         """
         Produces the ORDER BY part of the query.  This is a list of fields and possibly their directionality, ASC or
         DESC. The clauses are stored in the query under self._orderbys as a list of tuples containing the field and
         directionality (which can be None).
 
-        If an order by field is used in the select clause, determined by a matching , then the ORDER BY clause will use
+        If an order by field is used in the select clause,
+        determined by a matching, and the orderby_alias
+        is set True then the ORDER BY clause will use
         the alias, otherwise the field will be rendered as SQL.
         """
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
         for field, directionality in self._orderbys:
             term = "{quote}{alias}{quote}".format(alias=field.alias, quote=quote_char or '') \
-                if field.alias and field.alias in selected_aliases \
+                if orderby_alias and field.alias and field.alias in selected_aliases \
                 else field.get_sql(quote_char=quote_char, **kwargs)
 
             clauses.append('{term} {orient}'.format(term=term, orient=directionality.value)
