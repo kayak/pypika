@@ -11,6 +11,8 @@ matrix:
   include:
   - python: "3.7"
     dist: xenial
+  - python: "pypy3.5"
+    dist: xenial
 
 install:
     - "python setup.py install"
