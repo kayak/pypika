@@ -245,12 +245,12 @@ XOR
 
 .. code-block:: python
 
-    customers = Table('customers')
-    q = Query.from_(customers).select(
-        customers.id, customers.fname, customers.lname, customers.phone
-    ).where(
-        (customers.age >= 18) ^ customers.is_registered
-    )
+ customers = Table('customers')
+ q = Query.from_(customers).select(
+     customers.id, customers.fname, customers.lname, customers.phone
+ ).where(
+     (customers.age >= 18) ^ customers.is_registered
+ )
 
 .. code-block:: sql
 
