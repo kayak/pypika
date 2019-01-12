@@ -136,6 +136,25 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT (id) DO UPDATE SET name=\'m\'', str(query))
 
+    def test_insert_on_conflict_two_handlers_do_nothing(self):
+        with self.assertRaises(QueryException):
+            query = PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict_do_nothing(
+                'id').on_conflict_do_update(self.table_abc.id, [self.table_abc.name], ["m"])
+    
+    def test_insert_on_conflict_two_handlers_do_update(self):
+        with self.assertRaises(QueryException):
+            query = PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict_do_update(
+                self.table_abc.id, [self.table_abc.name], ["m"]).on_conflict_do_nothing('id')
+
+    def test_non_insert_on_conflict_do_nothing(self):
+        with self.assertRaises(QueryException):
+            query = PostgreSQLQuery.update(self.table_abc).set('foo', 'bar').on_conflict_do_nothing('id')
+
+    def test_non_insert_on_conflict_do_update(self):
+        with self.assertRaises(QueryException):
+            query = PostgreSQLQuery.update(self.table_abc).set('foo', 'bar').on_conflict_do_update(
+                'id', ['name'], ["m"])
+
 class PostgresInsertIntoReturningTests(unittest.TestCase):
     table_abc = Table('abc')
 

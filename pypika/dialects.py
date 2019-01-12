@@ -135,8 +135,7 @@ class PostgreQueryBuilder(QueryBuilder):
     def _conflict_field_str(self, term):
         if self._insert_table:
             return Field(term, table=self._insert_table)
-        else:
-            raise QueryException('On conflict can not be used for this query')
+            
 
     def _on_conflict_sql(self, **kwargs):
         if self._on_conflict_field is None:
@@ -153,8 +152,7 @@ class PostgreQueryBuilder(QueryBuilder):
                             value=value.get_sql(**kwargs)) for field, value in self._on_conflict_updates
                     )
                 )
-            else:
-                raise QueryException('No handler is defined for insert on conflict')
+
             return conflict_query
 
 
