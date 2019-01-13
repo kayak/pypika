@@ -212,7 +212,7 @@ class Term(object):
         return self.between(item.start, item.stop)
 
     def __str__(self):
-        return self.get_sql(quote_char='"', params=[])
+        return self.get_sql(quote_char='"')
 
     def __hash__(self):
         return hash(self.get_sql(with_alias=True))
@@ -262,13 +262,15 @@ class ValueWrapper(Term):
         if isinstance(self.value, date):
             return "'%s'" % self.value.isoformat()
         if isinstance(self.value, basestring):
+            # FIXME escape values
             value = self.value.replace("'", "''")
             return "'%s'" % value
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
         if self.value is None:
             return 'null'
-        return str(self.value)
+        # FIXME escape values
+        return str(self.value).replace("'", "''")
 
 
 class Values(Term):
