@@ -1,6 +1,7 @@
 import inspect
 import itertools
 import re
+from datetime import date
 
 from aenum import Enum
 
@@ -17,9 +18,13 @@ from pypika.utils import (
     builder,
     ignore_copy,
     resolve_is_aggregate,
-    format_value,
-    BELCHR,
 )
+
+try:
+  basestring
+except NameError:
+  basestring = str
+
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -207,13 +212,27 @@ class Term(object):
         return self.between(item.start, item.stop)
 
     def __str__(self):
-        return self.get_sql(quote_char='"')
+        return self.get_sql(quote_char='"', params=[])
 
     def __hash__(self):
         return hash(self.get_sql(with_alias=True))
 
     def get_sql(self):
         raise NotImplementedError()
+
+
+class Parameter(Term):
+    is_aggregate = None
+
+    def __init__(self, placeholder):
+        super(Parameter, self).__init__()
+        self.placeholder = placeholder
+
+    def fields(self):
+        return []
+
+    def get_sql(self, **kwargs):
+        return str(self.placeholder)
 
 
 class Negative(Term):
@@ -240,11 +259,16 @@ class ValueWrapper(Term):
             return self.value.get_sql(quote_char=quote_char, **kwargs)
         if isinstance(self.value, Enum):
             return self.value.value
-        # FIXME params should always exist
-        if 'params' in kwargs:
-            kwargs['params'].append(self.value)
-            return BELCHR
-        return format_value(self.value)
+        if isinstance(self.value, date):
+            return "'%s'" % self.value.isoformat()
+        if isinstance(self.value, basestring):
+            value = self.value.replace("'", "''")
+            return "'%s'" % value
+        if isinstance(self.value, bool):
+            return str.lower(str(self.value))
+        if self.value is None:
+            return 'null'
+        return str(self.value)
 
 
 class Values(Term):
@@ -379,9 +403,6 @@ class Tuple(Criterion):
         super(Tuple, self).__init__()
         self.values = [self.wrap_constant(value)
                        for value in values]
-
-    def __str__(self):
-        return self.get_sql()
 
     def fields(self):
         return list(itertools.chain(*[value.fields()
@@ -722,9 +743,6 @@ class Not(Criterion):
         sql = "NOT {term}".format(term=self.term.get_sql(quote_char=quote_char,
                                                          **kwargs))
         return alias_sql(sql, self.alias, quote_char=quote_char)
-
-    def __str__(self):
-        return self.get_sql(quote_char='"')
 
     @ignore_copy
     def __getattr__(self, name):

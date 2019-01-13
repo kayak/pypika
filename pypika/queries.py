@@ -24,8 +24,6 @@ from .utils import (
     builder,
     format_quotes,
     ignore_copy,
-    format_value,
-    BELCHR,
 )
 
 __author__ = "Timothy Heys"
@@ -735,7 +733,7 @@ class QueryBuilder(Selectable, Term):
     def __hash__(self):
         return hash(self.alias) + sum(hash(clause) for clause in self._from)
 
-    def _get_sql(self, with_alias=False, subquery=False, **kwargs):
+    def get_sql(self, with_alias=False, subquery=False, **kwargs):
         kwargs.setdefault('quote_char', self.quote_char)
 
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
@@ -828,20 +826,6 @@ class QueryBuilder(Selectable, Term):
             return alias_sql(querystring, self.alias, kwargs.get('quote_char'))
 
         return querystring
-
-    def get_sql(self, with_alias=False, subquery=False, **kwargs):
-        if subquery:
-            return self._get_sql(with_alias=with_alias, subquery=True, **kwargs)
-
-        params = kwargs['params'] = []
-        sql = self._get_sql(with_alias=with_alias, **kwargs)
-        return sql.replace('%', '%%').replace(BELCHR, '%s') % tuple(format_value(val) for val in params)
-
-    def get_parametrized_sql(self, with_alias=False, **kwargs):
-        params = kwargs['params'] = []
-        sql = self._get_sql(with_alias=with_alias, subquery=subquery, **kwargs)
-        # TODO replace '?' with a generator
-        return sql.replace(BELCHR, '?'), params
 
     def _with_sql(self, **kwargs):
         return 'WITH ' + ','.join(

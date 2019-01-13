@@ -1,15 +1,7 @@
 # coding: utf-8
-from datetime import date
-
-try:
-  basestring
-except NameError:
-  basestring = str
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-
-BELCHR = chr(7)  # Use BEL as sentinel value for parameter placeholder.
 
 
 class QueryException(Exception):
@@ -108,18 +100,3 @@ def alias_sql(sql, alias, quote_char=None):
     if alias is None:
         return sql
     return '{sql} {alias}'.format(sql=sql, alias=format_quotes(alias, quote_char))
-
-
-def format_value(value):
-    # FIXME test this
-    # FIXME escape values
-    if isinstance(value, date):
-        return "'%s'" % value.isoformat()
-    if isinstance(value, basestring):
-        value = value.replace("'", "''")
-        return "'%s'" % value
-    if isinstance(value, bool):
-        return str.lower(str(value))
-    if value is None:
-        return 'null'
-    return str(value)

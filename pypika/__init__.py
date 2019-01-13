@@ -66,6 +66,7 @@ from .terms import (
     Not,
     Rollup,
     Tuple,
+    Parameter,
 )
 # noinspection PyUnresolvedReferences
 from .utils import (
