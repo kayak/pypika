@@ -102,44 +102,42 @@ class PostgreQueryBuilder(QueryBuilder):
         self._on_conflict_updates = []
 
     @builder
-    def on_conflict_do_nothing(self, target_field):
+    def on_conflict(self, target_field):
         if not self._insert_table:
             raise QueryException('On conflict only applies to insert query')
-        if len(self._on_conflict_updates) > 0:
-            raise QueryException('Can not have two conflict handlers')
         if isinstance(target_field, str):
             self._on_conflict_field = self._conflict_field_str(target_field)
         elif isinstance(target_field, Field):
             self._on_conflict_field = target_field
-        self._on_conflict_do_nothing = True
-        
 
     @builder
-    def on_conflict_do_update(self, target_field, update_fields, update_values):
-        if not self._insert_table:
-            raise QueryException('On conflict only applies to insert query')
+    def do_nothing(self):
+        if len(self._on_conflict_updates) > 0:
+            raise QueryException('Can not have two conflict handlers')
+        self._on_conflict_do_nothing = True
+
+    @builder
+    def do_update(self, update_field, update_value):
         if self._on_conflict_do_nothing:
             raise QueryException('Can not have two conflict handlers')
-        assert len(update_fields) == len(update_values), 'number of fields does noth match with number of values'
-        if isinstance(target_field, str):
-            self._on_conflict_field = self._conflict_field_str(target_field)
-        elif isinstance(target_field, Field):
-            self._on_conflict_field = target_field
-        for i, f in enumerate(update_fields):
-            if isinstance(f, str):
-                field = self._conflict_field_str(f)
-            elif isinstance(f, Field):
-                field = f
-            self._on_conflict_updates.append((field, ValueWrapper(update_values[i])))
+        #assert len(update_fields) == len(update_values), 'number of fields does noth match with number of values'
+        #for i, f in enumerate(update_fields):
+        #field = None
+        if isinstance(update_field, str):
+            field = self._conflict_field_str(update_field)
+        elif isinstance(update_field, Field):
+            field = update_field
+        self._on_conflict_updates.append((field, ValueWrapper(update_value)))
 
     def _conflict_field_str(self, term):
         if self._insert_table:
             return Field(term, table=self._insert_table)
             
-
     def _on_conflict_sql(self, **kwargs):
         if self._on_conflict_field is None:
             return ''
+        elif not self._on_conflict_do_nothing and len(self._on_conflict_updates) == 0:
+            raise QueryException('No handler defined for on conflict')
         else:
             conflict_query = ' ON CONFLICT (' + self._on_conflict_field.get_sql(with_alias=True, **kwargs) + ')'
             if self._on_conflict_do_nothing:
