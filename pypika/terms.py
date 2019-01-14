@@ -255,6 +255,7 @@ class ValueWrapper(Term):
         return []
 
     def get_sql(self, quote_char=None, **kwargs):
+        # FIXME escape values
         if isinstance(self.value, Term):
             return self.value.get_sql(quote_char=quote_char, **kwargs)
         if isinstance(self.value, Enum):
@@ -262,15 +263,13 @@ class ValueWrapper(Term):
         if isinstance(self.value, date):
             return "'%s'" % self.value.isoformat()
         if isinstance(self.value, basestring):
-            # FIXME escape values
             value = self.value.replace("'", "''")
             return "'%s'" % value
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
         if self.value is None:
             return 'null'
-        # FIXME escape values
-        return str(self.value).replace("'", "''")
+        return str(self.value)
 
 
 class Values(Term):
