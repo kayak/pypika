@@ -97,6 +97,62 @@ class PostgreQueryBuilder(QueryBuilder):
         super(PostgreQueryBuilder, self).__init__(dialect=Dialects.POSTGRESQL)
         self._returns = []
         self._return_star = False
+        self._on_conflict_field = None
+        self._on_conflict_do_nothing = False
+        self._on_conflict_updates = []
+
+    @builder
+    def on_conflict(self, target_field):
+        if not self._insert_table:
+            raise QueryException('On conflict only applies to insert query')
+        if isinstance(target_field, str):
+            self._on_conflict_field = self._conflict_field_str(target_field)
+        elif isinstance(target_field, Field):
+            self._on_conflict_field = target_field
+
+    @builder
+    def do_nothing(self):
+        if len(self._on_conflict_updates) > 0:
+            raise QueryException('Can not have two conflict handlers')
+        self._on_conflict_do_nothing = True
+
+    @builder
+    def do_update(self, update_field, update_value):
+        if self._on_conflict_do_nothing:
+            raise QueryException('Can not have two conflict handlers')
+        #assert len(update_fields) == len(update_values), 'number of fields does noth match with number of values'
+        #for i, f in enumerate(update_fields):
+        #field = None
+        if isinstance(update_field, str):
+            field = self._conflict_field_str(update_field)
+        elif isinstance(update_field, Field):
+            field = update_field
+        self._on_conflict_updates.append((field, ValueWrapper(update_value)))
+
+    def _conflict_field_str(self, term):
+        if self._insert_table:
+            return Field(term, table=self._insert_table)
+            
+    def _on_conflict_sql(self, **kwargs):
+        if self._on_conflict_field is None:
+            return ''
+        elif not self._on_conflict_do_nothing and len(self._on_conflict_updates) == 0:
+            raise QueryException('No handler defined for on conflict')
+        else:
+            conflict_query = ' ON CONFLICT (' + self._on_conflict_field.get_sql(with_alias=True, **kwargs) + ')'
+            if self._on_conflict_do_nothing:
+                conflict_query += ' DO NOTHING'
+            elif len(self._on_conflict_updates) > 0:
+                conflict_query += ' DO UPDATE SET {updates}'.format(
+                    updates=','.join(
+                        '{field}={value}'.format(
+                            field=field.get_sql(**kwargs),
+                            value=value.get_sql(**kwargs)) for field, value in self._on_conflict_updates
+                    )
+                )
+
+            return conflict_query
+
 
     @builder
     def returning(self, *terms):
@@ -137,7 +193,7 @@ class PostgreQueryBuilder(QueryBuilder):
 
         if isinstance(term, Star):
             self._set_returns_for_star()
-
+        
         self._returns.append(term)
 
     def _return_field_str(self, term):
@@ -167,6 +223,7 @@ class PostgreQueryBuilder(QueryBuilder):
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         querystring = super(PostgreQueryBuilder, self).get_sql(with_alias, subquery, **kwargs)
+        querystring += self._on_conflict_sql()
         if self._returns:
             querystring += self._returning_sql()
         return querystring
