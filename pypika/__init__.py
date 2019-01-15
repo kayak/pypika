@@ -64,9 +64,9 @@ from .terms import (
     Field,
     Interval,
     Not,
+    Parameter,
     Rollup,
     Tuple,
-    Parameter,
 )
 # noinspection PyUnresolvedReferences
 from .utils import (
@@ -80,4 +80,4 @@ from .utils import (
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.20.2"
+__version__ = "0.21.0"
