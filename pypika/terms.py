@@ -221,6 +221,20 @@ class Term(object):
         raise NotImplementedError()
 
 
+class Parameter(Term):
+    is_aggregate = None
+
+    def __init__(self, placeholder):
+        super(Parameter, self).__init__()
+        self.placeholder = placeholder
+
+    def fields(self):
+        return []
+
+    def get_sql(self, **kwargs):
+        return str(self.placeholder)
+
+
 class Negative(Term):
     def __init__(self, term):
         super(Negative, self).__init__()
@@ -241,10 +255,6 @@ class ValueWrapper(Term):
         return []
 
     def get_sql(self, quote_char=None, **kwargs):
-        sql = self._get_value_sql(quote_char=quote_char, **kwargs)
-        return alias_sql(sql, self.alias, quote_char)
-
-    def _get_value_sql(self, quote_char=None, **kwargs):
         # FIXME escape values
         if isinstance(self.value, Term):
             return self.value.get_sql(quote_char=quote_char, **kwargs)
@@ -394,9 +404,6 @@ class Tuple(Criterion):
         super(Tuple, self).__init__()
         self.values = [self.wrap_constant(value)
                        for value in values]
-
-    def __str__(self):
-        return self.get_sql()
 
     def fields(self):
         return list(itertools.chain(*[value.fields()
@@ -737,9 +744,6 @@ class Not(Criterion):
         sql = "NOT {term}".format(term=self.term.get_sql(quote_char=quote_char,
                                                          **kwargs))
         return alias_sql(sql, self.alias, quote_char=quote_char)
-
-    def __str__(self):
-        return self.get_sql(quote_char='"')
 
     @ignore_copy
     def __getattr__(self, name):

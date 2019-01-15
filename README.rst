@@ -728,6 +728,44 @@ The syntax for joining tables is the same as when selecting data
    JOIN "profiles" ON "profiles"."customer_id"="customers"."id"
    SET "customers"."lname"="profiles"."lname"
 
+Parametrized Queries
+^^^^^^^^^^^^^^^^^^^^
+
+PyPika allows you to use ``Parameter(str)`` term as a placeholder for parametrized queries.
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers).columns('id', 'fname', 'lname')
+        .insert(Parameter(':1'), Parameter(':2'), Parameter(':3'))
+
+.. code-block:: sql
+
+    INSERT INTO customers (id,fname,lname) VALUES (:1,:2,:3)
+
+This allows you to build prepared statements, and/or avoid SQL-injection related risks.
+
+Due to the mix of syntax for parameters, depending on connector/driver, it is required that you specify the parameter token explicitly.
+
+An example of some common SQL parameter styles used in Python drivers are:
+
+PostgreSQL:
+    ``$number`` OR ``%s`` + ``:name`` (depending on driver)
+MySQL:
+    ``%s``
+SQLite:
+    ``?``
+Vertica:
+    ``:name``
+Oracle:
+    ``:number`` + ``:name``
+MSSQL:
+    ``%(name)s`` OR ``:name`` + ``:number`` (depending on driver)
+
+You can find out what parameter style is needed for DBAPI compliant drivers here: https://www.python.org/dev/peps/pep-0249/#paramstyle or in the DB driver documentation.
+
+
 .. _tutorial_end:
 
 

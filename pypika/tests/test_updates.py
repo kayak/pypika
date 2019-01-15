@@ -9,6 +9,7 @@ __email__ = "theys@kayak.com"
 
 class UpdateTests(unittest.TestCase):
     table_abc = Table('abc')
+    table_def = Table('def')
 
     def test_empty_query(self):
         q = Query.update('abc')
@@ -34,6 +35,10 @@ class UpdateTests(unittest.TestCase):
     def test_update_with_none(self):
         q = Query.update('abc').set('foo', None)
         self.assertEqual('UPDATE "abc" SET "foo"=null', str(q))
+
+    def test_update_with_join(self):
+        q = Query.update(self.table_abc).join(self.table_def).on(self.table_def.abc_id == self.table_abc.id).set(self.table_abc.lname, self.table_def.lname)
+        self.assertEqual('UPDATE "abc" JOIN "def" ON "def"."abc_id"="abc"."id" SET "abc"."lname"="def"."lname"', str(q))
 
 
 class PostgresUpdateTests(unittest.TestCase):
