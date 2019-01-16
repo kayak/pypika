@@ -216,6 +216,13 @@ class ArithmeticTests(unittest.TestCase):
         self.assertEqual('SELECT MOD(\"a\",2) FROM \"abc\"', str(q1))
         self.assertEqual('SELECT MOD(\"a\",2) FROM \"abc\"', str(q2))
 
+    def test__floor(self):
+        q1 = Q.from_('abc').select(fn.Floor(F('foo')))
+        q2 = Q.from_(self.t).select(fn.Floor(self.t.foo))
+
+        self.assertEqual('SELECT FLOOR(\"foo\") FROM \"abc\"', str(q1))
+        self.assertEqual('SELECT FLOOR(\"foo\") FROM \"abc\"', str(q2))
+
 
 class AggregationTests(unittest.TestCase):
     def test__count(self):
@@ -371,7 +378,6 @@ class StringTests(unittest.TestCase):
         q = Q.from_(self.t).select(fn.Substring(self.t.foo, 2, 6))
 
         self.assertEqual("SELECT SUBSTRING(\"foo\",2,6) FROM \"abc\"", str(q))
-
 
 
 class SplitPartFunctionTests(unittest.TestCase):

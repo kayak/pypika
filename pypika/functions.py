@@ -82,6 +82,11 @@ class Sqrt(Function):
         super(Sqrt, self).__init__('SQRT', term, alias=alias)
 
 
+class Floor(Function):
+    def __init__(self, term, alias=None):
+        super(Floor, self).__init__('FLOOR', term, alias=alias)
+
+
 # Type Functions
 class Cast(Function):
     def __init__(self, term, as_type, alias=None):
