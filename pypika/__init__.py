@@ -32,12 +32,14 @@ This contains all of the utility classes such as exceptions and decorators.
 """
 # noinspection PyUnresolvedReferences
 from .dialects import (
+    ClickHouseQuery,
     Dialects,
     MSSQLQuery,
     MySQLQuery,
     OracleQuery,
     PostgreSQLQuery,
     RedshiftQuery,
+    SQLLiteQuery,
     VerticaQuery,
 )
 # noinspection PyUnresolvedReferences

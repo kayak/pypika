@@ -17,6 +17,8 @@ from pypika import (
     Table,
     Tables,
     VerticaQuery,
+    ClickHouseQuery,
+    SQLLiteQuery,
     functions as fn,
 )
 
@@ -386,6 +388,38 @@ class GroupByTests(unittest.TestCase):
             'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
             q.get_sql(groupby_alias=False))
 
+    def test_groupby__no_alias_platforms(self):
+        for query_cls in [MSSQLQuery, OracleQuery]:
+            with self.subTest('for query class {}'.format(query_cls.__class__.__name__)):
+                bar = self.t.bar.as_('bar01')
+                q = query_cls.from_(self.t) \
+                    .select(fn.Sum(self.t.foo), bar) \
+                    .groupby(bar)
+
+                self.assertEqual(
+                    'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
+                    str(q)
+                )
+
+    def test_groupby__alias_platforms(self):
+        for query_cls in [MySQLQuery, VerticaQuery, PostgreSQLQuery, RedshiftQuery, ClickHouseQuery, SQLLiteQuery]:
+            with self.subTest('for query class {}'.format(query_cls.__class__.__name__)):
+                bar = self.t.bar.as_('bar01')
+                q = query_cls.from_(self.t) \
+                    .select(fn.Sum(self.t.foo), bar) \
+                    .groupby(bar)
+
+                quote_char = query_cls._builder().QUOTE_CHAR \
+                    if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+
+                self.assertEqual(
+                    'SELECT SUM({quote_char}foo{quote_char}),{quote_char}bar{quote_char} '
+                    '{quote_char}bar01{quote_char} '
+                    'FROM {quote_char}abc{quote_char} '
+                    'GROUP BY {quote_char}bar01{quote_char}'.format(quote_char=quote_char),
+                    str(q)
+                )
+
     def test_groupby__alias_with_join(self):
         table1 = Table('table1', alias='t1')
         bar = table1.bar.as_('bar01')
@@ -696,7 +730,7 @@ class AliasTests(unittest.TestCase):
         my_foo = table_abc.foo.as_('my_foo')
         q = Query.from_(table_abc) \
             .select(my_foo, table_abc.bar) \
-            .groupby(my_foo)\
+            .groupby(my_foo) \
             .orderby(my_foo)
 
         self.assertEqual('SELECT "q0"."foo" "my_foo","q0"."bar" '
