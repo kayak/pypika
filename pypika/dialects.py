@@ -17,8 +17,12 @@ from pypika.utils import (
 
 
 class MySQLQueryBuilder(QueryBuilder):
+    QUOTE_CHAR = '`'
+
     def __init__(self):
-        super(MySQLQueryBuilder, self).__init__(quote_char='`', dialect=Dialects.MYSQL, wrap_union_queries=False)
+        super(MySQLQueryBuilder, self).__init__(quote_char=self.QUOTE_CHAR,
+                                                dialect=Dialects.MYSQL,
+                                                wrap_union_queries=False)
         self._duplicate_updates = []
 
     @builder
@@ -82,6 +86,14 @@ class VerticaQuery(Query):
         return VerticaQueryBuilder()
 
 
+class OracleQueryBuilder(QueryBuilder):
+    def __init__(self):
+        super(OracleQueryBuilder, self).__init__(dialect=Dialects.ORACLE)
+
+    def get_sql(self, *args, **kwargs):
+        return super(OracleQueryBuilder, self).get_sql(*args, groupby_alias=False, **kwargs)
+
+
 class OracleQuery(Query):
     """
     Defines a query class for use with Oracle.
@@ -89,7 +101,7 @@ class OracleQuery(Query):
 
     @classmethod
     def _builder(cls):
-        return QueryBuilder(dialect=Dialects.ORACLE)
+        return OracleQueryBuilder()
 
 
 class PostgreQueryBuilder(QueryBuilder):
@@ -120,9 +132,7 @@ class PostgreQueryBuilder(QueryBuilder):
     def do_update(self, update_field, update_value):
         if self._on_conflict_do_nothing:
             raise QueryException('Can not have two conflict handlers')
-        #assert len(update_fields) == len(update_values), 'number of fields does noth match with number of values'
-        #for i, f in enumerate(update_fields):
-        #field = None
+
         if isinstance(update_field, str):
             field = self._conflict_field_str(update_field)
         elif isinstance(update_field, Field):
@@ -132,7 +142,7 @@ class PostgreQueryBuilder(QueryBuilder):
     def _conflict_field_str(self, term):
         if self._insert_table:
             return Field(term, table=self._insert_table)
-            
+
     def _on_conflict_sql(self, **kwargs):
         if self._on_conflict_field is None:
             return ''
@@ -152,7 +162,6 @@ class PostgreQueryBuilder(QueryBuilder):
                 )
 
             return conflict_query
-
 
     @builder
     def returning(self, *terms):
@@ -193,7 +202,7 @@ class PostgreQueryBuilder(QueryBuilder):
 
         if isinstance(term, Star):
             self._set_returns_for_star()
-        
+
         self._returns.append(term)
 
     def _return_field_str(self, term):
@@ -249,6 +258,14 @@ class RedshiftQuery(Query):
         return QueryBuilder(dialect=Dialects.REDSHIFT)
 
 
+class MSSQLQueryBuilder(QueryBuilder):
+    def __init__(self):
+        super(MSSQLQueryBuilder, self).__init__(dialect=Dialects.MSSQL)
+
+    def get_sql(self, *args, **kwargs):
+        return super(MSSQLQueryBuilder, self).get_sql(*args, groupby_alias=False, **kwargs)
+
+
 class MSSQLQuery(Query):
     """
     Defines a query class for use with Microsoft SQL Server.
@@ -256,7 +273,7 @@ class MSSQLQuery(Query):
 
     @classmethod
     def _builder(cls):
-        return QueryBuilder(dialect=Dialects.MSSQL)
+        return MSSQLQueryBuilder()
 
 
 class ClickHouseQuery(Query):
