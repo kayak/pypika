@@ -389,36 +389,35 @@ class GroupByTests(unittest.TestCase):
             q.get_sql(groupby_alias=False))
 
     def test_groupby__no_alias_platforms(self):
+        bar = self.t.bar.as_('bar01')
         for query_cls in [MSSQLQuery, OracleQuery]:
-            with self.subTest('for query class {}'.format(query_cls.__class__.__name__)):
-                bar = self.t.bar.as_('bar01')
-                q = query_cls.from_(self.t) \
-                    .select(fn.Sum(self.t.foo), bar) \
-                    .groupby(bar)
+            q = query_cls.from_(self.t) \
+                .select(fn.Sum(self.t.foo), bar) \
+                .groupby(bar)
 
-                self.assertEqual(
-                    'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
-                    str(q)
-                )
+            self.assertEqual(
+                'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
+                str(q)
+            )
 
     def test_groupby__alias_platforms(self):
+        bar = self.t.bar.as_('bar01')
+
         for query_cls in [MySQLQuery, VerticaQuery, PostgreSQLQuery, RedshiftQuery, ClickHouseQuery, SQLLiteQuery]:
-            with self.subTest('for query class {}'.format(query_cls.__class__.__name__)):
-                bar = self.t.bar.as_('bar01')
-                q = query_cls.from_(self.t) \
-                    .select(fn.Sum(self.t.foo), bar) \
-                    .groupby(bar)
+            q = query_cls.from_(self.t) \
+                .select(fn.Sum(self.t.foo), bar) \
+                .groupby(bar)
 
-                quote_char = query_cls._builder().QUOTE_CHAR \
-                    if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            quote_char = query_cls._builder().QUOTE_CHAR \
+                if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
 
-                self.assertEqual(
-                    'SELECT SUM({quote_char}foo{quote_char}),{quote_char}bar{quote_char} '
-                    '{quote_char}bar01{quote_char} '
-                    'FROM {quote_char}abc{quote_char} '
-                    'GROUP BY {quote_char}bar01{quote_char}'.format(quote_char=quote_char),
-                    str(q)
-                )
+            self.assertEqual(
+                'SELECT SUM({quote_char}foo{quote_char}),{quote_char}bar{quote_char} '
+                '{quote_char}bar01{quote_char} '
+                'FROM {quote_char}abc{quote_char} '
+                'GROUP BY {quote_char}bar01{quote_char}'.format(quote_char=quote_char),
+                str(q)
+            )
 
     def test_groupby__alias_with_join(self):
         table1 = Table('table1', alias='t1')
