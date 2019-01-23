@@ -254,7 +254,7 @@ class ValueWrapper(Term):
     def fields(self):
         return []
 
-    def get_sql(self, quote_char=None, **kwargs):
+    def get_value_sql(self, quote_char=None, **kwargs):
         # FIXME escape values
         if isinstance(self.value, Term):
             return self.value.get_sql(quote_char=quote_char, **kwargs)
@@ -270,6 +270,10 @@ class ValueWrapper(Term):
         if self.value is None:
             return 'null'
         return str(self.value)
+
+    def get_sql(self, quote_char=None, **kwargs):
+        sql = self.get_value_sql(quote_char=quote_char, **kwargs)
+        return alias_sql(sql, self.alias, quote_char)
 
 
 class Values(Term):
@@ -287,8 +291,6 @@ class NullValue(Term):
 
     def get_sql(self, quote_char=None, **kwargs):
         sql = 'NULL'
-        if self.alias is None:
-            return sql
         return alias_sql(sql, self.alias, quote_char)
 
 
