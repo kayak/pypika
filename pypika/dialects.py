@@ -1,3 +1,5 @@
+from copy import copy
+
 from pypika.enums import Dialects
 from pypika.queries import (
     Query,
@@ -24,6 +26,11 @@ class MySQLQueryBuilder(QueryBuilder):
                                                 dialect=Dialects.MYSQL,
                                                 wrap_union_queries=False)
         self._duplicate_updates = []
+
+    def __copy__(self):
+        newone = super(MySQLQueryBuilder, self).__copy__()
+        newone._duplicate_updates = copy(self._duplicate_updates)
+        return newone
 
     @builder
     def on_duplicate_key_update(self, field, value):
@@ -112,6 +119,12 @@ class PostgreQueryBuilder(QueryBuilder):
         self._on_conflict_field = None
         self._on_conflict_do_nothing = False
         self._on_conflict_updates = []
+
+    def __copy__(self):
+        newone = super(PostgreQueryBuilder, self).__copy__()
+        newone._returns = copy(self._returns)
+        newone._on_conflict_updates = copy(self._on_conflict_updates)
+        return newone
 
     @builder
     def on_conflict(self, target_field):
