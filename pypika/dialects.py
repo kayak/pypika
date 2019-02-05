@@ -26,6 +26,7 @@ class MySQLQueryBuilder(QueryBuilder):
                                                 dialect=Dialects.MYSQL,
                                                 wrap_union_queries=False)
         self._duplicate_updates = []
+        self._modifiers = []
 
     def __copy__(self):
         newone = super(MySQLQueryBuilder, self).__copy__()
@@ -50,6 +51,28 @@ class MySQLQueryBuilder(QueryBuilder):
                     field=field.get_sql(**kwargs),
                     value=value.get_sql(**kwargs)) for field, value in self._duplicate_updates
             )
+        )
+
+    @builder
+    def modifier(self, value):
+        """
+        Adds a modifier such as SQL_CALC_FOUND_ROWS to the query.
+        https://dev.mysql.com/doc/refman/5.7/en/select.html
+
+        :param value: The modifier value e.g. SQL_CALC_FOUND_ROWS
+        """
+        self._modifiers.append(value)
+
+    def _select_sql(self, **kwargs):
+        """
+        Overridden function to generate the SELECT part of the SQL statement,
+        with the addition of the a modifier if present.
+        """
+        return 'SELECT {distinct}{modifier}{select}'.format(
+              distinct='DISTINCT ' if self._distinct else '',
+              modifier='{} '.format(' '.join(self._modifiers)) if self._modifiers else '',
+              select=','.join(term.get_sql(with_alias=True, subquery=True, **kwargs)
+                              for term in self._selects),
         )
 
 
