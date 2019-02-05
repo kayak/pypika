@@ -19,7 +19,7 @@ class PseudocolumnsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
+        super(PseudocolumnsTest, cls).setUpClass()
         cls.table1 = Table('table1')
 
     def test_column_value(self):
