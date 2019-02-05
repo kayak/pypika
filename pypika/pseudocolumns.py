@@ -1,8 +1,8 @@
-from .terms import Psuedocolumn
+from .terms import PseudoColumn
 
-ColumnValue = Psuedocolumn('COLUMN_VALUE')
-ObjectID = Psuedocolumn('OBJECT_ID')
-ObjectValue = Psuedocolumn('OBJECT_VALUE')
-RowNum = Psuedocolumn('ROWNUM')
-RowID = Psuedocolumn('ROWID')
-SysDate = Psuedocolumn('SYSDATE')
+ColumnValue = PseudoColumn('COLUMN_VALUE')
+ObjectID = PseudoColumn('OBJECT_ID')
+ObjectValue = PseudoColumn('OBJECT_VALUE')
+RowNum = PseudoColumn('ROWNUM')
+RowID = PseudoColumn('ROWID')
+SysDate = PseudoColumn('SYSDATE')

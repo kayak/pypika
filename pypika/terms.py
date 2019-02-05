@@ -1076,13 +1076,17 @@ class Rollup(Function):
         super(Rollup, self).__init__('ROLLUP', *terms)
 
 
-class Psuedocolumn(Term):
+class PseudoColumn(Term):
     """
-    Represents a pseudocolumn
+    Represents a pseudo column (a "column" which yields a value when selected
+    but is not actually a real table column).
     """
 
     def __init__(self, name):
         self.name = name
 
-    def to_sql(self, **kwargs):
+    def get_sql(self, **kwargs):
         return self.name
+
+    def fields(self):
+        return []
