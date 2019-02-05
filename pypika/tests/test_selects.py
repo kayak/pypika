@@ -21,6 +21,7 @@ from pypika import (
     SQLLiteQuery,
     functions as fn,
 )
+from pypika.terms import ValueWrapper
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -38,6 +39,11 @@ class SelectTests(unittest.TestCase):
         q = Query.select(1)
 
         self.assertEqual('SELECT 1', str(q))
+
+    def test_select_no_with_alias_from(self):
+        q = Query.select(ValueWrapper(1, 'test'))
+
+        self.assertEqual('SELECT 1 "test"', str(q))
 
     def test_select_no_from_with_field_raises_exception(self):
         with self.assertRaises(QueryException):

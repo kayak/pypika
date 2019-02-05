@@ -1,3 +1,4 @@
+from copy import copy
 from functools import reduce
 
 from .enums import (
@@ -396,11 +397,19 @@ class QueryBuilder(Selectable, Term):
         self._wrapper_cls = wrapper_cls
 
     def __copy__(self):
-        newone = type(self)()
+        newone = type(self).__new__(type(self))
         newone.__dict__.update(self.__dict__)
-        for key, value in self.__dict__.items():
-            if isinstance(value, (set, list)):
-                newone.__dict__[key] = type(value)(x for x in value)
+        newone._select_star_tables = copy(self._select_star_tables)
+        newone._from = copy(self._from)
+        newone._with = copy(self._with)
+        newone._selects = copy(self._selects)
+        newone._columns = copy(self._columns)
+        newone._values = copy(self._values)
+        newone._groupbys = copy(self._groupbys)
+        newone._orderbys = copy(self._orderbys)
+        newone._joins = copy(self._joins)
+        newone._unions = copy(self._unions)
+        newone._updates = copy(self._updates)
         return newone
 
     @builder
