@@ -15,11 +15,11 @@ from pypika.pseudocolumns import (
 from pypika.terms import PseudoColumn
 
 
-class PseudocolumnsTest(unittest.TestCase):
+class PseudoColumnsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(PseudocolumnsTest, cls).setUpClass()
+        super(PseudoColumnsTest, cls).setUpClass()
         cls.table1 = Table('table1')
 
     def test_column_value(self):
