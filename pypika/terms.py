@@ -433,7 +433,7 @@ class Bracket(Tuple):
         super(Bracket, self).__init__(term)
 
     def get_sql(self, **kwargs):
-        sql = super().get_sql(**kwargs)
+        sql = super(Bracket, self).get_sql(**kwargs)
         return '{sql} {alias}'.format(sql=sql, alias=self.alias) if self.alias else sql
 
 
