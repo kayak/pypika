@@ -86,4 +86,4 @@ class BracketTests(unittest.TestCase):
             .from_(self.table_abc) \
             .select(Bracket(self.table_abc.foo / 2).as_('alias'))
 
-        self.assertEqual('SELECT ("foo"/2) alias FROM "abc"', str(q))
+        self.assertEqual('SELECT ("foo"/2) "alias" FROM "abc"', str(q))
