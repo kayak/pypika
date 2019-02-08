@@ -435,8 +435,11 @@ class Bracket(Tuple):
         super(Bracket, self).__init__(term)
 
     def get_sql(self, **kwargs):
-        sql = super(Bracket, self).get_sql(**kwargs)
-        return alias_sql(sql, self.alias, kwargs.get('quote_char', None)) if self.alias else sql
+        return alias_sql(
+            sql=super(Bracket, self).get_sql(**kwargs),
+            alias=self.alias,
+            quote_char=kwargs.get('quote_char', None),
+        )
 
 
 class BasicCriterion(Criterion):
