@@ -376,6 +376,11 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo",COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"', str(q))
 
+    def test_groupby__int(self):
+        q = Query.from_('abc').groupby(1).select('foo', fn.Count('*').distinct())
+
+        self.assertEqual('SELECT "foo",COUNT(DISTINCT *) FROM "abc" GROUP BY 1', str(q))
+
     def test_groupby__alias(self):
         bar = self.t.bar.as_('bar01')
         q = Query.from_(self.t) \

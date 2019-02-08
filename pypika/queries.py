@@ -550,6 +550,8 @@ class QueryBuilder(Selectable, Term):
         for term in terms:
             if isinstance(term, str):
                 term = Field(term, table=self._from[0])
+            elif isinstance(term, int):
+                term = Field(str(term), table=self._from[0]).wrap_constant(term)
 
             self._validate_term(term)
             self._groupbys.append(term)
