@@ -80,3 +80,10 @@ class BracketTests(unittest.TestCase):
             .select(Bracket(self.table_abc.foo / 2) / 2)
 
         self.assertEqual('SELECT ("foo"/2)/2 FROM "abc"', str(q))
+
+    def test_arithmetic_with_brackets_and_alias(self):
+        q = Query \
+            .from_(self.table_abc) \
+            .select(Bracket(self.table_abc.foo / 2).as_('alias'))
+
+        self.assertEqual('SELECT ("foo"/2) alias FROM "abc"', str(q))

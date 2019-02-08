@@ -21,10 +21,9 @@ from pypika.utils import (
 )
 
 try:
-  basestring
+    basestring
 except NameError:
-  basestring = str
-
+    basestring = str
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -73,7 +72,8 @@ class Term(object):
 
     def for_(self, table):
         """
-        Replaces the tables of this term for the table parameter provided.  The base implementation returns self because not all terms have a table property.
+        Replaces the tables of this term for the table parameter provided.  The base implementation returns self
+        because not all terms have a table property.
 
         :param table:
             The table to replace with.
@@ -277,7 +277,7 @@ class ValueWrapper(Term):
 
 
 class Values(Term):
-    def __init__(self, field,):
+    def __init__(self, field, ):
         super(Values, self).__init__(None)
         self.field = Field(field) if not isinstance(field, Field) else field
 
@@ -340,7 +340,6 @@ class EmptyCriterion:
         return other
 
 
-
 class Field(Criterion):
     def __init__(self, name, alias=None, table=None):
         super(Field, self).__init__(alias)
@@ -394,7 +393,7 @@ class Star(Field):
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         if self.table and (with_namespace or self.table.alias):
             return "{quote}{namespace}{quote}.*".format(
-                  namespace=self.table.alias or getattr(self.table, '_table_name'),
+                namespace=self.table.alias or getattr(self.table, '_table_name'),
                 quote=quote_char or ''
             )
 
@@ -413,8 +412,8 @@ class Tuple(Criterion):
 
     def get_sql(self, **kwargs):
         return '({})'.format(
-              ','.join(term.get_sql(**kwargs)
-                       for term in self.values)
+            ','.join(term.get_sql(**kwargs)
+                     for term in self.values)
         )
 
     @property
@@ -426,14 +425,18 @@ class Tuple(Criterion):
 class Array(Tuple):
     def get_sql(self, **kwargs):
         return '[{}]'.format(
-              ','.join(term.get_sql(**kwargs)
-                       for term in self.values)
+            ','.join(term.get_sql(**kwargs)
+                     for term in self.values)
         )
 
 
 class Bracket(Tuple):
     def __init__(self, term):
         super(Bracket, self).__init__(term)
+
+    def get_sql(self, **kwargs):
+        sql = super(Bracket, self).get_sql(**kwargs)
+        return '{sql} {alias}'.format(sql=sql, alias=self.alias) if self.alias else sql
 
 
 class BasicCriterion(Criterion):
@@ -1042,14 +1045,14 @@ class Interval(object):
         else:
             # Create the whole expression but trim out the unnecessary fields
             expr = "{years}-{months}-{days} {hours}:{minutes}:{seconds}.{microseconds}".format(
-                    years=getattr(self, 'years', 0),
-                    months=getattr(self, 'months', 0),
-                    days=getattr(self, 'days', 0),
-                    hours=getattr(self, 'hours', 0),
-                    minutes=getattr(self, 'minutes', 0),
-                    seconds=getattr(self, 'seconds', 0),
-                    microseconds=getattr(self, 'microseconds', 0),
-                )
+                years=getattr(self, 'years', 0),
+                months=getattr(self, 'months', 0),
+                days=getattr(self, 'days', 0),
+                hours=getattr(self, 'hours', 0),
+                minutes=getattr(self, 'minutes', 0),
+                seconds=getattr(self, 'seconds', 0),
+                microseconds=getattr(self, 'microseconds', 0),
+            )
             expr = self.trim_pattern.sub('', expr)
 
             unit = '{largest}_{smallest}'.format(
