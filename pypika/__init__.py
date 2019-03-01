@@ -80,6 +80,6 @@ from .utils import (
     UnionException,
 )
 
-__author__ = "Timothy Heys"
-__email__ = "theys@kayak.com"
-__version__ = "0.25.1"
+__author__ = 'Timothy Heys'
+__email__ = 'theys@kayak.com'
+__version__ = '0.25.1'
