@@ -340,7 +340,6 @@ class EmptyCriterion:
         return other
 
 
-
 class Field(Criterion):
     def __init__(self, name, alias=None, table=None):
         super(Field, self).__init__(alias)
