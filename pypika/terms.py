@@ -390,6 +390,12 @@ class Star(Field):
     def __init__(self, table=None):
         super(Star, self).__init__('*', table=table)
 
+    @property
+    def tables_(self):
+        if self.table is None:
+            return {}
+        return {self.table}
+
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         if self.table and (with_namespace or self.table.alias):
             return "{quote}{namespace}{quote}.*".format(

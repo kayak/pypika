@@ -5,6 +5,7 @@ from pypika import (
     Field,
     Table,
 )
+from pypika.terms import Star
 
 
 class TablesTests(unittest.TestCase):
@@ -22,3 +23,14 @@ class TablesTests(unittest.TestCase):
         c = Case().when(table.a == 1, 2 * table.a)
         self.assertIsInstance(c.tables_, set)
         self.assertSetEqual(c.tables_, {table})
+
+    def test__star_tables(self):
+        star = Star()
+
+        self.assertEqual(star.tables_, {})
+
+    def test__table_star_tables(self):
+        table = Table('a')
+        star = Star(table=table)
+
+        self.assertEqual(star.tables_, {table})
