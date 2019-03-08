@@ -250,6 +250,11 @@ class AggregationTests(unittest.TestCase):
 
         self.assertEqual('SELECT SUM(\"foo\") FROM \"abc\"', str(q))
 
+    def test__approx_count_distinct(self):
+        q = Q.from_('abc').select(fn.ApproxCountDistinct(F('foo')))
+
+        self.assertEqual('SELECT APPROX_COUNT_DISTINCT(\"foo\") FROM \"abc\"', str(q))
+
     def test__avg(self):
         q = Q.from_('abc').select(fn.Avg(F('foo')))
 
@@ -290,7 +295,8 @@ class ConditionTests(unittest.TestCase):
     def test__case__field(self):
         q = Q.from_('abc').select(Case().when(F('foo') == 1, F('bar')).else_(F('buz')))
 
-        self.assertEqual('SELECT CASE WHEN \"foo\"=1 THEN \"bar\" ELSE \"buz\" END FROM \"abc\"', str(q))
+        self.assertEqual(
+            'SELECT CASE WHEN \"foo\"=1 THEN \"bar\" ELSE \"buz\" END FROM \"abc\"', str(q))
 
     def test__case__multi(self):
         q = Q.from_('abc').select(

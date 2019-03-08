@@ -47,6 +47,11 @@ class Sum(DistinctOptionFunction):
         super(Sum, self).__init__('SUM', term, alias=alias)
 
 
+class ApproxCountDistinct(AggregateFunction):
+    def __init__(self, term, alias=None):
+        super(ApproxCountDistinct, self).__init__('APPROX_COUNT_DISTINCT', term, alias=alias)
+
+
 class Avg(AggregateFunction):
     def __init__(self, term, alias=None):
         super(Avg, self).__init__('AVG', term, alias=alias)
