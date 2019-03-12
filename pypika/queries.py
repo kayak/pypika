@@ -246,7 +246,13 @@ class _UnionQuery(Selectable, Term):
         self._unions = [(union_type, union_query)]
         self._orderbys = []
 
+        self._ordertype = None
+
         self._limit = None
+        
+        self._limit_min = None
+        self._limit_max = None
+
         self._offset = None
 
         self._wrapper_cls = wrapper_cls
@@ -261,8 +267,17 @@ class _UnionQuery(Selectable, Term):
             self._orderbys.append((field, kwargs.get('order')))
 
     @builder
+    def order_as(self, order_type):
+        self._ordertype = order_type
+
+    @builder
     def limit(self, limit):
         self._limit = limit
+
+    @builder
+    def limitr(self, limit_min, limit_max):
+        self._limit_min = limit_min
+        self._limit_max = limit_max
 
     @builder
     def offset(self, offset):
@@ -309,6 +324,9 @@ class _UnionQuery(Selectable, Term):
         if self._limit:
             querystring += self._limit_sql()
 
+        if self._limit_min:
+            querystring += self._limitr_sql()
+
         if self._offset:
             querystring += self._offset_sql()
 
@@ -339,7 +357,10 @@ class _UnionQuery(Selectable, Term):
             clauses.append('{term} {orient}'.format(term=term, orient=directionality.value)
                            if directionality is not None else term)
 
-        return ' ORDER BY {orderby}'.format(orderby=','.join(clauses))
+        if self._ordertype:
+            return ' ORDER BY {orderby} as {type}'.format(orderby=','.join(clauses),type=self._ordertype)
+        else: 
+            return ' ORDER BY {orderby}'.format(orderby=','.join(clauses))
 
     def _offset_sql(self):
         return " OFFSET {offset}".format(offset=self._offset)
@@ -347,6 +368,8 @@ class _UnionQuery(Selectable, Term):
     def _limit_sql(self):
         return " LIMIT {limit}".format(limit=self._limit)
 
+    def _limitr_sql(self):
+        return " LIMIT {limit_min}, {limit_max}".format(limit_min=self._limit_min, limit_max=self._limit_max)
 
 class QueryBuilder(Selectable, Term):
     """
@@ -374,11 +397,18 @@ class QueryBuilder(Selectable, Term):
         self._groupbys = []
         self._with_totals = False
         self._havings = None
+
         self._orderbys = []
+        self._ordertype = None
+
         self._joins = []
         self._unions = []
 
         self._limit = None
+
+        self._limit_min = None
+        self._limit_max = None
+
         self._offset = None
 
         self._updates = []
@@ -597,6 +627,10 @@ class QueryBuilder(Selectable, Term):
             self._orderbys.append((field, kwargs.get('order')))
 
     @builder
+    def order_as(self, order_type):
+        self._ordertype = order_type
+
+    @builder
     def join(self, item, how=JoinType.inner):
         if isinstance(item, Table):
             return Joiner(self, item, how, type_label='table')
@@ -612,6 +646,11 @@ class QueryBuilder(Selectable, Term):
     @builder
     def limit(self, limit):
         self._limit = limit
+
+    @builder
+    def limitr(self, limit_min, limit_max):
+        self._limit_min = limit_min
+        self._limit_max = limit_max
 
     @builder
     def offset(self, offset):
@@ -827,6 +866,9 @@ class QueryBuilder(Selectable, Term):
         if self._limit:
             querystring += self._limit_sql()
 
+        if self._limit_min:
+            querystring += self._limitr_sql()
+
         if self._offset:
             querystring += self._offset_sql()
 
@@ -953,7 +995,10 @@ class QueryBuilder(Selectable, Term):
             clauses.append('{term} {orient}'.format(term=term, orient=directionality.value)
                            if directionality is not None else term)
 
-        return ' ORDER BY {orderby}'.format(orderby=','.join(clauses))
+        if self._ordertype:
+             return ' ORDER BY {orderby} as {type}'.format(orderby=','.join(clauses),type=self._ordertype);
+        else:
+            return ' ORDER BY {orderby}'.format(orderby=','.join(clauses))
 
     def _rollup_sql(self):
         return ' WITH ROLLUP'
@@ -966,6 +1011,9 @@ class QueryBuilder(Selectable, Term):
 
     def _limit_sql(self):
         return " LIMIT {limit}".format(limit=self._limit)
+
+    def _limitr_sql(self):
+        return " LIMIT {limit_min}, {limit_max}".format(limit_min=self._limit_min, limit_max=self._limit_max)
 
     def _set_sql(self, **kwargs):
         return ' SET {set}'.format(
