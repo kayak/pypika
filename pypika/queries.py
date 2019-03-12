@@ -369,7 +369,7 @@ class _UnionQuery(Selectable, Term):
         return " LIMIT {limit}".format(limit=self._limit)
 
     def _limitr_sql(self):
-        return " LIMIT {limit_min} {limit_max}".format(limit_min=self._limit_min, limit_max=self._limit_max)
+        return " LIMIT {limit_min}, {limit_max}".format(limit_min=self._limit_min, limit_max=self._limit_max)
 
 class QueryBuilder(Selectable, Term):
     """
@@ -1009,7 +1009,7 @@ class QueryBuilder(Selectable, Term):
     def _offset_sql(self):
         return " OFFSET {offset}".format(offset=self._offset)
 
-    def _limitr_sql(self):
+    def _limit_sql(self):
         return " LIMIT {limit}".format(limit=self._limit)
 
     def _limitr_sql(self):
