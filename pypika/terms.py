@@ -517,6 +517,10 @@ class ContainsCriterion(Criterion):
     def tables_(self):
         return self.term.tables_
 
+    @property
+    def is_aggregate(self):
+        return self.term.is_aggregate
+
     def fields(self):
         return self.term.fields() if self.term.fields else []
 
@@ -543,6 +547,10 @@ class BetweenCriterion(Criterion):
     @property
     def tables_(self):
         return self.term.tables_
+
+    @property
+    def is_aggregate(self):
+        return self.term.is_aggregate
 
     @builder
     def for_(self, table):

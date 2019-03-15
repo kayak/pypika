@@ -45,7 +45,7 @@ class SelectQueryJoinTests(unittest.TestCase):
         q = Query.from_(self.table0).join(self.table1, how=JoinType.outer).on(
               self.table0.foo == self.table1.bar).select('*')
 
-        self.assertEqual('SELECT * FROM "abc" OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
+        self.assertEqual('SELECT * FROM "abc" FULL OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
 
     def test_left_outer_join(self):
         q = Query.from_(self.table0).join(self.table1, how=JoinType.left_outer).on(

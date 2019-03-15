@@ -66,6 +66,7 @@ from .terms import (
     Field,
     Interval,
     Not,
+    NullValue,
     Parameter,
     Rollup,
     Tuple,

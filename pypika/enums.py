@@ -51,7 +51,7 @@ class JoinType(Enum):
     inner = ''
     left = 'LEFT'
     right = 'RIGHT'
-    outer = 'OUTER'
+    outer = 'FULL OUTER'
     left_outer = 'LEFT OUTER'
     right_outer = 'RIGHT OUTER'
     full_outer = 'FULL OUTER'
