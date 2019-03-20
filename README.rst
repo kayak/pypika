@@ -15,6 +15,14 @@ building SQL queries without limiting the flexibility of handwritten SQL. Design
 leverages the builder design pattern to construct queries to avoid messy string formatting and concatenation. It is also
 easily extended to take full advantage of specific features of SQL database vendors.
 
+What are the design goals for |Brand|?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|Brand| is a fast, expressive and flexible way to replace handwritten SQL (or even ORM for the courageous souls amongst you).
+Validation of SQL correctness is not an explicit goal of |Brand|. With such a large number of
+SQL database vendors providing a robust validation of input data is difficult. Instead you are encouraged to check inputs you provide to |Brand| or appropriately handle errors raised from
+your SQL database - just as you would have if you were writing SQL yourself.
+
 .. _intro_end:
 
 Read the docs: http://pypika.readthedocs.io/en/latest/
