@@ -410,6 +410,7 @@ Example of a correlated subquery in the `SELECT`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
+
     history, customers = Tables('history', 'customers')
     last_purchase_at = Query.from_(history, correlated_table=customers).select(
         history.purchase_at
@@ -422,7 +423,15 @@ Example of a correlated subquery in the `SELECT`
     )
 
 .. code-block:: sql
-    SELECT "customers"."id", (SELECT "history"."purchase_at" FROM "history" WHERE "history"."customer_id" = "customers"."customer_id" ORDER BY "history"."purchase_at" DESC LIMIT 1) AS "last_purchase_at" FROM "customers"
+
+    SELECT
+      "customers"."id",
+      (SELECT "history"."purchase_at"
+       FROM "history"
+       WHERE "history"."customer_id" = "customers"."customer_id"
+       ORDER BY "history"."purchase_at" DESC
+       LIMIT 1) "last_purchase_at"
+    FROM "customers"
 
 
 Unions
