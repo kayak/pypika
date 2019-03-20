@@ -157,6 +157,22 @@ class SelectTests(unittest.TestCase):
                          'FROM (SELECT "sq0"."foo","sq0"."bar" '
                          'FROM (SELECT * FROM "abc") "sq0") "sq1") "sq2"', str(q))
 
+    def test_correlated_subquery(self):
+        subquery = Query.from_(
+            self.table_abc, correlated_table=self.table_efg
+        ).select(self.table_abc.foo).where(
+            self.table_abc.efg_id == self.table_efg.id
+        ).limit(1)
+
+        q = Query.from_(self.table_efg).select(
+            self.table_efg.id, subquery.as_('foo')
+        )
+
+        self.assertEqual('SELECT "id",'
+                         '(SELECT "abc"."foo" FROM "abc" WHERE '
+                         '"abc"."efg_id"="efg"."id" LIMIT 1) "foo" '
+                         'FROM "efg"', str(q))
+
     def test_select__no_table(self):
         q = Query.select(1, 2, 3)
 

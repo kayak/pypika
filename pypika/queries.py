@@ -168,7 +168,7 @@ class Query(object):
         return QueryBuilder()
 
     @classmethod
-    def from_(cls, table):
+    def from_(cls, table, correlated_table=None):
         """
         Query builder entry point.  Initializes query building and sets the table to select from.  When using this
         function, the query becomes a SELECT query.
@@ -178,9 +178,16 @@ class Query(object):
 
             An instance of a Table object or a string table name.
 
+        :param correlated_table:
+            Type: ``Table``, ``Query``, or ``str``
+
+            An instance of the outer table (or string table name)
+            used if this query is forming part of a correlated subquery.
+            (a subquery inside SELECT or WHERE).
+
         :returns QueryBuilder
         """
-        return cls._builder().from_(table)
+        return cls._builder().from_(table, correlated_table)
 
     @classmethod
     def into(cls, table):
@@ -358,6 +365,7 @@ class QueryBuilder(Selectable, Term):
         super(QueryBuilder, self).__init__(None)
 
         self._from = []
+        self._correlated = []
         self._insert_table = None
         self._update_table = None
         self._delete_from = False
@@ -401,6 +409,7 @@ class QueryBuilder(Selectable, Term):
         newone.__dict__.update(self.__dict__)
         newone._select_star_tables = copy(self._select_star_tables)
         newone._from = copy(self._from)
+        newone._correlated = copy(self._correlated)
         newone._with = copy(self._with)
         newone._selects = copy(self._selects)
         newone._columns = copy(self._columns)
@@ -413,7 +422,7 @@ class QueryBuilder(Selectable, Term):
         return newone
 
     @builder
-    def from_(self, selectable):
+    def from_(self, selectable, correlated_table=None):
         """
         Adds a table to the query.  This function can only be called once and will raise an AttributeError if called a
         second time.
@@ -423,11 +432,26 @@ class QueryBuilder(Selectable, Term):
 
             When a ``str`` is passed, a table with the name matching the ``str`` value is used.
 
+        :param correlated_table:
+            Type: ``Table``, ``Query``, or ``str``
+
+            An instance of the outer table (or string table name)
+            used if this query is forming part of a correlated subquery.
+            (a subquery inside SELECT or WHERE).
+
         :returns
             A copy of the query with the table added.
         """
 
         self._from.append(Table(selectable) if isinstance(selectable, str) else selectable)
+
+        if correlated_table is not None:
+            # add a reference to the outer table in a correlated subquery.
+            self._correlated.append(
+                Table(correlated_table)
+                if isinstance(correlated_table, str) else
+                correlated_table
+            )
 
         if isinstance(selectable, (QueryBuilder, _UnionQuery)) and selectable.alias is None:
             if isinstance(selectable, QueryBuilder):
@@ -711,9 +735,11 @@ class QueryBuilder(Selectable, Term):
         for field in term.fields():
             table_in_base_tables = field.table in base_tables
             table_in_joins = field.table in [join.item for join in self._joins]
+            table_in_correlated_subquery = field.table in self._correlated
             if field.table is not None \
                   and not table_in_base_tables \
                   and not table_in_joins \
+                  and not table_in_correlated_subquery \
                   and field.table != self._update_table:
                 raise JoinException('Table [%s] missing from query.  '
                                     'Table must be first joined before any of '
@@ -755,10 +781,11 @@ class QueryBuilder(Selectable, Term):
             return ''
 
         has_joins = bool(self._joins)
+        has_correlated_subquery = bool(self._correlated)
         has_multiple_from_clauses = 1 < len(self._from)
         has_subquery_from_clause = 0 < len(self._from) and isinstance(self._from[0], QueryBuilder)
 
-        kwargs['with_namespace'] = any((has_joins, has_multiple_from_clauses, has_subquery_from_clause))
+        kwargs['with_namespace'] = any((has_joins, has_multiple_from_clauses, has_subquery_from_clause, has_correlated_subquery))
 
         if self._update_table:
             querystring = self._update_sql(**kwargs)
