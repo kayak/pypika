@@ -276,6 +276,14 @@ class ValueWrapper(Term):
         return alias_sql(sql, self.alias, quote_char)
 
 
+class Pseudocolumn(Term):
+    def __init__(self, name):
+        self.name = name
+
+    def get_sql(self, **kwargs):
+        return self.name
+
+
 class Values(Term):
     def __init__(self, field, ):
         super(Values, self).__init__(None)

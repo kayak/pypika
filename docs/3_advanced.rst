@@ -24,6 +24,26 @@ the platform-specific Query classes can be used.
 You can use these query classes as a drop in replacement for the default ``Query`` class shown in the other examples.
 Again, if you encounter any issues specific to a platform, please create a GitHub issue on this repository.
 
+Oracle ROWNUM
+-------------
+
+Instead of using the LIMIT keyword, Oracle requires a query is limited by added a WHERE clause via the ROWNUM
+Pseudocolumn. The OracleQuery.RowNum property allows you to build queries based on this.
+
+.. code-block:: python
+
+    from pypika import OracleQuery, VerticaQuery
+
+    stuff = Table('stuff')
+
+    query = OracleQuery.from_(stuff) \
+       .select('*') \
+       .where(OracleQuery.RowNum <= 5)
+
+.. code-block:: sql
+
+    SELECT * FROM "stuff" WHERE ROWNUM <= 5
+
 GROUP BY Modifiers
 ------------------
 
