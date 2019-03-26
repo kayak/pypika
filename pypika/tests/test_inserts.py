@@ -70,7 +70,7 @@ class InsertIntoTests(unittest.TestCase):
 
     def test_insert_all_columns_multi_rows_chained_mixed(self):
         query = Query.into(self.table_abc).insert(
-            (1, 'a', True), (2, 'b', False)
+              (1, 'a', True), (2, 'b', False)
         ).insert(3, 'c', True)
 
         self.assertEqual('INSERT INTO "abc" VALUES '
@@ -90,7 +90,7 @@ class InsertIntoTests(unittest.TestCase):
 
     def test_insert_selected_columns(self):
         query = Query.into(self.table_abc).columns(
-            self.table_abc.foo, self.table_abc.bar, self.table_abc.buz
+              self.table_abc.foo, self.table_abc.bar, self.table_abc.buz
         ).insert(1, 'a', True)
 
         self.assertEqual('INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query))
@@ -126,14 +126,14 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
 
     def test_insert_on_conflict_do_update_field(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1, "m").on_conflict(
-            self.table_abc.id).do_update(self.table_abc.name, "m")
+              self.table_abc.id).do_update(self.table_abc.name, "m")
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT (id) DO UPDATE SET name=\'m\'',
-         str(query))
+                         str(query))
 
     def test_insert_on_conflict_do_update_field_str(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1, "m").on_conflict(
-            'id').do_update('name', "m")
+              'id').do_update('name', "m")
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT (id) DO UPDATE SET name=\'m\'', str(query))
 
@@ -144,12 +144,12 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     def test_insert_on_conflict_two_handlers_do_nothing(self):
         with self.assertRaises(QueryException):
             query = PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict(
-                'id').do_nothing().do_update(self.table_abc.name, "m")
-    
+                  'id').do_nothing().do_update(self.table_abc.name, "m")
+
     def test_insert_on_conflict_two_handlers_do_update(self):
         with self.assertRaises(QueryException):
             query = PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict(
-                self.table_abc.id).do_update(self.table_abc.name, "m").do_nothing()
+                  self.table_abc.id).do_update(self.table_abc.name, "m").do_nothing()
 
     def test_non_insert_on_conflict_do_nothing(self):
         with self.assertRaises(QueryException):
@@ -158,7 +158,8 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     def test_non_insert_on_conflict_do_update(self):
         with self.assertRaises(QueryException):
             query = PostgreSQLQuery.update(self.table_abc).set('foo', 'bar').on_conflict(
-                'id').do_update(['name'], ["m"])
+                  'id').do_update(['name'], ["m"])
+
 
 class PostgresInsertIntoReturningTests(unittest.TestCase):
     table_abc = Table('abc')
@@ -180,33 +181,33 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
 
     def test_insert_returning_all_fields_and_arithmetics(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(
-            self.table_abc.star,
-            self.table_abc.f1 + self.table_abc.f2
+              self.table_abc.star,
+              self.table_abc.f1 + self.table_abc.f2
         )
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *,f1+f2', str(query))
 
     def test_insert_all_columns_multi_rows_chained_returning_star(self):
         query = PostgreSQLQuery.into(
-            self.table_abc
+              self.table_abc
         ).insert(1, 'a', True).insert(2, 'b', False).returning(self.table_abc.star)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
 
     def test_insert_all_columns_multi_rows_chained_returning_star_and_id(self):
         query = PostgreSQLQuery.into(
-            self.table_abc
+              self.table_abc
         ).insert(1, 'a', True).insert(2, 'b', False).returning(
-            self.table_abc.name,
-            self.table_abc.star,
-            self.table_abc.id,
+              self.table_abc.name,
+              self.table_abc.star,
+              self.table_abc.id,
         )
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
 
     def test_insert_all_columns_multi_rows_chained_returning_star_str(self):
         query = PostgreSQLQuery.into(
-            self.table_abc
+              self.table_abc
         ).insert(1, 'a', True).insert(2, 'b', False).returning('*')
 
         self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false) RETURNING *', str(query))
@@ -245,70 +246,70 @@ class InsertIntoOnDuplicateTests(unittest.TestCase):
     table_abc = Table('abc')
 
     def test_insert_one_column(self):
-        query = MySQLQuery\
-            .into(self.table_abc).insert(1)\
+        query = MySQLQuery \
+            .into(self.table_abc).insert(1) \
             .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)
         self.assertEqual('INSERT INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `foo`=`foo`', str(query))
 
     def test_insert_one_column_using_values(self):
-        query = MySQLQuery\
-            .into(self.table_abc).insert(1)\
+        query = MySQLQuery \
+            .into(self.table_abc).insert(1) \
             .on_duplicate_key_update(self.table_abc.foo, Values(self.table_abc.foo))
         self.assertEqual('INSERT INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `foo`=VALUES(`foo`)', str(query))
 
     def test_insert_one_column_single_element_array(self):
-        query = MySQLQuery\
-            .into(self.table_abc).insert((1,))\
+        query = MySQLQuery \
+            .into(self.table_abc).insert((1,)) \
             .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)
 
         self.assertEqual('INSERT INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `foo`=`foo`', str(query))
 
     def test_insert_one_column_multi_element_array(self):
-        query = MySQLQuery\
-            .into(self.table_abc).insert((1,), (2,))\
+        query = MySQLQuery \
+            .into(self.table_abc).insert((1,), (2,)) \
             .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)
 
         self.assertEqual('INSERT INTO `abc` VALUES (1),(2) ON DUPLICATE KEY UPDATE `foo`=`foo`', str(query))
 
     def test_insert_multiple_columns_on_duplicate_update_one_with_same_value(self):
-        query = MySQLQuery\
-            .into(self.table_abc).insert(1, 'a')\
+        query = MySQLQuery \
+            .into(self.table_abc).insert(1, 'a') \
             .on_duplicate_key_update(self.table_abc.bar, Values(self.table_abc.bar))
 
         self.assertEqual('INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=VALUES(`bar`)', str(query))
 
     def test_insert_multiple_columns_on_duplicate_update_one_with_different_value(self):
-        query = MySQLQuery\
+        query = MySQLQuery \
             .into(self.table_abc).insert(1, 'a') \
             .on_duplicate_key_update(self.table_abc.bar, 'b')
 
         self.assertEqual('INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=\'b\'', str(query))
 
     def test_insert_multiple_columns_on_duplicate_update_one_with_expression(self):
-        query = MySQLQuery\
+        query = MySQLQuery \
             .into(self.table_abc).insert(1, 2) \
-            .on_duplicate_key_update(self.table_abc.bar, 4+F('bar'))  # todo sql expression? not python
+            .on_duplicate_key_update(self.table_abc.bar, 4 + F('bar'))  # todo sql expression? not python
 
         self.assertEqual('INSERT INTO `abc` VALUES (1,2) ON DUPLICATE KEY UPDATE `bar`=4+`bar`', str(query))
 
     def test_insert_multiple_columns_on_duplicate_update_one_with_expression_using_original_field_value(self):
-        query = MySQLQuery\
-            .into(self.table_abc).insert(1, 'a')\
+        query = MySQLQuery \
+            .into(self.table_abc).insert(1, 'a') \
             .on_duplicate_key_update(self.table_abc.bar, fn.Concat(self.table_abc.bar, 'update'))
 
         self.assertEqual(
-            'INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=CONCAT(`bar`,\'update\')',
-            str(query)
+              'INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=CONCAT(`bar`,\'update\')',
+              str(query)
         )
 
     def test_insert_multiple_columns_on_duplicate_update_one_with_expression_using_values(self):
-        query = MySQLQuery\
-            .into(self.table_abc).insert(1, 'a')\
+        query = MySQLQuery \
+            .into(self.table_abc).insert(1, 'a') \
             .on_duplicate_key_update(self.table_abc.bar, fn.Concat(Values(self.table_abc.bar), 'update'))
 
         self.assertEqual(
-            'INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=CONCAT(VALUES(`bar`),\'update\')',
-            str(query)
+              'INSERT INTO `abc` VALUES (1,\'a\') ON DUPLICATE KEY UPDATE `bar`=CONCAT(VALUES(`bar`),\'update\')',
+              str(query)
         )
 
     def test_insert_multiple_columns_on_duplicate_update_multiple(self):
@@ -318,45 +319,45 @@ class InsertIntoOnDuplicateTests(unittest.TestCase):
             .on_duplicate_key_update(self.table_abc.baz, 'c')
 
         self.assertEqual(
-            'INSERT INTO `abc` VALUES (1,\'a\',\'b\') ON DUPLICATE KEY UPDATE `bar`=\'b\',`baz`=\'c\'',
-            str(query)
+              'INSERT INTO `abc` VALUES (1,\'a\',\'b\') ON DUPLICATE KEY UPDATE `bar`=\'b\',`baz`=\'c\'',
+              str(query)
         )
 
     def test_insert_multi_rows_chained_mixed_on_duplicate_update_multiple(self):
-        query = MySQLQuery.into(self.table_abc)\
-            .insert((1, 'a', True), (2, 'b', False))\
-            .insert(3, 'c', True)\
-            .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo)\
+        query = MySQLQuery.into(self.table_abc) \
+            .insert((1, 'a', True), (2, 'b', False)) \
+            .insert(3, 'c', True) \
+            .on_duplicate_key_update(self.table_abc.foo, self.table_abc.foo) \
             .on_duplicate_key_update(self.table_abc.bar, Values(self.table_abc.bar))
 
         self.assertEqual(
-            'INSERT INTO `abc` VALUES (1,\'a\',true),(2,\'b\',false),(3,\'c\',true) '
-            'ON DUPLICATE KEY UPDATE `foo`=`foo`,`bar`=VALUES(`bar`)',
-            str(query)
+              'INSERT INTO `abc` VALUES (1,\'a\',true),(2,\'b\',false),(3,\'c\',true) '
+              'ON DUPLICATE KEY UPDATE `foo`=`foo`,`bar`=VALUES(`bar`)',
+              str(query)
         )
 
     def test_insert_selected_columns_on_duplicate_update_one(self):
-        query = MySQLQuery.into(self.table_abc)\
-            .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz)\
-            .insert(1, 'a', True)\
+        query = MySQLQuery.into(self.table_abc) \
+            .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz) \
+            .insert(1, 'a', True) \
             .on_duplicate_key_update(self.table_abc.baz, False)
 
         self.assertEqual(
-            'INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,\'a\',true) ON DUPLICATE KEY UPDATE `baz`=false',
-            str(query)
+              'INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,\'a\',true) ON DUPLICATE KEY UPDATE `baz`=false',
+              str(query)
         )
 
     def test_insert_selected_columns_on_duplicate_update_multiple(self):
-        query = MySQLQuery.into(self.table_abc)\
-            .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz)\
-            .insert(1, 'a', True)\
-            .on_duplicate_key_update(self.table_abc.baz, False)\
+        query = MySQLQuery.into(self.table_abc) \
+            .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz) \
+            .insert(1, 'a', True) \
+            .on_duplicate_key_update(self.table_abc.baz, False) \
             .on_duplicate_key_update(self.table_abc.bar, Values(self.table_abc.bar))
 
         self.assertEqual(
-            'INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,\'a\',true) '
-            'ON DUPLICATE KEY UPDATE `baz`=false,`bar`=VALUES(`bar`)',
-            str(query)
+              'INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,\'a\',true) '
+              'ON DUPLICATE KEY UPDATE `baz`=false,`bar`=VALUES(`bar`)',
+              str(query)
         )
 
     def test_insert_none_skipped(self):
@@ -385,7 +386,7 @@ class InsertSelectFromTests(unittest.TestCase):
 
     def test_insert_from_columns(self):
         query = Query.into(self.table_abc).from_(self.table_efg).select(
-            self.table_efg.fiz, self.table_efg.buz, self.table_efg.baz
+              self.table_efg.fiz, self.table_efg.buz, self.table_efg.baz
         )
 
         self.assertEqual('INSERT INTO "abc" '
@@ -393,7 +394,7 @@ class InsertSelectFromTests(unittest.TestCase):
 
     def test_insert_columns_from_star(self):
         query = Query.into(self.table_abc).columns(
-            self.table_abc.foo, self.table_abc.bar, self.table_abc.buz,
+              self.table_abc.foo, self.table_abc.bar, self.table_abc.buz,
         ).from_(self.table_efg).select('*')
 
         self.assertEqual('INSERT INTO "abc" ("foo","bar","buz") '
@@ -401,9 +402,9 @@ class InsertSelectFromTests(unittest.TestCase):
 
     def test_insert_columns_from_columns(self):
         query = Query.into(self.table_abc).columns(
-            self.table_abc.foo, self.table_abc.bar, self.table_abc.buz
+              self.table_abc.foo, self.table_abc.bar, self.table_abc.buz
         ).from_(self.table_efg).select(
-            self.table_efg.fiz, self.table_efg.buz, self.table_efg.baz
+              self.table_efg.fiz, self.table_efg.buz, self.table_efg.baz
         )
 
         self.assertEqual('INSERT INTO "abc" ("foo","bar","buz") '
@@ -411,18 +412,34 @@ class InsertSelectFromTests(unittest.TestCase):
 
     def test_insert_columns_from_columns_with_join(self):
         query = Query.into(self.table_abc).columns(
-            self.table_abc.c1, self.table_abc.c2, self.table_abc.c3, self.table_abc.c4
+              self.table_abc.c1, self.table_abc.c2, self.table_abc.c3, self.table_abc.c4
         ).from_(self.table_efg).select(
-            self.table_efg.foo, self.table_efg.bar
+              self.table_efg.foo, self.table_efg.bar
         ).join(self.table_hij).on(
-            self.table_efg.id == self.table_hij.abc_id
+              self.table_efg.id == self.table_hij.abc_id
         ).select(
-            self.table_hij.fiz, self.table_hij.buz
+              self.table_hij.fiz, self.table_hij.buz
         )
 
         self.assertEqual('INSERT INTO "abc" ("c1","c2","c3","c4") '
                          'SELECT "efg"."foo","efg"."bar","hij"."fiz","hij"."buz" FROM "efg" '
                          'JOIN "hij" ON "efg"."id"="hij"."abc_id"', str(query))
+
+
+class InsertSubqueryTests(unittest.TestCase):
+    def test_insert_subquery_wrapped_in_brackets(self):
+        purchase_order_item, part = Tables("purchase_order_item", "part")
+
+        q = Query.into(purchase_order_item) \
+            .columns(purchase_order_item.id_part, purchase_order_item.id_customer) \
+            .insert(Query.from_(part)
+                    .select(part.part_id)
+                    .where(part.part_number == "FOOBAR"), 12345)
+
+        self.assertEqual('INSERT INTO "purchase_order_item" '
+                         '("id_part","id_customer") '
+                         'VALUES '
+                         '((SELECT "part_id" FROM "part" WHERE "part_number"=\'FOOBAR\'),12345)', str(q))
 
 
 class SelectIntoTests(unittest.TestCase):
@@ -435,18 +452,18 @@ class SelectIntoTests(unittest.TestCase):
 
     def test_select_columns_into(self):
         query = Query.from_(self.table_abc).select(
-            self.table_abc.foo, self.table_abc.bar, self.table_abc.buz
+              self.table_abc.foo, self.table_abc.bar, self.table_abc.buz
         ).into(self.table_efg)
 
         self.assertEqual('SELECT "foo","bar","buz" INTO "efg" FROM "abc"', str(query))
 
     def test_select_columns_into_with_join(self):
         query = Query.from_(self.table_abc).select(
-            self.table_abc.foo, self.table_abc.bar
+              self.table_abc.foo, self.table_abc.bar
         ).join(self.table_hij).on(
-            self.table_abc.id == self.table_hij.abc_id
+              self.table_abc.id == self.table_hij.abc_id
         ).select(
-            self.table_hij.fiz, self.table_hij.buz
+              self.table_hij.fiz, self.table_hij.buz
         ).into(self.table_efg)
 
         self.assertEqual('SELECT "abc"."foo","abc"."bar","hij"."fiz","hij"."buz" '

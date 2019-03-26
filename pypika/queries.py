@@ -142,7 +142,6 @@ class Table(Selectable):
             return "Table('{}', schema='{}')".format(self._table_name, self._schema)
         return "Table('{}')".format(self._table_name)
 
-
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -840,12 +839,12 @@ class QueryBuilder(Selectable, Term):
 
     def _with_sql(self, **kwargs):
         return 'WITH ' + ','.join(
-            clause.name + ' AS (' + clause.get_sql(
-                subquery=False,
-                with_alias=False,
-                **kwargs) +
-            ') '
-            for clause in self._with)
+              clause.name + ' AS (' + clause.get_sql(
+                    subquery=False,
+                    with_alias=False,
+                    **kwargs) +
+              ') '
+              for clause in self._with)
 
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{select}'.format(
@@ -881,12 +880,12 @@ class QueryBuilder(Selectable, Term):
         )
 
     def _values_sql(self, **kwargs):
-        return ' VALUES ({values})'.format(
-              values='),('.join(','.join(term.get_sql(with_alias=True, **kwargs)
-                                         for term in row)
-                                for row in self._values)
-
-        )
+        return ' VALUES ({values})' \
+            .format(values='),('
+                    .join(','
+                          .join(term.get_sql(with_alias=True, subquery=True, **kwargs)
+                                   for term in row)
+                          for row in self._values))
 
     def _into_sql(self, **kwargs):
         return ' INTO {table}'.format(
@@ -1018,6 +1017,7 @@ class Joiner(object):
         self.query.do_join(Join(self.item, JoinType.cross))
 
         return self.query
+
 
 class Join(object):
     def __init__(self, item, how):
