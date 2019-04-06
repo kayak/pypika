@@ -414,6 +414,31 @@ Example of a join using `USING`
     SELECT "history".* FROM "history" JOIN "customers" USING "customer_id" WHERE "customers"."id"=5
 
 
+Example of a correlated subquery in the `SELECT`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+    history, customers = Tables('history', 'customers')
+    last_purchase_at = Query.from_(history).select(
+        history.purchase_at
+    ).where(history.customer_id==customers.customer_id).orderby(
+        history.purchase_at, order=Order.desc
+    ).limit(1)
+    q = Query.from_(customers).select(
+        customers.id, last_purchase_at._as('last_purchase_at')
+    )
+.. code-block:: sql
+
+    SELECT
+      "id",
+      (SELECT "history"."purchase_at"
+       FROM "history"
+       WHERE "history"."customer_id" = "customers"."customer_id"
+       ORDER BY "history"."purchase_at" DESC
+       LIMIT 1) "last_purchase_at"
+    FROM "customers"
+
+
 Unions
 """"""
 
