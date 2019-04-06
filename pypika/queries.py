@@ -388,6 +388,7 @@ class QueryBuilder(Selectable, Term):
         self._select_into = False
 
         self._subquery_count = 0
+        self._foreign_table = False
 
         self.quote_char = quote_char
         self.dialect = dialect
@@ -516,7 +517,8 @@ class QueryBuilder(Selectable, Term):
 
     @builder
     def prewhere(self, criterion):
-        self._validate_term(criterion)
+        if not self._validate_table(criterion):
+            self._foreign_table = True
 
         if self._prewheres:
             self._prewheres &= criterion
@@ -528,7 +530,8 @@ class QueryBuilder(Selectable, Term):
         if isinstance(criterion, EmptyCriterion):
             return
 
-        self._validate_term(criterion)
+        if not self._validate_table(criterion):
+            self._foreign_table = True
 
         if self._wheres:
             self._wheres &= criterion
@@ -537,8 +540,6 @@ class QueryBuilder(Selectable, Term):
 
     @builder
     def having(self, criterion):
-        self._validate_term(criterion)
-
         if self._havings:
             self._havings &= criterion
         else:
@@ -552,7 +553,6 @@ class QueryBuilder(Selectable, Term):
             elif isinstance(term, int):
                 term = Field(str(term), table=self._from[0]).wrap_constant(term)
 
-            self._validate_term(term)
             self._groupbys.append(term)
 
     @builder
@@ -664,8 +664,6 @@ class QueryBuilder(Selectable, Term):
             # Do not add select terms after a star is selected
             return
 
-        self._validate_term(term)
-
         if term.table in self._select_star_tables:
             # Do not add select terms for table after a table star is selected
             return
@@ -679,7 +677,6 @@ class QueryBuilder(Selectable, Term):
         self._selects.append(term)
 
     def _select_other(self, function):
-        self._validate_term(function)
         self._selects.append(function)
 
     def fields(self):
@@ -704,7 +701,11 @@ class QueryBuilder(Selectable, Term):
 
         self._joins.append(join)
 
-    def _validate_term(self, term):
+    def _validate_table(self, term):
+        """
+        Returns False if the term references a table not already part of the
+        FROM clause or JOINS and True otherwise.
+        """
         base_tables = self._from + [self._update_table]
 
         for field in term.fields():
@@ -714,9 +715,8 @@ class QueryBuilder(Selectable, Term):
                   and not table_in_base_tables \
                   and not table_in_joins \
                   and field.table != self._update_table:
-                raise JoinException('Table [%s] missing from query.  '
-                                    'Table must be first joined before any of '
-                                    'its fields can be used' % field.table)
+                return False
+        return True
 
     def _tag_subquery(self, subquery):
         subquery.alias = 'sq%d' % self._subquery_count
@@ -756,8 +756,14 @@ class QueryBuilder(Selectable, Term):
         has_joins = bool(self._joins)
         has_multiple_from_clauses = 1 < len(self._from)
         has_subquery_from_clause = 0 < len(self._from) and isinstance(self._from[0], QueryBuilder)
+        has_reference_to_foreign_table = self._foreign_table
 
-        kwargs['with_namespace'] = any((has_joins, has_multiple_from_clauses, has_subquery_from_clause))
+        kwargs['with_namespace'] = any((
+            has_joins,
+            has_multiple_from_clauses,
+            has_subquery_from_clause,
+            has_reference_to_foreign_table
+        ))
 
         if self._update_table:
             querystring = self._update_sql(**kwargs)
