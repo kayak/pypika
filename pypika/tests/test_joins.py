@@ -276,23 +276,34 @@ class JoinBehaviorTests(unittest.TestCase):
         self.assertEqual('SELECT "foo" FROM "abc"', str(query1))
 
     def test_select_field_from_missing_table(self):
-        with self.assertRaises(JoinException):
-            Query.from_(self.table_abc).select(self.table_efg.foo)
+        """
+        Previously we validated the select field was a member of a table
+        in the query (e.g. FROM clause or a JOIN). However this made
+        correlated subqueries awkward to write (subqueries which refer
+        to their parent table. So the validation was removed.
 
-        with self.assertRaises(JoinException):
-            Query.from_(self.table_abc).where(self.table_efg.foo == 0)
+        None of the following raise an error. Previously raised JoinException
+        """
+        Query.from_(self.table_abc).select(self.table_efg.foo)
 
-        with self.assertRaises(JoinException):
-            Query.from_(self.table_abc).where(fn.Sum(self.table_efg.foo) == 0)
+        Query.from_(self.table_abc).where(self.table_efg.foo == 0)
 
-        with self.assertRaises(JoinException):
-            Query.from_(self.table_abc).select(fn.Sum(self.table_abc.bar * 2) + fn.Sum(self.table_efg.foo * 2))
+        Query.from_(self.table_abc).where(fn.Sum(self.table_efg.foo) == 0)
 
-        with self.assertRaises(JoinException):
-            Query.from_(self.table_abc).groupby(self.table_efg.foo)
+        Query.from_(self.table_abc).select(fn.Sum(self.table_abc.bar * 2) + fn.Sum(self.table_efg.foo * 2))
 
-        with self.assertRaises(JoinException):
-            Query.from_(self.table_abc).groupby(self.table_abc.foo).having(self.table_efg.bar)
+        Query.from_(self.table_abc).groupby(self.table_efg.foo)
+
+        Query.from_(self.table_abc).groupby(self.table_abc.foo).having(self.table_efg.bar)
+
+        subquery = Query.from_(self.table_efg).select(
+            self.table_efg.id
+        ).where(self.table_efg.abc_id == self.table_abc.id)
+        query = Query.from_(self.table_abc).select(subquery.as_('efg_id').limit(1))
+        self.assertEqual(
+            'SELECT (SELECT "efg"."id" FROM "efg" WHERE "efg"."abc_id"="abc"."id" LIMIT 1) "efg_id" FROM "abc"',
+            str(query)
+        )
 
     def test_ignore_table_references(self):
         query = Query.from_(Table('abc')).select(Table('abc').foo)
