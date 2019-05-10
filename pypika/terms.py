@@ -82,6 +82,9 @@ class Term(object):
         """
         return self
 
+    def tables(self):
+        return []
+
     def fields(self):
         return [self]
 
@@ -276,14 +279,6 @@ class ValueWrapper(Term):
         return alias_sql(sql, self.alias, quote_char)
 
 
-class Pseudocolumn(Term):
-    def __init__(self, name):
-        self.name = name
-
-    def get_sql(self, **kwargs):
-        return self.name
-
-
 class Values(Term):
     def __init__(self, field, ):
         super(Values, self).__init__(None)
@@ -377,14 +372,14 @@ class Field(Criterion):
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
             field_sql = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
-                namespace=self.table.alias or self.table._table_name,
-                name=self.name,
-                quote=quote_char or '',
+                  namespace=self.table.alias or self.table._table_name,
+                  name=self.name,
+                  quote=quote_char or '',
             )
         else:
             field_sql = "{quote}{name}{quote}".format(
-                name=self.name,
-                quote=quote_char or '',
+                  name=self.name,
+                  quote=quote_char or '',
             )
 
         field_alias = getattr(self, 'alias', None)
@@ -407,8 +402,8 @@ class Star(Field):
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         if self.table and (with_namespace or self.table.alias):
             return "{quote}{namespace}{quote}.*".format(
-                namespace=self.table.alias or getattr(self.table, '_table_name'),
-                quote=quote_char or ''
+                  namespace=self.table.alias or getattr(self.table, '_table_name'),
+                  quote=quote_char or ''
             )
 
         return '*'
@@ -426,8 +421,8 @@ class Tuple(Criterion):
 
     def get_sql(self, **kwargs):
         return '({})'.format(
-            ','.join(term.get_sql(**kwargs)
-                     for term in self.values)
+              ','.join(term.get_sql(**kwargs)
+                       for term in self.values)
         )
 
     @property
@@ -439,8 +434,8 @@ class Tuple(Criterion):
 class Array(Tuple):
     def get_sql(self, **kwargs):
         return '[{}]'.format(
-            ','.join(term.get_sql(**kwargs)
-                     for term in self.values)
+              ','.join(term.get_sql(**kwargs)
+                       for term in self.values)
         )
 
 
@@ -450,9 +445,9 @@ class Bracket(Tuple):
 
     def get_sql(self, **kwargs):
         return alias_sql(
-            sql=super(Bracket, self).get_sql(**kwargs),
-            alias=self.alias,
-            quote_char=kwargs.get('quote_char', None),
+              sql=super(Bracket, self).get_sql(**kwargs),
+              alias=self.alias,
+              quote_char=kwargs.get('quote_char', None),
         )
 
 
@@ -494,9 +489,9 @@ class BasicCriterion(Criterion):
 
     def get_sql(self, with_alias=False, **kwargs):
         sql = '{left}{comparator}{right}'.format(
-            comparator=self.comparator.value,
-            left=self.left.get_sql(**kwargs),
-            right=self.right.get_sql(**kwargs),
+              comparator=self.comparator.value,
+              left=self.left.get_sql(**kwargs),
+              right=self.right.get_sql(**kwargs),
         )
         if with_alias and self.alias:
             return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
@@ -535,9 +530,9 @@ class ContainsCriterion(Criterion):
     def get_sql(self, **kwargs):
         # FIXME escape
         return "{term} {not_}IN {container}".format(
-            term=self.term.get_sql(**kwargs),
-            container=self.container.get_sql(**kwargs),
-            not_='NOT ' if self._is_negated else ''
+              term=self.term.get_sql(**kwargs),
+              container=self.container.get_sql(**kwargs),
+              not_='NOT ' if self._is_negated else ''
         )
 
     def negate(self):
@@ -567,9 +562,9 @@ class BetweenCriterion(Criterion):
     def get_sql(self, **kwargs):
         # FIXME escape
         return "{term} BETWEEN {start} AND {end}".format(
-            term=self.term.get_sql(**kwargs),
-            start=self.start.get_sql(**kwargs),
-            end=self.end.get_sql(**kwargs),
+              term=self.term.get_sql(**kwargs),
+              start=self.start.get_sql(**kwargs),
+              end=self.end.get_sql(**kwargs),
         )
 
     def fields(self):
@@ -591,7 +586,7 @@ class NullCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         return "{term} IS NULL".format(
-            term=self.term.get_sql(**kwargs),
+              term=self.term.get_sql(**kwargs),
         )
 
     def fields(self):
@@ -604,14 +599,14 @@ class ComplexCriterion(BasicCriterion):
 
     def get_sql(self, subcriterion=False, **kwargs):
         sql = '{left} {comparator} {right}'.format(
-            comparator=self.comparator.value,
-            left=self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs),
-            right=self.right.get_sql(subcriterion=self.needs_brackets(self.right), **kwargs),
+              comparator=self.comparator.value,
+              left=self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs),
+              right=self.right.get_sql(subcriterion=self.needs_brackets(self.right), **kwargs),
         )
 
         if subcriterion:
             return '({criterion})'.format(
-                criterion=sql
+                  criterion=sql
             )
 
         return sql
@@ -682,9 +677,9 @@ class ArithmeticExpression(Term):
 
         quote_char = kwargs.get('quote_char', None)
         arithmatic_sql = '{left}{operator}{right}'.format(
-            operator=self.operator.value,
-            left=("({})" if is_mul and is_left_add else "{}").format(self.left.get_sql(**kwargs)),
-            right=("({})" if is_mul and is_right_add else "{}").format(self.right.get_sql(**kwargs)),
+              operator=self.operator.value,
+              left=("({})" if is_mul and is_left_add else "{}").format(self.left.get_sql(**kwargs)),
+              right=("({})" if is_mul and is_right_add else "{}").format(self.right.get_sql(**kwargs)),
         )
 
         if not with_alias or self.alias is None:
@@ -719,8 +714,8 @@ class Case(Term):
             raise CaseException("At least one 'when' case is required for a CASE statement.")
 
         cases = " ".join('WHEN {when} THEN {then}'.format(
-            when=criterion.get_sql(**kwargs),
-            then=term.get_sql(**kwargs)
+              when=criterion.get_sql(**kwargs),
+              then=term.get_sql(**kwargs)
         ) for criterion, term in self._cases)
         else_ = (' ELSE {}'.format(self._else.get_sql(**kwargs))
                  if self._else
@@ -848,12 +843,12 @@ class Function(Criterion):
         special_params_sql = self.get_special_params_sql(**kwargs)
 
         return '{name}({args}{special})'.format(
-            name=self.name,
-            args=','.join(p.get_sql(with_alias=False, **kwargs)
-                          if hasattr(p, 'get_sql')
-                          else str(p)
-                          for p in self.args),
-            special=(' ' + special_params_sql) if special_params_sql else '',
+              name=self.name,
+              args=','.join(p.get_sql(with_alias=False, **kwargs)
+                            if hasattr(p, 'get_sql')
+                            else str(p)
+                            for p in self.args),
+              special=(' ' + special_params_sql) if special_params_sql else '',
         )
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
@@ -897,25 +892,25 @@ class AnalyticFunction(Function):
             return field.get_sql(**kwargs)
 
         return '{field} {orient}'.format(
-            field=field.get_sql(**kwargs),
-            orient=orient.value,
+              field=field.get_sql(**kwargs),
+              orient=orient.value,
         )
 
     def get_partition_sql(self, **kwargs):
         terms = []
         if self._partition:
             terms.append('PARTITION BY {args}'.format(
-                args=','.join(p.get_sql(**kwargs)
-                              if hasattr(p, 'get_sql')
-                              else str(p)
-                              for p in self._partition)))
+                  args=','.join(p.get_sql(**kwargs)
+                                if hasattr(p, 'get_sql')
+                                else str(p)
+                                for p in self._partition)))
 
         if self._orderbys:
             terms.append('ORDER BY {orderby}'.format(
-                orderby=','.join(
-                    self._orderby_field(field, orient, **kwargs)
-                    for field, orient in self._orderbys
-                )))
+                  orderby=','.join(
+                        self._orderby_field(field, orient, **kwargs)
+                        for field, orient in self._orderbys
+                  )))
 
         return ' '.join(terms)
 
@@ -927,8 +922,8 @@ class AnalyticFunction(Function):
             return function_sql
 
         return '{function_sql} OVER({partition_sql})'.format(
-            function_sql=function_sql,
-            partition_sql=partition_sql
+              function_sql=function_sql,
+              partition_sql=partition_sql
         )
 
 
@@ -939,8 +934,8 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
 
         def __str__(self):
             return '{value} {modifier}'.format(
-                value=self.value or 'UNBOUNDED',
-                modifier=self.modifier,
+                  value=self.value or 'UNBOUNDED',
+                  modifier=self.modifier,
             )
 
     def __init__(self, name, *args, **kwargs):
@@ -966,15 +961,15 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
     def get_frame_sql(self):
         if not isinstance(self.bound, tuple):
             return '{frame} {bound}'.format(
-                frame=self.frame,
-                bound=self.bound
+                  frame=self.frame,
+                  bound=self.bound
             )
 
         lower, upper = self.bound
         return '{frame} BETWEEN {lower} AND {upper}'.format(
-            frame=self.frame,
-            lower=lower,
-            upper=upper,
+              frame=self.frame,
+              lower=lower,
+              upper=upper,
         )
 
     def get_partition_sql(self, **kwargs):
@@ -984,8 +979,8 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
             return partition_sql
 
         return '{over} {frame}'.format(
-            over=partition_sql,
-            frame=self.get_frame_sql()
+              over=partition_sql,
+              frame=self.get_frame_sql()
         )
 
 
@@ -1070,19 +1065,19 @@ class Interval(object):
         else:
             # Create the whole expression but trim out the unnecessary fields
             expr = "{years}-{months}-{days} {hours}:{minutes}:{seconds}.{microseconds}".format(
-                years=getattr(self, 'years', 0),
-                months=getattr(self, 'months', 0),
-                days=getattr(self, 'days', 0),
-                hours=getattr(self, 'hours', 0),
-                minutes=getattr(self, 'minutes', 0),
-                seconds=getattr(self, 'seconds', 0),
-                microseconds=getattr(self, 'microseconds', 0),
+                  years=getattr(self, 'years', 0),
+                  months=getattr(self, 'months', 0),
+                  days=getattr(self, 'days', 0),
+                  hours=getattr(self, 'hours', 0),
+                  minutes=getattr(self, 'minutes', 0),
+                  seconds=getattr(self, 'seconds', 0),
+                  microseconds=getattr(self, 'microseconds', 0),
             )
             expr = self.trim_pattern.sub('', expr)
 
             unit = '{largest}_{smallest}'.format(
-                largest=self.largest,
-                smallest=self.smallest,
+                  largest=self.largest,
+                  smallest=self.smallest,
             ) if self.largest != self.smallest else self.largest
 
         return self.templates.get(dialect, 'INTERVAL \'{expr} {unit}\'') \
@@ -1111,6 +1106,7 @@ class PseudoColumn(Term):
     """
 
     def __init__(self, name):
+        super().__init__()
         self.name = name
 
     def get_sql(self, **kwargs):

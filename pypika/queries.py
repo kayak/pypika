@@ -10,7 +10,7 @@ from .terms import (
     EmptyCriterion,
     Field,
     Function,
-    Pseudocolumn,
+    PseudoColumn,
     Rollup,
     Star,
     Term,
@@ -710,7 +710,7 @@ class QueryBuilder(Selectable, Term):
         base_tables = self._from + [self._update_table]
 
         for field in term.fields():
-            if isinstance(field, Pseudocolumn):
+            if isinstance(field, PseudoColumn):
                 continue
 
             table_in_base_tables = field.table in base_tables

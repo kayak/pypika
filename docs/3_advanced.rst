@@ -28,7 +28,7 @@ Oracle ROWNUM
 -------------
 
 Instead of using the LIMIT keyword, Oracle requires a query is limited by added a WHERE clause via the ROWNUM
-Pseudocolumn. The OracleQuery.RowNum property allows you to build queries based on this.
+PseudoColumn. The OracleQuery.RowNum property allows you to build queries based on this.
 
 .. code-block:: python
 

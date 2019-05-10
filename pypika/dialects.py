@@ -9,7 +9,7 @@ from pypika.terms import (
     ArithmeticExpression,
     Field,
     Function,
-    Pseudocolumn,
+    PseudoColumn,
     Star,
     ValueWrapper,
 )
@@ -129,7 +129,7 @@ class OracleQuery(Query):
     """
     Defines a query class for use with Oracle.
     """
-    RowNum = Pseudocolumn('ROWNUM')
+    RowNum = PseudoColumn('ROWNUM')
 
     @classmethod
     def _builder(cls):
