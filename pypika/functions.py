@@ -157,8 +157,8 @@ class Ascii(Function):
 
 
 class NullIf(Function):
-    def __init__(self, criterion, alias=None):
-        super(NullIf, self).__init__('NULLIF', criterion, alias=alias)
+    def __init__(self, term, condition, **kwargs):
+        super(NullIf, self).__init__('NULLIF', term, condition, **kwargs)
 
 
 class Bin(Function):
