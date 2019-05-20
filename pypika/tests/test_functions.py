@@ -607,9 +607,9 @@ class NullFunctionsTests(unittest.TestCase):
         self.assertEqual('SELECT COALESCE(\"foo\",0) FROM \"abc\"', str(q))
 
     def test_nullif(self):
-        q = Q.from_('abc').select(fn.NullIf(F('foo') == 0))
+        q = Q.from_('abc').select(fn.NullIf(F('foo'), 0))
 
-        self.assertEqual('SELECT NULLIF(\"foo\"=0) FROM \"abc\"', str(q))
+        self.assertEqual('SELECT NULLIF(\"foo\",0) FROM \"abc\"', str(q))
 
     def test_nvl(self):
         q = Q.from_('abc').select(fn.NVL(F('foo'), 0))
