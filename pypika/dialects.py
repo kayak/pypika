@@ -10,6 +10,7 @@ from pypika.terms import (
     Field,
     Function,
     Star,
+    Array,
     ValueWrapper,
 )
 from pypika.utils import (
@@ -273,6 +274,15 @@ class PostgreQueryBuilder(QueryBuilder):
             querystring += self._returning_sql()
         return querystring
 
+    def _values_sql(self, **kwargs):
+        return ' VALUES ({values})' \
+            .format(values='),('
+                    .join(','
+                          .join("ARRAY" + term.get_sql(with_alias=True, subquery=True, **kwargs)
+                                if isinstance(term, Array)
+                                else term.get_sql(with_alias=True, subquery=True, **kwargs)
+                                for term in row)
+                          for row in self._values))
 
 class PostgreSQLQuery(Query):
     """
