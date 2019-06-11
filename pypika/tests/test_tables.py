@@ -3,8 +3,8 @@ import unittest
 from pypika import (
     Schema,
     Table,
+    Tables
 )
-from pypika.queries import make_tables
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -60,19 +60,19 @@ class TableEqualityTests(unittest.TestCase):
 
     def test_many_tables_with_alias(self):
         tables_data = [('table1', 't1'), ('table2', 't2'), ('table3', 't3')]
-        tables = make_tables(*tables_data)
+        tables = Tables(*tables_data)
         for el in tables:
             self.assertIsNotNone(el.alias)
 
     def test_many_tables_without_alias(self):
         tables_data = ['table1', 'table2', 'table3']
-        tables = make_tables(*tables_data)
+        tables = Tables(*tables_data)
         for el in tables:
             self.assertIsNone(el.alias)
 
     def test_many_tables_with_or_not_alias(self):
         tables_data = [('table1', 't1'), ('table2'), 'table3']
-        tables = make_tables(*tables_data)
+        tables = Tables(*tables_data)
         for i in range(len(tables)):
             if isinstance(tables_data[i], tuple):
                 self.assertIsNotNone(tables[i].alias)
