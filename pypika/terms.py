@@ -430,7 +430,11 @@ class Tuple(Criterion):
 
 class Array(Tuple):
     def get_sql(self, **kwargs):
-        return '[{}]'.format(
+        if kwargs['dialect'] == Dialects.POSTGRESQL:
+            template = 'ARRAY[{}]'
+        else:
+            template = '[{}]'
+        return template.format(
               ','.join(term.get_sql(**kwargs)
                        for term in self.values)
         )
