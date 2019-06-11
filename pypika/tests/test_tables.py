@@ -3,6 +3,7 @@ import unittest
 from pypika import (
     Schema,
     Table,
+    Tables
 )
 
 __author__ = "Timothy Heys"
@@ -56,3 +57,24 @@ class TableEqualityTests(unittest.TestCase):
         t2 = Table("q", schema='a')
 
         self.assertNotEqual(t1, t2)
+
+    def test_many_tables_with_alias(self):
+        tables_data = [('table1', 't1'), ('table2', 't2'), ('table3', 't3')]
+        tables = Tables(*tables_data)
+        for el in tables:
+            self.assertIsNotNone(el.alias)
+
+    def test_many_tables_without_alias(self):
+        tables_data = ['table1', 'table2', 'table3']
+        tables = Tables(*tables_data)
+        for el in tables:
+            self.assertIsNone(el.alias)
+
+    def test_many_tables_with_or_not_alias(self):
+        tables_data = [('table1', 't1'), ('table2'), 'table3']
+        tables = Tables(*tables_data)
+        for i in range(len(tables)):
+            if isinstance(tables_data[i], tuple):
+                self.assertIsNotNone(tables[i].alias)
+            else:
+                self.assertIsNone(tables[i].alias)

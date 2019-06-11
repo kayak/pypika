@@ -150,7 +150,19 @@ class Table(Selectable):
 
 
 def make_tables(*names, **kwargs):
-    return [Table(name, schema=kwargs.get('schema')) for name in names]
+    """
+        Shortcut to create many tables. If `names` param is a tuple, the first
+        position will refer to the `_table_name` while the second will be its `alias`.
+        Any other data structure will be treated as a whole as the `_table_name`
+    """
+    tables = []
+    for name in names:
+        if isinstance(name, tuple) and len(name) == 2:
+            t = Table(name=name[0], alias=name[1], schema=kwargs.get('schema'))
+        else:
+            t = Table(name=name, schema=kwargs.get('schema'))
+        tables.append(t)
+    return tables
 
 
 class Query(object):
