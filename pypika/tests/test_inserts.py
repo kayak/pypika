@@ -469,3 +469,19 @@ class SelectIntoTests(unittest.TestCase):
         self.assertEqual('SELECT "abc"."foo","abc"."bar","hij"."fiz","hij"."buz" '
                          'INTO "efg" FROM "abc" '
                          'JOIN "hij" ON "abc"."id"="hij"."abc_id"', str(query))
+
+
+class ReplaceTests(unittest.TestCase):
+    table_abc, table_def = Tables('abc', 'efg')
+
+    def test_replace_simple(self):
+        query = Query.into(self.table_abc).replace('v1', 'v2', 'v3')
+        expected_output = 'REPLACE INTO "abc" VALUES (\'v1\',\'v2\',\'v3\')'
+        self.assertEqual(str(query), expected_output)
+
+    def test_replace_subquery(self):
+        query = Query.into(self.table_abc).replace(
+            Query.from_(self.table_def).select('f1', 'f2')
+        )
+        expected_output = 'REPLACE INTO "abc" VALUES ((SELECT "f1","f2" FROM "efg"))'
+        self.assertEqual(str(query), expected_output)

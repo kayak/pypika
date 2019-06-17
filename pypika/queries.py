@@ -372,6 +372,7 @@ class QueryBuilder(Selectable, Term):
         self._insert_table = None
         self._update_table = None
         self._delete_from = False
+        self._replace = False
 
         self._with = []
         self._selects = []
@@ -509,15 +510,20 @@ class QueryBuilder(Selectable, Term):
 
         if not terms:
             return
+        else:
+            self._validate_terms_and_append(*terms)
+        self._replace = False
 
-        if not isinstance(terms[0], (list, tuple, set)):
-            terms = [terms]
+    @builder
+    def replace(self, *terms):
+        if self._insert_table is None:
+            raise AttributeError("'Query' object has no attribute '%s'" % 'insert')
 
-        for values in terms:
-            self._values.append([value
-                                 if isinstance(value, Term)
-                                 else self.wrap_constant(value)
-                                 for value in values])
+        if not terms:
+            return
+        else:
+            self._validate_terms_and_append(*terms)
+        self._replace = True
 
     @builder
     def distinct(self):
@@ -734,6 +740,21 @@ class QueryBuilder(Selectable, Term):
         subquery.alias = 'sq%d' % self._subquery_count
         self._subquery_count += 1
 
+    def _validate_terms_and_append(self, *terms):
+        """
+        Handy function for INSERT and REPLACE statements in order to check if 
+        terms are introduced and how append them to `self._values`
+        """
+        if not isinstance(terms[0], (list, tuple, set)):
+            terms = [terms]
+
+        for values in terms:
+            self._values.append([value
+                                 if isinstance(value, Term)
+                                 else self.wrap_constant(value)
+                                 for value in values])
+
+
     def __str__(self):
         return self.get_sql(quote_char=self.quote_char, dialect=self.dialect)
 
@@ -795,7 +816,10 @@ class QueryBuilder(Selectable, Term):
             querystring = self._delete_sql(**kwargs)
 
         elif not self._select_into and self._insert_table:
-            querystring = self._insert_sql(**kwargs)
+            if self._replace:
+                querystring = self._replace_sql(**kwargs)
+            else:
+                querystring = self._insert_sql(**kwargs)
 
             if self._columns:
                 querystring += self._columns_sql(**kwargs)
@@ -875,6 +899,11 @@ class QueryBuilder(Selectable, Term):
         return 'INSERT {ignore}INTO {table}'.format(
               table=self._insert_table.get_sql(**kwargs),
               ignore='IGNORE ' if self._ignore else ''
+        )
+
+    def _replace_sql(self, **kwargs):
+        return 'REPLACE INTO {table}'.format(
+              table=self._insert_table.get_sql(**kwargs),
         )
 
     @staticmethod
