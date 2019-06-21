@@ -594,6 +594,15 @@ class DateFunctionsTests(unittest.TestCase):
 
         self.assertEqual("SELECT CURRENT_TIME()", str(query))
 
+    def test_to_date(self):
+        q1 = fn.ToDate('2019-06-21', 'yyyy-mm-dd')
+        q2 = Query.from_(self.t).select(fn.ToDate('2019-06-21', 'yyyy-mm-dd'))
+        q3 = Query.from_(self.t).select(fn.ToDate(F('foo'), 'yyyy-mm-dd'))
+
+        self.assertEqual(str(q1), "TO_DATE('2019-06-21','yyyy-mm-dd')")
+        self.assertEqual(str(q2), "SELECT TO_DATE('2019-06-21','yyyy-mm-dd') FROM \"abc\"")
+        self.assertEqual(str(q3), "SELECT TO_DATE(\"foo\",'yyyy-mm-dd') FROM \"abc\"")
+
 
 class NullFunctionsTests(unittest.TestCase):
     def test_isnull(self):

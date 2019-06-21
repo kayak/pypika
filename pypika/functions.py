@@ -140,6 +140,11 @@ class DateAdd(Function):
         super(DateAdd, self).__init__('DATE_ADD', date_part, interval, term, alias=alias)
 
 
+class ToDate(Function):
+    def __init__(self, value, format_mask, alias=None):
+        super(ToDate, self).__init__('TO_DATE', value, format_mask, alias=alias)
+
+
 class Timestamp(Function):
     def __init__(self, term, alias=None):
         super(Timestamp, self).__init__('TIMESTAMP', term, alias=alias)
