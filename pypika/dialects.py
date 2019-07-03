@@ -211,7 +211,7 @@ class PostgreQueryBuilder(QueryBuilder):
             elif isinstance(term, Function):
                 raise QueryException('Aggregate functions are not allowed in returning')
             else:
-                self._return_other(self.wrap_constant(term))
+                self._return_other(self.wrap_constant(term, self._wrapper_cls))
 
     def _validate_returning_term(self, term):
         for field in term.fields():
@@ -323,17 +323,16 @@ class ClickHouseQuery(Query):
 
 
 class SQLLiteValueWrapper(ValueWrapper):
-    def _get_value_sql(self, *args, **kwargs):
+    def get_value_sql(self, *args, **kwargs):
         if isinstance(self.value, bool):
             return '1' if self.value else '0'
-        return super(SQLLiteValueWrapper, self)._get_value_sql(*args, **kwargs)
+        return super().get_value_sql(*args, **kwargs)
 
 
 class SQLLiteQuery(Query):
     """
     Defines a query class for use with Microsoft SQL Server.
     """
-
     @classmethod
     def _builder(cls):
         return QueryBuilder(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper)

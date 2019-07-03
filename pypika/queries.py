@@ -476,7 +476,7 @@ class QueryBuilder(Selectable, Term):
             elif isinstance(term, (Function, ArithmeticExpression)):
                 self._select_other(term)
             else:
-                self._select_other(self.wrap_constant(term))
+                self._select_other(self.wrap_constant(term, wrapper_cls=self._wrapper_cls))
 
     @builder
     def delete(self):

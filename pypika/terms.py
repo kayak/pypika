@@ -43,7 +43,7 @@ class Term(object):
     def tables_(self):
         return set()
 
-    def wrap_constant(self, val):
+    def wrap_constant(self, val, wrapper_cls=None):
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
@@ -51,6 +51,8 @@ class Term(object):
 
         :param val:
             Any value.
+        :param wrapper_cls:
+            A pypika class which wraps a constant value so it can be handled as a component of the query.
         :return:
             Raw string, number, or decimal values will be returned in a ValueWrapper.  Fields and other parts of the
             querybuilder will be returned as inputted.
@@ -67,8 +69,9 @@ class Term(object):
         if isinstance(val, tuple):
             return Tuple(*val)
 
-        _ValueWrapper = getattr(self, '_wrapper_cls', ValueWrapper)
-        return _ValueWrapper(val)
+        # Need to default here to avoid the recursion. ValueWrapper extends this class.
+        wrapper_cls = wrapper_cls or ValueWrapper
+        return wrapper_cls(val)
 
     def for_(self, table):
         """
