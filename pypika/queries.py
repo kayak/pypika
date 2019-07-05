@@ -148,6 +148,15 @@ class Table(Selectable):
     def __hash__(self):
         return hash(str(self))
 
+    def select(self, *terms):
+        return Query.from_(self._table_name).select(*terms)
+
+    def update(self):
+        return Query.update(self._table_name)
+
+    def insert(self, *terms):
+        return Query.into(self._table_name).insert(*terms)
+
 
 def make_tables(*names, **kwargs):
     """
@@ -810,6 +819,9 @@ class QueryBuilder(Selectable, Term):
 
             if self._wheres:
                 querystring += self._where_sql(**kwargs)
+
+            if self._limit:
+                querystring += self._limit_sql()
 
             return querystring
 

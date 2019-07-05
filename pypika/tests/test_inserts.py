@@ -110,6 +110,14 @@ class InsertIntoTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "abc" VALUES (NULL)', str(query))
 
+    def test_insert_column_using_table_alias(self):
+        q = self.table_abc.insert(1)
+        self.assertEqual('INSERT INTO "abc" VALUES (1)', str(q))
+
+    def test_insert_column_using_alias_with_chain(self):
+        q = self.table_abc.insert(1, 'a', True).insert(2, 'b', False)
+        self.assertEqual('INSERT INTO "abc" VALUES (1,\'a\',true),(2,\'b\',false)', str(q))
+
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     table_abc = Table('abc')
