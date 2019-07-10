@@ -1,5 +1,5 @@
 # coding: utf-8
-from aenum import Enum
+from enum import Enum
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
