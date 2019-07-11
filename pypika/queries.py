@@ -149,13 +149,13 @@ class Table(Selectable):
         return hash(str(self))
 
     def select(self, *terms):
-        return Query.from_(self._table_name).select(*terms)
+        return Query.from_(self).select(*terms)
 
     def update(self):
-        return Query.update(self._table_name)
+        return Query.update(self)
 
     def insert(self, *terms):
-        return Query.into(self._table_name).insert(*terms)
+        return Query.into(self).insert(*terms)
 
 
 def make_tables(*names, **kwargs):
