@@ -31,7 +31,7 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class Selectable(object):
+class Selectable:
     def __init__(self, alias):
         self.alias = alias
 
@@ -165,7 +165,7 @@ def make_tables(*names, **kwargs):
     return tables
 
 
-class Query(object):
+class Query:
     """
     Query is the primary class and entry point in pypika. It is used to build queries iteratively using the builder
     design
@@ -994,7 +994,7 @@ class QueryBuilder(Selectable, Term):
         )
 
 
-class Joiner(object):
+class Joiner:
     def __init__(self, query, item, how, type_label):
         self.query = query
         self.item = item
@@ -1037,7 +1037,7 @@ class Joiner(object):
         return self.query
 
 
-class Join(object):
+class Join:
     def __init__(self, item, how):
         self.item = item
         self.how = how

@@ -3,7 +3,7 @@ import itertools
 import re
 from datetime import date
 
-from aenum import Enum
+from enum import Enum
 
 from pypika.enums import (
     Arithmetic,
@@ -29,7 +29,7 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class Term(object):
+class Term:
     is_aggregate = False
 
     def __init__(self, alias=None):
@@ -1005,7 +1005,7 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
         return None
 
 
-class Interval(object):
+class Interval:
     templates = {
         # MySQL requires no single quotes around the expr and unit
         Dialects.MYSQL: 'INTERVAL {expr} {unit}',
