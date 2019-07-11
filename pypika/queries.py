@@ -757,6 +757,7 @@ class QueryBuilder(Selectable, Term):
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         kwargs.setdefault('quote_char', self.quote_char)
+        kwargs.setdefault('dialect', self.dialect)
 
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
             return ''
