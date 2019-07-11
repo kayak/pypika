@@ -855,13 +855,13 @@ class Function(Criterion):
               special=(' ' + special_params_sql) if special_params_sql else '',
         )
 
-    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
+    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None, **kwargs):
         # FIXME escape
-        function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char)
+        function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char, dialect=dialect)
 
         if self.schema is not None:
             function_sql = '{schema}.{function}' \
-                .format(schema=self.schema.get_sql(quote_char=quote_char, **kwargs),
+                .format(schema=self.schema.get_sql(quote_char=quote_char, dialect=dialect, **kwargs),
                         function=function_sql)
 
         if not with_alias or self.alias is None:
