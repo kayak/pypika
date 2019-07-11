@@ -1,11 +1,11 @@
 from copy import copy
 from functools import reduce
 
-from .enums import (
+from pypika.enums import (
     JoinType,
     UnionType,
 )
-from .terms import (
+from pypika.terms import (
     ArithmeticExpression,
     EmptyCriterion,
     Field,
@@ -16,7 +16,7 @@ from .terms import (
     Tuple,
     ValueWrapper,
 )
-from .utils import (
+from pypika.utils import (
     JoinException,
     QueryException,
     RollupException,

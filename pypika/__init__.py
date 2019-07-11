@@ -31,7 +31,7 @@ This contains all of the utility classes such as exceptions and decorators.
 
 """
 # noinspection PyUnresolvedReferences
-from .dialects import (
+from pypika.dialects import (
     ClickHouseQuery,
     Dialects,
     MSSQLQuery,
@@ -43,13 +43,13 @@ from .dialects import (
     VerticaQuery,
 )
 # noinspection PyUnresolvedReferences
-from .enums import (
+from pypika.enums import (
     DatePart,
     JoinType,
     Order,
 )
 # noinspection PyUnresolvedReferences
-from .queries import (
+from pypika.queries import (
     AliasedQuery,
     Query,
     Schema,
@@ -57,7 +57,7 @@ from .queries import (
     make_tables as Tables,
 )
 # noinspection PyUnresolvedReferences
-from .terms import (
+from pypika.terms import (
     Array,
     Bracket,
     Case,
@@ -72,7 +72,7 @@ from .terms import (
     Tuple,
 )
 # noinspection PyUnresolvedReferences
-from .utils import (
+from pypika.utils import (
     CaseException,
     GroupingException,
     JoinException,
