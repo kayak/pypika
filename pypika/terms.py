@@ -1,5 +1,6 @@
 import inspect
 import itertools
+import json
 import re
 from datetime import date
 
@@ -11,6 +12,7 @@ from pypika.enums import (
     Dialects,
     Equality,
     Matching,
+    PostgresOperators,
 )
 from pypika.utils import (
     CaseException,
@@ -162,10 +164,6 @@ class Term:
     def __mul__(self, other):
         return ArithmeticExpression(Arithmetic.mul, self, self.wrap_constant(other))
 
-    def __div__(self, other):
-        # Required for Python2
-        return self.__truediv__(other)
-
     def __truediv__(self, other):
         return ArithmeticExpression(Arithmetic.div, self, self.wrap_constant(other))
 
@@ -183,10 +181,6 @@ class Term:
 
     def __rmul__(self, other):
         return ArithmeticExpression(Arithmetic.mul, self.wrap_constant(other), self)
-
-    def __rdiv__(self, other):
-        # Required for Python2
-        return self.__rtruediv__(other)
 
     def __rtruediv__(self, other):
         return ArithmeticExpression(Arithmetic.div, self.wrap_constant(other), self)
@@ -453,6 +447,60 @@ class Bracket(Tuple):
               alias=self.alias,
               quote_char=kwargs.get('quote_char', None),
         )
+
+
+class JSONField(Field):
+    DEFAULT_QUOTE_CHAR = '"'
+    EXPRESSION_QUOTE_CHAR = "'"
+
+    def __init__(self, val, quote_char=DEFAULT_QUOTE_CHAR, **kwargs):
+        super().__init__(val, **kwargs)
+        self.quote_char = quote_char
+
+    def get_sql(self, **kwargs):
+        if 'dialect' in kwargs and kwargs['dialect'] != Dialects.POSTGRESQL:
+            raise RuntimeError('Dialect `{}` does not support JSON field'.format(kwargs["dialect"]))
+
+        kwargs['quote_char'] = self.quote_char
+        return super().get_sql(**kwargs)
+
+    def haskey(self, other):
+        other = self._base_prepare(other)
+        return BasicCriterion(PostgresOperators.HAS_KEY, self, other)
+
+    def contains(self, other):
+        other = self._base_prepare(other)
+        return BasicCriterion(PostgresOperators.CONTAINS, self, other)
+
+    def contained_by(self, other):
+        other = self._base_prepare(other)
+        return BasicCriterion(PostgresOperators.CONTAINED_BY, self, other)
+
+    def has_keys(self, other):
+        if isinstance(other, list):
+            other = JSONField(Array(*other), quote_char='')
+        else:
+            raise RuntimeError('Type `{}` does not support for this operation'.format(type(other)))
+        return BasicCriterion(PostgresOperators.HAS_KEYS, self, other)
+
+    def has_any_keys(self, other):
+        if isinstance(other, list):
+            other = JSONField(Array(*other), quote_char='')
+        else:
+            raise RuntimeError('Type `{}` does not support for this operation'.format(type(other)))
+        return BasicCriterion(PostgresOperators.HAS_ANY_KEYS, self, other)
+
+    def _base_prepare(self, other):
+        if isinstance(other, str):
+            other = JSONField(other, quote_char=self.EXPRESSION_QUOTE_CHAR)
+        elif isinstance(other, (dict, list)):
+            other = JSONField(json.dumps(other), quote_char=self.EXPRESSION_QUOTE_CHAR)
+        elif isinstance(other, JSONField):
+            other.quote_char = self.EXPRESSION_QUOTE_CHAR
+        else:
+            raise RuntimeError('Type `{}` does not support'.format(type(other)))
+
+        return other
 
 
 class BasicCriterion(Criterion):

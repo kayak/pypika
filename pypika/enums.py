@@ -125,3 +125,12 @@ class Dialects(Enum):
     POSTGRESQL = 'postgressql'
     REDSHIFT = 'redshift'
     SQLLITE = 'sqllite'
+
+
+class PostgresOperators(Enum):
+    HAS_KEY = '?'
+    CONTAINS = '@>'
+    CONTAINED_BY = '<@'
+    HAS_KEYS = '?&'
+    HAS_ANY_KEYS = '?|'
+
