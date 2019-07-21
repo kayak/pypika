@@ -100,3 +100,16 @@ class InsertTests(unittest.TestCase):
         self.assertEqual(
             'SELECT * FROM "abc" WHERE "json"?|ARRAY[\'dates\',\'imported\']', str(q)
         )
+
+    def test_get_value_by_key(self):
+        q = PostgreSQLQuery.from_(self.table_abc).select(self.json_field.get_value_by_key(['dates', 'import']))
+
+        self.assertEqual(
+            'SELECT "json"->\'dates\'->>\'import\' FROM "abc"', str(q)
+        )
+
+        q = PostgreSQLQuery.from_(self.table_abc).select(self.json_field.get_value_by_key('dates'))
+
+        self.assertEqual(
+            'SELECT "json"->\'dates\' FROM "abc"', str(q)
+        )

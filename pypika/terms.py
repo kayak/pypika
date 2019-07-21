@@ -464,7 +464,7 @@ class JSONField(Field):
 
         kwargs['quote_char'] = self.quote_char
 
-        # __str__ call not equal .get_sql()
+        # from __str__  sometimes, we can't get dialect, so if we can call .get_sql method
         if hasattr(self.name, 'get_sql'):
             name = self.name.get_sql(**kwargs)
         else:
@@ -501,6 +501,20 @@ class JSONField(Field):
             raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
         return BasicCriterion(PostgresOperators.HAS_ANY_KEYS, self, other)
 
+    def get_value_by_key(self, other):
+        if isinstance(other, str):
+            other = JSONField(other, quote_char=self.EXPRESSION_QUOTE_CHAR)
+        elif isinstance(other, list) and len(other) == 2:
+            root_key = JSONField(other[0], quote_char=self.EXPRESSION_QUOTE_CHAR)
+            nested_key = JSONField(other[1], quote_char=self.EXPRESSION_QUOTE_CHAR)
+            return NestedCriterion(
+                PostgresOperators.GET_JSON_VALUE, PostgresOperators.GET_TEXT_VALUE,
+                self, root_key, nested_key,
+            )
+        else:
+            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
+        return BasicCriterion(PostgresOperators.GET_JSON_VALUE, self, other)
+
     def _base_prepare(self, other):
         if isinstance(other, str):
             other = JSONField(other, quote_char=self.EXPRESSION_QUOTE_CHAR)
@@ -512,6 +526,46 @@ class JSONField(Field):
             raise QueryException('Type `{}` does not support'.format(type(other)))
 
         return other
+
+
+class NestedCriterion(Criterion):
+    def __init__(self, comparator, nested_comparator, left, right, nested, alias=None):
+        super().__init__(alias)
+        self.left = left
+        self.comparator = comparator
+        self.nested_comparator = nested_comparator
+        self.right = right
+        self.nested = nested
+
+    def fields(self):
+        return [*self.right.fields(), *self.left.fields(), *self.nested.fields()]
+
+    @property
+    def is_aggregate(self):
+        return resolve_is_aggregate([term.is_aggregate for term in [self.left, self.right, self.nested]])
+
+    @property
+    def tables_(self):
+        return self.left.tables_ | self.right.tables_ | self.nested.tables_
+
+    @builder
+    def for_(self, table):
+        self.left = self.left.for_(table)
+        self.right = self.right.for_(table)
+        self.nested = self.right.for_(table)
+
+    def get_sql(self, with_alias=False, **kwargs):
+        sql = '{left}{comparator}{right}{nested_comparator}{nested}'.format(
+            left=self.left.get_sql(**kwargs),
+            comparator=self.comparator.value,
+            right=self.right.get_sql(**kwargs),
+            nested_comparator=self.nested_comparator.value,
+            nested=self.nested.get_sql(**kwargs)
+        )
+        if with_alias and self.alias:
+            return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
+
+        return sql
 
 
 class BasicCriterion(Criterion):

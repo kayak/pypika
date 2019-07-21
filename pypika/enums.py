@@ -133,4 +133,6 @@ class PostgresOperators(Enum):
     CONTAINED_BY = '<@'
     HAS_KEYS = '?&'
     HAS_ANY_KEYS = '?|'
+    GET_JSON_VALUE = '->'
+    GET_TEXT_VALUE = '->>'
 
