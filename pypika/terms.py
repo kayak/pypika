@@ -16,6 +16,7 @@ from pypika.enums import (
 )
 from pypika.utils import (
     CaseException,
+    QueryException,
     alias_sql,
     builder,
     ignore_copy,
@@ -453,16 +454,26 @@ class JSONField(Field):
     DEFAULT_QUOTE_CHAR = '"'
     EXPRESSION_QUOTE_CHAR = "'"
 
-    def __init__(self, val, quote_char=DEFAULT_QUOTE_CHAR, **kwargs):
-        super().__init__(val, **kwargs)
+    def __init__(self, val, alias=None, table=None, quote_char=DEFAULT_QUOTE_CHAR):
+        super().__init__(val, alias, table)
         self.quote_char = quote_char
 
     def get_sql(self, **kwargs):
-        if 'dialect' in kwargs and kwargs['dialect'] != Dialects.POSTGRESQL:
+        if kwargs['dialect'] != Dialects.POSTGRESQL:
             raise RuntimeError('Dialect `{}` does not support JSON field'.format(kwargs["dialect"]))
 
         kwargs['quote_char'] = self.quote_char
-        return super().get_sql(**kwargs)
+
+        # __str__ call not equal .get_sql()
+        if hasattr(self.name, 'get_sql'):
+            name = self.name.get_sql(**kwargs)
+        else:
+            name = self.name
+
+        return '{quote}{val}{quote}'.format(
+            quote=self.quote_char,
+            val=name,
+        )
 
     def haskey(self, other):
         other = self._base_prepare(other)
@@ -480,14 +491,14 @@ class JSONField(Field):
         if isinstance(other, list):
             other = JSONField(Array(*other), quote_char='')
         else:
-            raise RuntimeError('Type `{}` does not support for this operation'.format(type(other)))
+            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
         return BasicCriterion(PostgresOperators.HAS_KEYS, self, other)
 
     def has_any_keys(self, other):
         if isinstance(other, list):
             other = JSONField(Array(*other), quote_char='')
         else:
-            raise RuntimeError('Type `{}` does not support for this operation'.format(type(other)))
+            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
         return BasicCriterion(PostgresOperators.HAS_ANY_KEYS, self, other)
 
     def _base_prepare(self, other):
@@ -498,7 +509,7 @@ class JSONField(Field):
         elif isinstance(other, JSONField):
             other.quote_char = self.EXPRESSION_QUOTE_CHAR
         else:
-            raise RuntimeError('Type `{}` does not support'.format(type(other)))
+            raise QueryException('Type `{}` does not support'.format(type(other)))
 
         return other
 
