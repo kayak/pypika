@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Table
+from pypika import Table, Query, QueryException
 from pypika.dialects import PostgreSQLQuery
 from pypika.terms import JSONField
 
@@ -47,6 +47,14 @@ class InsertTests(unittest.TestCase):
     def test_json_haskey(self):
         q = PostgreSQLQuery.from_(self.table_abc).select("*").where(
             self.json_field.haskey("dates"),
+        )
+
+        self.assertEqual(
+            'SELECT * FROM "abc" WHERE "json"?\'dates\'', str(q),
+        )
+
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(
+            self.json_field.haskey(JSONField("dates")),
         )
 
         self.assertEqual(
@@ -113,3 +121,14 @@ class InsertTests(unittest.TestCase):
         self.assertEqual(
             'SELECT "json"->\'dates\' FROM "abc"', str(q)
         )
+
+    def test_not_valid_values(self):
+        q = Query.from_(self.table_abc).select("*").where(self.json_field.haskey("dates"))
+        self.assertRaises(QueryException, str, q)
+        self.assertRaises(QueryException, q.get_sql)
+
+        self.assertRaises(QueryException, self.json_field.has_keys, 'dates')
+        self.assertRaises(QueryException, self.json_field.has_any_keys, 'dates')
+        self.assertRaises(QueryException, self.json_field.get_value_by_key, {'test':'test'})
+        self.assertRaises(QueryException, self.json_field.haskey, 1)
+

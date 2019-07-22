@@ -460,11 +460,11 @@ class JSONField(Field):
 
     def get_sql(self, **kwargs):
         if kwargs['dialect'] != Dialects.POSTGRESQL:
-            raise RuntimeError('Dialect `{}` does not support JSON field'.format(kwargs["dialect"]))
+            raise QueryException('Dialect `{}` does not support JSON field'.format(kwargs["dialect"]))
 
         kwargs['quote_char'] = self.quote_char
 
-        # from __str__  sometimes, we can't get dialect, so if we can call .get_sql method
+        # from __str__  sometimes, we can't get dialect, so if we can, we call .get_sql method
         if hasattr(self.name, 'get_sql'):
             name = self.name.get_sql(**kwargs)
         else:
@@ -538,7 +538,7 @@ class NestedCriterion(Criterion):
         self.nested = nested
 
     def fields(self):
-        return [*self.right.fields(), *self.left.fields(), *self.nested.fields()]
+        return list(itertools.chain(self.right.fields(), self.left.fields(), self.nested.fields()))
 
     @property
     def is_aggregate(self):
