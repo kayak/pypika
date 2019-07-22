@@ -125,7 +125,6 @@ class InsertTests(unittest.TestCase):
     def test_not_valid_values(self):
         q = Query.from_(self.table_abc).select("*").where(self.json_field.haskey("dates"))
         self.assertRaises(QueryException, str, q)
-        self.assertRaises(QueryException, q.get_sql)
 
         self.assertRaises(QueryException, self.json_field.has_keys, 'dates')
         self.assertRaises(QueryException, self.json_field.has_any_keys, 'dates')
