@@ -1,7 +1,10 @@
 import unittest
 
 from pypika import (
+    Array,
     Bracket,
+    Dialects,
+    PostgreSQLQuery,
     Query,
     Tables,
     Tuple,
@@ -69,6 +72,24 @@ class TupleTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar" '
                          'WHERE ("abc"."foo","efg"."bar") IN ((1,1),(2,2),(3,3))', str(query))
+
+
+class ArrayTests(unittest.TestCase):
+    table_abc, table_efg = Tables('abc', 'efg')
+
+    def test_array_general(self):
+        query = Query.from_(self.table_abc) \
+            .select(Array(1, 'a', ['b', 2, 3]))
+
+        self.assertEqual('SELECT [1,\'a\',[\'b\',2,3]] FROM "abc"', str(query))
+        self.assertEqual('SELECT [1,\'a\',[\'b\',2,3]] FROM "abc"', str(query.get_sql()))
+
+    def test_array_postgresql(self):
+        query = PostgreSQLQuery.from_(self.table_abc) \
+            .select(Array(1, 'a', ['b', 2, 3]))
+
+        self.assertEqual('SELECT ARRAY[1,\'a\',ARRAY[\'b\',2,3]] FROM "abc"', str(query))
+        self.assertEqual('SELECT ARRAY[1,\'a\',ARRAY[\'b\',2,3]] FROM "abc"', query.get_sql())
 
 
 class BracketTests(unittest.TestCase):

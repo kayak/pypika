@@ -1,11 +1,11 @@
 from copy import copy
 from functools import reduce
 
-from .enums import (
+from pypika.enums import (
     JoinType,
     UnionType,
 )
-from .terms import (
+from pypika.terms import (
     ArithmeticExpression,
     EmptyCriterion,
     Field,
@@ -16,7 +16,7 @@ from .terms import (
     Tuple,
     ValueWrapper,
 )
-from .utils import (
+from pypika.utils import (
     JoinException,
     QueryException,
     RollupException,
@@ -757,6 +757,7 @@ class QueryBuilder(Selectable, Term):
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         kwargs.setdefault('quote_char', self.quote_char)
+        kwargs.setdefault('dialect', self.dialect)
 
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
             return ''

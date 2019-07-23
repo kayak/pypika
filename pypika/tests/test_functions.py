@@ -12,10 +12,16 @@ from pypika import (
     VerticaQuery,
     functions as fn,
 )
-from pypika.enums import SqlTypes
+from pypika.enums import SqlTypes, Dialects
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
+
+
+class FunctionTests(unittest.TestCase):
+    def test_dialect_propagation(self):
+        func = fn.Function('func', ['a'], ['b'])
+        self.assertEqual("func(ARRAY['a'],ARRAY['b'])", func.get_sql(dialect=Dialects.POSTGRESQL))
 
 
 class SchemaTests(unittest.TestCase):
