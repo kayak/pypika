@@ -44,9 +44,9 @@ class InsertTests(unittest.TestCase):
             str(q),
         )
 
-    def test_json_haskey(self):
+    def test_json_has_key(self):
         q = PostgreSQLQuery.from_(self.table_abc).select("*").where(
-            self.json_field.haskey("dates"),
+            self.json_field.has_key("dates"),
         )
 
         self.assertEqual(
@@ -54,7 +54,7 @@ class InsertTests(unittest.TestCase):
         )
 
         q = PostgreSQLQuery.from_(self.table_abc).select("*").where(
-            self.json_field.haskey(JSONField("dates")),
+            self.json_field.has_key(JSONField("dates")),
         )
 
         self.assertEqual(
@@ -123,11 +123,11 @@ class InsertTests(unittest.TestCase):
         )
 
     def test_not_valid_values(self):
-        q = Query.from_(self.table_abc).select("*").where(self.json_field.haskey("dates"))
+        q = Query.from_(self.table_abc).select("*").where(self.json_field.has_key("dates"))
         self.assertRaises(QueryException, str, q)
 
         self.assertRaises(QueryException, self.json_field.has_keys, 'dates')
         self.assertRaises(QueryException, self.json_field.has_any_keys, 'dates')
         self.assertRaises(QueryException, self.json_field.get_value_by_key, {'test':'test'})
-        self.assertRaises(QueryException, self.json_field.haskey, 1)
+        self.assertRaises(QueryException, self.json_field.has_key, 1)
 
