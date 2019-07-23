@@ -233,6 +233,10 @@ class SelectTests(unittest.TestCase):
             self.table_abc.select("foo")[10:10],
             Query.from_('abc').select('foo')[10:10]
         )
+        self.assertEqual(
+            self.table_abc.select(self.table_abc.foo)[10:10],
+            Query.from_('abc').select('foo')[10:10]
+        )
 
 
 class WhereTests(unittest.TestCase):

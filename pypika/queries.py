@@ -149,12 +149,37 @@ class Table(Selectable):
         return hash(str(self))
 
     def select(self, *terms):
+        """
+        Perform a SELECT operation on the current table
+
+        :param terms:
+            Type:  list[expression]
+
+            A list of terms to select. These can be any type of int, float, str, bool or Term or a Field.
+
+        :return:  QueryBuilder
+        """
         return Query.from_(self).select(*terms)
 
     def update(self):
+        """
+        Perform an UPDATE operation on the current table
+
+        :return: QueryBuilder
+        """
         return Query.update(self)
 
     def insert(self, *terms):
+        """
+        Perform an INSERT operation on the current table
+
+        :param terms:
+            Type: list[expression]
+
+            A list of terms to select. These can be any type of int, float, str, bool or  any other valid data
+
+        :return: QueryBuilder
+        """
         return Query.into(self).insert(*terms)
 
 
