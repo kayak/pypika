@@ -475,7 +475,7 @@ class JSONField(Field):
             val=name,
         )
 
-    def haskey(self, other):
+    def has_key(self, other):
         other = self._base_prepare(other)
         return BasicCriterion(PostgresOperators.HAS_KEY, self, other)
 
