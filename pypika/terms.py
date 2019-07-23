@@ -1,5 +1,6 @@
 import inspect
 import itertools
+import json
 import re
 from datetime import date
 
@@ -11,9 +12,11 @@ from pypika.enums import (
     Dialects,
     Equality,
     Matching,
+    PostgresOperators,
 )
 from pypika.utils import (
     CaseException,
+    QueryException,
     alias_sql,
     builder,
     ignore_copy,
@@ -162,10 +165,6 @@ class Term:
     def __mul__(self, other):
         return ArithmeticExpression(Arithmetic.mul, self, self.wrap_constant(other))
 
-    def __div__(self, other):
-        # Required for Python2
-        return self.__truediv__(other)
-
     def __truediv__(self, other):
         return ArithmeticExpression(Arithmetic.div, self, self.wrap_constant(other))
 
@@ -183,10 +182,6 @@ class Term:
 
     def __rmul__(self, other):
         return ArithmeticExpression(Arithmetic.mul, self.wrap_constant(other), self)
-
-    def __rdiv__(self, other):
-        # Required for Python2
-        return self.__rtruediv__(other)
 
     def __rtruediv__(self, other):
         return ArithmeticExpression(Arithmetic.div, self.wrap_constant(other), self)
@@ -453,6 +448,124 @@ class Bracket(Tuple):
               alias=self.alias,
               quote_char=kwargs.get('quote_char', None),
         )
+
+
+class JSONField(Field):
+    DEFAULT_QUOTE_CHAR = '"'
+    EXPRESSION_QUOTE_CHAR = "'"
+
+    def __init__(self, val, alias=None, table=None, quote_char=DEFAULT_QUOTE_CHAR):
+        super().__init__(val, alias, table)
+        self.quote_char = quote_char
+
+    def get_sql(self, **kwargs):
+        if kwargs['dialect'] != Dialects.POSTGRESQL:
+            raise QueryException('Dialect `{}` does not support JSON field'.format(kwargs["dialect"]))
+
+        kwargs['quote_char'] = self.quote_char
+
+        # from __str__  sometimes, we can't get dialect, so if we can, we call .get_sql method
+        if hasattr(self.name, 'get_sql'):
+            name = self.name.get_sql(**kwargs)
+        else:
+            name = self.name
+
+        return '{quote}{val}{quote}'.format(
+            quote=self.quote_char,
+            val=name,
+        )
+
+    def has_key(self, other):
+        other = self._base_prepare(other)
+        return BasicCriterion(PostgresOperators.HAS_KEY, self, other)
+
+    def contains(self, other):
+        other = self._base_prepare(other)
+        return BasicCriterion(PostgresOperators.CONTAINS, self, other)
+
+    def contained_by(self, other):
+        other = self._base_prepare(other)
+        return BasicCriterion(PostgresOperators.CONTAINED_BY, self, other)
+
+    def has_keys(self, other):
+        if isinstance(other, list):
+            other = JSONField(Array(*other), quote_char='')
+        else:
+            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
+        return BasicCriterion(PostgresOperators.HAS_KEYS, self, other)
+
+    def has_any_keys(self, other):
+        if isinstance(other, list):
+            other = JSONField(Array(*other), quote_char='')
+        else:
+            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
+        return BasicCriterion(PostgresOperators.HAS_ANY_KEYS, self, other)
+
+    def get_value_by_key(self, other):
+        if isinstance(other, str):
+            other = JSONField(other, quote_char=self.EXPRESSION_QUOTE_CHAR)
+        elif isinstance(other, list) and len(other) == 2:
+            root_key = JSONField(other[0], quote_char=self.EXPRESSION_QUOTE_CHAR)
+            nested_key = JSONField(other[1], quote_char=self.EXPRESSION_QUOTE_CHAR)
+            return NestedCriterion(
+                PostgresOperators.GET_JSON_VALUE, PostgresOperators.GET_TEXT_VALUE,
+                self, root_key, nested_key,
+            )
+        else:
+            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
+        return BasicCriterion(PostgresOperators.GET_JSON_VALUE, self, other)
+
+    def _base_prepare(self, other):
+        if isinstance(other, str):
+            other = JSONField(other, quote_char=self.EXPRESSION_QUOTE_CHAR)
+        elif isinstance(other, (dict, list)):
+            other = JSONField(json.dumps(other), quote_char=self.EXPRESSION_QUOTE_CHAR)
+        elif isinstance(other, JSONField):
+            other.quote_char = self.EXPRESSION_QUOTE_CHAR
+        else:
+            raise QueryException('Type `{}` does not support'.format(type(other)))
+
+        return other
+
+
+class NestedCriterion(Criterion):
+    def __init__(self, comparator, nested_comparator, left, right, nested, alias=None):
+        super().__init__(alias)
+        self.left = left
+        self.comparator = comparator
+        self.nested_comparator = nested_comparator
+        self.right = right
+        self.nested = nested
+
+    def fields(self):
+        return list(itertools.chain(self.right.fields(), self.left.fields(), self.nested.fields()))
+
+    @property
+    def is_aggregate(self):
+        return resolve_is_aggregate([term.is_aggregate for term in [self.left, self.right, self.nested]])
+
+    @property
+    def tables_(self):
+        return self.left.tables_ | self.right.tables_ | self.nested.tables_
+
+    @builder
+    def for_(self, table):
+        self.left = self.left.for_(table)
+        self.right = self.right.for_(table)
+        self.nested = self.right.for_(table)
+
+    def get_sql(self, with_alias=False, **kwargs):
+        sql = '{left}{comparator}{right}{nested_comparator}{nested}'.format(
+            left=self.left.get_sql(**kwargs),
+            comparator=self.comparator.value,
+            right=self.right.get_sql(**kwargs),
+            nested_comparator=self.nested_comparator.value,
+            nested=self.nested.get_sql(**kwargs)
+        )
+        if with_alias and self.alias:
+            return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
+
+        return sql
 
 
 class BasicCriterion(Criterion):
