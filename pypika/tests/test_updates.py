@@ -40,6 +40,10 @@ class UpdateTests(unittest.TestCase):
         q = Query.update(self.table_abc).join(self.table_def).on(self.table_def.abc_id == self.table_abc.id).set(self.table_abc.lname, self.table_def.lname)
         self.assertEqual('UPDATE "abc" JOIN "def" ON "def"."abc_id"="abc"."id" SET "abc"."lname"="def"."lname"', str(q))
 
+    def test_update_with_limit(self):
+        q = Query.update(self.table_abc).set(self.table_abc.lname, "test").limit(1)
+        self.assertEqual('UPDATE "abc" SET "lname"=\'test\' LIMIT 1', str(q))
+
 
 class PostgresUpdateTests(unittest.TestCase):
     table_abc = Table('abc')

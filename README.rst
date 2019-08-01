@@ -92,6 +92,20 @@ Both of the above examples result in the following SQL:
 
     SELECT id,fname,lname,phone FROM customers
 
+Using ``pypika.Table`` based select alias
+
+.. code-block:: python
+
+    customers = Table('customers')
+    q = customers.select(custimers.id, customers.fname)
+
+query will return in the following SQL:
+
+.. code-block:: sql
+
+    SELECT id, fname FROM customers
+
+
 Results can be ordered by using the following syntax:
 
 .. code-block:: python
@@ -428,8 +442,8 @@ Example of a correlated subquery in the `SELECT`
     q = Query.from_(customers).select(
         customers.id, last_purchase_at._as('last_purchase_at')
     )
-    
-    
+
+
 .. code-block:: sql
 
     SELECT
@@ -634,6 +648,16 @@ Insert with values
 
     INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com')
 
+.. code-block:: python
+
+    customers =  Table('customers')
+
+    q = customers.insert(1, 'Jane', 'Doe', 'jane@example.com')
+
+.. code-block:: sql
+
+    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com')
+
 Multiple rows of data can be inserted either by chaining the ``insert`` function or passing multiple tuples as args.
 
 .. code-block:: python
@@ -763,6 +787,35 @@ The syntax for joining tables is the same as when selecting data
    UPDATE "customers"
    JOIN "profiles" ON "profiles"."customer_id"="customers"."id"
    SET "customers"."lname"="profiles"."lname"
+
+Using ``pypika.Table`` alias to perform the update
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    customers.update()
+            .set(customers.lname, 'smith')
+            .where(customers.id == 10)
+
+.. code-block:: sql
+
+    UPDATE "customers" SET "lname"='smith' WHERE "id"=10
+
+Using ``limit`` for performing update
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    customers.update()
+            .set(customers.lname, 'smith')
+            .limit(2)
+
+.. code-block:: sql
+
+    UPDATE "customers" SET "lname"='smith' LIMIT 2
+
 
 Parametrized Queries
 ^^^^^^^^^^^^^^^^^^^^

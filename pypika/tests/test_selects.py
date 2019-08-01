@@ -222,6 +222,22 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
 
+    def test_table_select_alias(self):
+        q = self.table_abc.select(1)
+
+        self.assertEqual('SELECT 1 FROM "abc"', str(q))
+        self.assertEqual(q, Query.from_("abc").select(1))
+
+    def test_table_select_alias_with_offset_and_limit(self):
+        self.assertEqual(
+            self.table_abc.select("foo")[10:10],
+            Query.from_('abc').select('foo')[10:10]
+        )
+        self.assertEqual(
+            self.table_abc.select(self.table_abc.foo)[10:10],
+            Query.from_('abc').select('foo')[10:10]
+        )
+
 
 class WhereTests(unittest.TestCase):
     t = Table('abc')
@@ -232,6 +248,8 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar"', str(q1))
         self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar"', str(q2))
+        q = self.t.select('*').where(self.t.foo == self.t.bar)
+        self.assertEqual(q, q1)
 
     def test_where_field_equals_where(self):
         q = Query.from_(self.t).select('*').where(self.t.foo == 1).where(self.t.bar == self.t.baz)
