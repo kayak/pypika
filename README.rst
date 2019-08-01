@@ -32,7 +32,7 @@ Installation
 
 .. _installation_start:
 
-|Brand| supports python ``2.7`` and ``3.3+``.  It may also work on pypy, cython, and jython, but is not being tested for these versions.
+|Brand| supports python ``3.3+``.  It may also work on pypy, cython, and jython, but is not being tested for these versions.
 
 To install |Brand| run the following command:
 
