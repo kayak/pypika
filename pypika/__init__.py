@@ -83,4 +83,4 @@ from pypika.utils import (
 
 __author__ = 'Timothy Heys'
 __email__ = 'theys@kayak.com'
-__version__ = '0.31.0'
+__version__ = '0.31.1'
