@@ -247,7 +247,7 @@ class CriterionTests(unittest.TestCase):
 
 
 class NotTests(unittest.TestCase):
-    table_abc = Table('abc', alias='cx0')
+    table_abc, table_efg = Table('abc', alias='cx0'), Table('efg', alias='cx1')
 
     def test_negate(self):
         c1 = Field('foo') >= 1
@@ -283,10 +283,10 @@ class NotTests(unittest.TestCase):
         self.assertEqual('NOT "foo" IS NULL "something"', str(c1))
         self.assertEqual('NOT "cx0"."foo" IS NULL "something"', str(c2))
 
-    def test_notnullcriterion_for_table(self):
-        f = self.table_abc.foo.notnull().for_(self.table_abc)
+    def test_notnullcriterion_replace_table(self):
+        f = self.table_abc.foo.notnull().replace_table(self.table_abc, self.table_efg)
 
-        self.assertEqual('NOT "cx0"."foo" IS NULL', str(f))
+        self.assertEqual('NOT "cx1"."foo" IS NULL', str(f))
 
     def test_not_with_or_criterion(self):
         self.assertEqual('NOT ("foo" OR "bar")', str(~(Field('foo') | Field('bar'))))
@@ -610,44 +610,45 @@ class FieldsAsCriterionTests(unittest.TestCase):
 class CriterionOperationsTests(unittest.TestCase):
     table_abc, table_efg = Table('abc', alias='cx0'), Table('efg', alias='cx1')
 
-    def test_field_for_table(self):
-        f = self.table_abc.foo.for_(self.table_efg)
+    def test_field_replace_table(self):
+        f = self.table_abc.foo.replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('"cx1"."foo"', str(f))
 
-    def test_arithmeticfunction_for_table(self):
-        f = (self.table_abc.foo + self.table_abc.bar).for_(self.table_efg)
+    def test_arithmeticfunction_replace_table(self):
+        f = (self.table_abc.foo + self.table_abc.bar).replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('"cx1"."foo"+"cx1"."bar"', str(f))
 
-    def test_criterion_for_table(self):
-        f = (self.table_abc.foo < self.table_abc.bar).for_(self.table_efg)
+    def test_criterion_replace_table(self):
+        f = (self.table_abc.foo < self.table_abc.bar).replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('"cx1"."foo"<"cx1"."bar"', str(f))
 
-    def test_complexcriterion_for_table(self):
-        f = ((self.table_abc.foo < self.table_abc.bar) & (self.table_abc.fiz > self.table_abc.buz)).for_(self.table_efg)
+    def test_complexcriterion_replace_table(self):
+        f = ((self.table_abc.foo < self.table_abc.bar) & (self.table_abc.fiz > self.table_abc.buz))
+        f = f.replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('"cx1"."foo"<"cx1"."bar" AND "cx1"."fiz">"cx1"."buz"', str(f))
 
-    def test_function_with_only_fields_for_table(self):
+    def test_function_with_only_fields_replace_table(self):
         f = fn.Sum(self.
-                   table_abc.foo).for_(self.table_efg)
+                   table_abc.foo).replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('SUM("cx1"."foo")', str(f))
 
-    def test_function_with_values_and_fields_for_table(self):
-        f = Mod(self.table_abc.foo, 2).for_(self.table_efg)
+    def test_function_with_values_and_fields_replace_table(self):
+        f = Mod(self.table_abc.foo, 2).replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('MOD("cx1"."foo",2)', str(f))
 
-    def test_betweencriterion_for_table(self):
-        f = self.table_abc.foo[0:1].for_(self.table_efg)
+    def test_betweencriterion_replace_table(self):
+        f = self.table_abc.foo[0:1].replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('"cx1"."foo" BETWEEN 0 AND 1', str(f))
 
-    def test_nullcriterion_for_table(self):
-        f = self.table_abc.foo.isnull().for_(self.table_efg)
+    def test_nullcriterion_replace_table(self):
+        f = self.table_abc.foo.isnull().replace_table(self.table_abc, self.table_efg)
 
         self.assertEqual('"cx1"."foo" IS NULL', str(f))
 
