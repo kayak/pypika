@@ -10,10 +10,10 @@ from pypika.terms import Star
 
 class TablesTests(unittest.TestCase):
 
-    def test__criterion_for_with_value(self):
+    def test__criterion_replace_table_with_value(self):
         table = Table('a')
 
-        c = (Field('foo') > 1).for_(table)
+        c = (Field('foo') > 1).replace_table(None, table)
         self.assertEqual(c.left, table)
         self.assertEqual(c.tables_, {table})
 

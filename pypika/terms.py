@@ -76,12 +76,14 @@ class Term:
         wrapper_cls = wrapper_cls or ValueWrapper
         return wrapper_cls(val)
 
-    def for_(self, table):
+    def replace_table(self, current_table, new_table):
         """
-        Replaces the tables of this term for the table parameter provided.  The base implementation returns self
-        because not all terms have a table property.
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+        The base implementation returns self because not all terms have a table property.
 
-        :param table:
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
             The table to replace with.
         :return:
             Self.
@@ -352,16 +354,18 @@ class Field(Criterion):
         return {self.table}
 
     @builder
-    def for_(self, table):
+    def replace_table(self, current_table, new_table):
         """
-        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
-        :param table:
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
             The table to replace with.
         :return:
-            A copy of the field with it's table value replaced.
+            A copy of the field with the tables replaced. 
         """
-        self.table = table
+        self.table = new_table if self.table == current_table else self.table
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         # Need to add namespace if the table has an alias
@@ -425,6 +429,22 @@ class Tuple(Criterion):
         return all([value.is_aggregate
                     for value in self.values])
 
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the field with the tables replaced.
+        """
+        self.values = [[value.replace_table(current_table, new_table) for value in value_list]
+                       for value_list
+                       in self.values]
+
 
 class Array(Tuple):
     def get_sql(self, **kwargs):
@@ -471,8 +491,8 @@ class JSONField(Field):
             name = self.name
 
         return '{quote}{val}{quote}'.format(
-            quote=self.quote_char,
-            val=name,
+              quote=self.quote_char,
+              val=name,
         )
 
     def has_key(self, other):
@@ -508,8 +528,8 @@ class JSONField(Field):
             root_key = JSONField(other[0], quote_char=self.EXPRESSION_QUOTE_CHAR)
             nested_key = JSONField(other[1], quote_char=self.EXPRESSION_QUOTE_CHAR)
             return NestedCriterion(
-                PostgresOperators.GET_JSON_VALUE, PostgresOperators.GET_TEXT_VALUE,
-                self, root_key, nested_key,
+                  PostgresOperators.GET_JSON_VALUE, PostgresOperators.GET_TEXT_VALUE,
+                  self, root_key, nested_key,
             )
         else:
             raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
@@ -549,18 +569,28 @@ class NestedCriterion(Criterion):
         return self.left.tables_ | self.right.tables_ | self.nested.tables_
 
     @builder
-    def for_(self, table):
-        self.left = self.left.for_(table)
-        self.right = self.right.for_(table)
-        self.nested = self.right.for_(table)
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced. 
+        """
+        self.left = self.left.replace_table(current_table, new_table)
+        self.right = self.right.replace_table(current_table, new_table)
+        self.nested = self.right.replace_table(current_table, new_table)
 
     def get_sql(self, with_alias=False, **kwargs):
         sql = '{left}{comparator}{right}{nested_comparator}{nested}'.format(
-            left=self.left.get_sql(**kwargs),
-            comparator=self.comparator.value,
-            right=self.right.get_sql(**kwargs),
-            nested_comparator=self.nested_comparator.value,
-            nested=self.nested.get_sql(**kwargs)
+              left=self.left.get_sql(**kwargs),
+              comparator=self.comparator.value,
+              right=self.right.get_sql(**kwargs),
+              nested_comparator=self.nested_comparator.value,
+              nested=self.nested.get_sql(**kwargs)
         )
         if with_alias and self.alias:
             return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
@@ -597,9 +627,19 @@ class BasicCriterion(Criterion):
         return self.left.tables_ | self.right.tables_
 
     @builder
-    def for_(self, table):
-        self.left = self.left.for_(table)
-        self.right = self.right.for_(table)
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced. 
+        """
+        self.left = self.left.replace_table(current_table, new_table)
+        self.right = self.right.replace_table(current_table, new_table)
 
     def fields(self):
         return self.left.fields() + self.right.fields()
@@ -641,6 +681,20 @@ class ContainsCriterion(Criterion):
     def is_aggregate(self):
         return self.term.is_aggregate
 
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced. 
+        """
+        self.term = self.term.replace_table(current_table, new_table)
+
     def fields(self):
         return self.term.fields() if self.term.fields else []
 
@@ -673,8 +727,18 @@ class BetweenCriterion(Criterion):
         return self.term.is_aggregate
 
     @builder
-    def for_(self, table):
-        self.term = self.term.for_(table)
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced. 
+        """
+        self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs):
         # FIXME escape
@@ -698,8 +762,18 @@ class NullCriterion(Criterion):
         return self.term.tables_
 
     @builder
-    def for_(self, table):
-        self.term = self.term.for_(table)
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced. 
+        """
+        self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs):
         return "{term} IS NULL".format(
@@ -772,17 +846,19 @@ class ArithmeticExpression(Term):
         return self.left.tables_ | self.right.tables_
 
     @builder
-    def for_(self, table):
+    def replace_table(self, current_table, new_table):
         """
-        Replaces the tables of this term for the table parameter provided.  Useful when reusing terms across queries.
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
-        :param table:
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
             The table to replace with.
         :return:
-            A copy of the term with it's table value replaced.
+            A copy of the term with the tables replaced. 
         """
-        self.left = self.left.for_(table)
-        self.right = self.right.for_(table)
+        self.left = self.left.replace_table(current_table, new_table)
+        self.right = self.right.replace_table(current_table, new_table)
 
     def fields(self):
         return self.left.fields() + self.right.fields()
@@ -820,6 +896,23 @@ class Case(Term):
     @builder
     def when(self, criterion, term):
         self._cases.append((criterion, self.wrap_constant(term)))
+
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the term with the tables replaced. 
+        """
+        self._cases = [[criterion.replace_table(current_table, new_table), term.replace_table(current_table, new_table)]
+                       for criterion, term
+                       in self._cases]
+        self._else = self._else.replace_table(current_table, new_table) if self._else else None
 
     @builder
     def else_(self, term):
@@ -906,6 +999,20 @@ class Not(Criterion):
 
         return inner
 
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced. 
+        """
+        self.term = self.term.replace_table(current_table, new_table)
+
     @property
     def tables_(self):
         return self.term.tables_
@@ -942,16 +1049,18 @@ class Function(Criterion):
         return len(self.args) == 1 and self.args[0].is_aggregate
 
     @builder
-    def for_(self, table):
+    def replace_table(self, current_table, new_table):
         """
-        Replaces the tables of this term for the table parameter provided.  Useful when reusing fields across queries.
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
-        :param table:
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
             The table to replace with.
         :return:
-            A copy of the field with it's table value replaced.
+            A copy of the criterion with the tables replaced. 
         """
-        self.args = [param.for_(table) for param in self.args]
+        self.args = [param.replace_table(current_table, new_table) for param in self.args]
 
     def get_special_params_sql(self, **kwargs):
         pass

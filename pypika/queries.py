@@ -462,7 +462,7 @@ class QueryBuilder(Selectable, Term):
     @builder
     def from_(self, selectable):
         """
-        Adds a table to the query.  This function can only be called once and will raise an AttributeError if called a
+        Adds a table to the query. This function can only be called once and will raise an AttributeError if called a
         second time.
 
         :param selectable:
@@ -485,6 +485,41 @@ class QueryBuilder(Selectable, Term):
             sub_query_count = max(self._subquery_count, sub_query_count)
             selectable.alias = 'sq%d' % sub_query_count
             self._subquery_count = sub_query_count + 1
+
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across
+        queries.
+
+        :param current_table:
+            The table instance to be replaces.
+        :param new_table:
+            The table instance to replace with.
+        :return:
+            A copy of the query with the tables replaced.
+        """
+        self._from = [new_table if table == current_table else table for table in self._from]
+        self._insert_table = new_table if self._insert_table else None
+        self._update_table = new_table if self._update_table else None
+
+        self._with = [alias_query.replace_table(current_table, new_table) for alias_query in self._with]
+        self._selects = [select.replace_table(current_table, new_table) for select in self._selects]
+        self._columns = [column.replace_table(current_table, new_table) for column in self._columns]
+        self._values = [[value.replace_table(current_table, new_table) for value in value_list]
+                        for value_list
+                        in self._values]
+
+        self._wheres = self._wheres.replace_table(current_table, new_table) if self._wheres else None
+        self._prewheres = self._prewheres.replace_table(current_table, new_table) if self._prewheres else None
+        self._groupbys = [groupby.replace_table(current_table, new_table) for groupby in self._groupbys]
+        self._havings = self._havings.replace_table(current_table, new_table) if self._havings else None
+        self._orderbys = [orderby.replace_table(current_table, new_table) for orderby in self._orderbys]
+        self._joins = [join.replace_table(current_table, new_table) for join in self._joins]
+
+        if current_table in self._select_star_tables:
+            self._select_star_tables.remove(current_table)
+            self._select_star_tables.add(new_table)
 
     @builder
     def with_(self, selectable, name):
@@ -788,7 +823,6 @@ class QueryBuilder(Selectable, Term):
                                  else self.wrap_constant(value)
                                  for value in values])
 
-
     def __str__(self):
         return self.get_sql(quote_char=self.quote_char, dialect=self.dialect)
 
@@ -969,7 +1003,7 @@ class QueryBuilder(Selectable, Term):
             .format(values='),('
                     .join(','
                           .join(term.get_sql(with_alias=True, subquery=True, **kwargs)
-                                   for term in row)
+                                for term in row)
                           for row in self._values))
 
     def _into_sql(self, **kwargs):
@@ -1121,6 +1155,21 @@ class Join:
     def validate(self, _from, _joins):
         pass
 
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing
+        fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the join with the tables replaced.
+        """
+        self.item = self.item.replace_table(current_table, new_table)
+
 
 class JoinOn(Join):
     def __init__(self, item, how, criteria):
@@ -1144,6 +1193,22 @@ class JoinOn(Join):
                   tables=', '.join(map(str, missing_tables))
             ))
 
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing
+        fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the join with the tables replaced.
+        """
+        self.item = new_table if self.item == current_table else self.item
+        self.criterion = self.criterion.replace_table(current_table, new_table)
+
 
 class JoinUsing(Join):
     def __init__(self, item, how, fields):
@@ -1159,3 +1224,19 @@ class JoinUsing(Join):
 
     def validate(self, _from, _joins):
         pass
+
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing
+        fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the join with the tables replaced.
+        """
+        self.item = new_table if self.item == current_table else self.item
+        self.fields = [field.replace_table(current_table, new_table) for field in self.fields]
