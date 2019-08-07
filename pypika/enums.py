@@ -23,6 +23,7 @@ class Equality(Comparator):
     gte = '>='
     lt = '<'
     lte = '<='
+    bitwise_and = "&"
 
 
 class Matching(Comparator):
