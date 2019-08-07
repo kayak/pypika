@@ -1102,12 +1102,12 @@ class Joiner:
         self.how = how
         self.type_label = type_label
 
-    def on(self, criterion):
+    def on(self, criterion, collate=None):
         if criterion is None:
             raise JoinException("Parameter 'criterion' is required for a "
                                 "{type} JOIN but was not supplied.".format(type=self.type_label))
 
-        self.query.do_join(JoinOn(self.item, self.how, criterion))
+        self.query.do_join(JoinOn(self.item, self.how, criterion, collate))
         return self.query
 
     def on_field(self, *fields):
@@ -1172,15 +1172,17 @@ class Join:
 
 
 class JoinOn(Join):
-    def __init__(self, item, how, criteria):
+    def __init__(self, item, how, criteria, collate=None):
         super(JoinOn, self).__init__(item, how)
         self.criterion = criteria
+        self.collate = " COLLATE {}".format(collate) if collate else ""
 
     def get_sql(self, **kwargs):
         join_sql = super(JoinOn, self).get_sql(**kwargs)
-        return '{join} ON {criterion}'.format(
+        return '{join} ON {criterion}{collate}'.format(
               join=join_sql,
               criterion=self.criterion.get_sql(**kwargs),
+              collate=self.collate
         )
 
     def validate(self, _from, _joins):
