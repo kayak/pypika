@@ -206,6 +206,12 @@ class Term:
     def __le__(self, other):
         return BasicCriterion(Equality.lte, self, self.wrap_constant(other))
 
+    def __matmul__(self, other):
+        return BasicCriterion(Equality.bitwise_and, self, self.wrap_constant(other))
+
+    def __rmatmul__(self, other):
+        return BasicCriterion(Equality.bitwise_and, self.wrap_constant(other), self)
+
     def __getitem__(self, item):
         if not isinstance(item, slice):
             raise TypeError("Field' object is not subscriptable")
