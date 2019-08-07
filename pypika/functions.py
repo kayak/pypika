@@ -135,6 +135,11 @@ class DateDiff(Function):
         super(DateDiff, self).__init__('DATEDIFF', interval, start_date, end_date, alias=alias)
 
 
+class TimeDiff(Function):
+    def __init__(self, start_time, end_time, alias=None):
+        super(TimeDiff, self).__init__('TIMEDIFF', start_time, end_time, alias=alias)
+
+
 class DateAdd(Function):
     def __init__(self, date_part, interval, term, alias=None):
         super(DateAdd, self).__init__('DATE_ADD', date_part, interval, term, alias=alias)

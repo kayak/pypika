@@ -576,6 +576,10 @@ class DateFunctionsTests(unittest.TestCase):
         a = fn.TimestampAdd('year', 1, '2017-10-01')
         self.assertEqual(str(a), "TIMESTAMPADD('year',1,'2017-10-01')")
 
+    def test_time_diff(self):
+        a = fn.TimeDiff('18:00:00', '10:00:00')
+        self.assertEqual(str(a), "TIMEDIFF('18:00:00','10:00:00')")
+
     def test_date_add(self):
         a = fn.DateAdd('year', 1, '2017-10-01')
         self.assertEqual(str(a), "DATE_ADD('year',1,'2017-10-01')")
