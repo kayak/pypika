@@ -97,7 +97,7 @@ Using ``pypika.Table`` based select alias
 .. code-block:: python
 
     customers = Table('customers')
-    q = customers.select(custimers.id, customers.fname)
+    q = customers.select(customers.id, customers.fname)
 
 query will return in the following SQL:
 
