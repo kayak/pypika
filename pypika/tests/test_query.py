@@ -95,3 +95,9 @@ class QueryTablesTests(unittest.TestCase):
                          'WHEN "fname"=\'John\' THEN \'It was John\' '
                          'ELSE \'It was someone else.\' END "who_was_it" '
                          'FROM "b"', str(query))
+
+    def test_is_joined(self):
+        q = Query.from_(self.table_a).join(self.table_b).on(self.table_a.foo == self.table_b.boo)
+
+        self.assertTrue(q.is_joined(self.table_b))
+        self.assertFalse(q.is_joined(self.table_c))

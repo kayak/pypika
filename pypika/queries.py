@@ -788,6 +788,9 @@ class QueryBuilder(Selectable, Term):
 
         self._joins.append(join)
 
+    def is_joined(self, table):
+        return any(table == join.item for join in self._joins)
+
     def _validate_table(self, term):
         """
         Returns False if the term references a table not already part of the
