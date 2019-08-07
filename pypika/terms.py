@@ -102,6 +102,9 @@ class Term:
     def notnull(self):
         return self.isnull().negate()
 
+    def bitwiseand(self, value):
+        return BitwiseAndCriterion(self, value)
+
     def gt(self, other):
         return self > other
 
@@ -205,12 +208,6 @@ class Term:
 
     def __le__(self, other):
         return BasicCriterion(Equality.lte, self, self.wrap_constant(other))
-
-    def __matmul__(self, other):
-        return BasicCriterion(Equality.bitwise_and, self, self.wrap_constant(other))
-
-    def __rmatmul__(self, other):
-        return BasicCriterion(Equality.bitwise_and, self.wrap_constant(other), self)
 
     def __getitem__(self, item):
         if not isinstance(item, slice):
@@ -752,6 +749,40 @@ class BetweenCriterion(Criterion):
               term=self.term.get_sql(**kwargs),
               start=self.start.get_sql(**kwargs),
               end=self.end.get_sql(**kwargs),
+        )
+
+    def fields(self):
+        return self.term.fields() if self.term.fields else []
+
+
+class BitwiseAndCriterion(Criterion):
+    def __init__(self, term, value, alias=None):
+        super(BitwiseAndCriterion, self).__init__(alias)
+        self.term = term
+        self.value = value
+
+    @property
+    def tables_(self):
+        return self.term.tables_
+
+    @builder
+    def replace_table(self, current_table, new_table):
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced.
+        """
+        self.term = self.term.replace_table(current_table, new_table)
+
+    def get_sql(self, **kwargs):
+        return "({term} & {value})".format(
+                term=self.term.get_sql(**kwargs),
+                value=self.value,
         )
 
     def fields(self):
