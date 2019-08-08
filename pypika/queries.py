@@ -1175,14 +1175,14 @@ class JoinOn(Join):
     def __init__(self, item, how, criteria, collate=None):
         super(JoinOn, self).__init__(item, how)
         self.criterion = criteria
-        self.collate = " COLLATE {}".format(collate) if collate else ""
+        self.collate = collate
 
     def get_sql(self, **kwargs):
         join_sql = super(JoinOn, self).get_sql(**kwargs)
         return '{join} ON {criterion}{collate}'.format(
               join=join_sql,
               criterion=self.criterion.get_sql(**kwargs),
-              collate=self.collate
+              collate=" COLLATE {}".format(self.collate) if self.collate else ""
         )
 
     def validate(self, _from, _joins):
