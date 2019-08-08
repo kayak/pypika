@@ -156,6 +156,17 @@ class SelectQueryJoinTests(unittest.TestCase):
             str(q_b)
         )
 
+    def test_join_on_collate(self):
+        table_a, table_b = Tables("a", "b")
+
+        q1 = Query.from_(table_a).select(table_b.ouch).join(table_b).on(table_a.foo == table_b.boo,
+                                                                        collate="utf8_general_ci")
+        q2 = Query.from_(table_a).select(table_b.ouch).join(table_b).on(table_a.foo == table_b.boo)
+
+        self.assertEqual('SELECT "b"."ouch" FROM "a" JOIN "b" ON "a"."foo"="b"."boo" COLLATE utf8_general_ci', str(q1))
+        self.assertEqual('SELECT "b"."ouch" FROM "a" JOIN "b" ON "a"."foo"="b"."boo"', str(q2))
+
+
 class JoinBehaviorTests(unittest.TestCase):
     table_abc, table_efg, table_hij, table_klm = Tables('abc', 'efg', 'hij', 'klm')
 
