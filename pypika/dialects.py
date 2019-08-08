@@ -180,22 +180,28 @@ class PostgreQueryBuilder(QueryBuilder):
             return Field(term, table=self._insert_table)
 
     def _on_conflict_sql(self, **kwargs):
-        if self._on_conflict_field is None:
-            return ''
-        elif not self._on_conflict_do_nothing and len(self._on_conflict_updates) == 0:
-            raise QueryException('No handler defined for on conflict')
+        if not self._on_conflict_do_nothing and len(self._on_conflict_updates) == 0:
+            if not self._on_conflict_field:
+                return ''
+            else:
+                raise QueryException('No handler defined for on conflict')
         else:
-            conflict_query = ' ON CONFLICT (' + self._on_conflict_field.get_sql(with_alias=True, **kwargs) + ')'
+            conflict_query = ' ON CONFLICT'
+            if self._on_conflict_field:
+                conflict_query += ' (' + self._on_conflict_field.get_sql(with_alias=True, **kwargs) + ')'
             if self._on_conflict_do_nothing:
                 conflict_query += ' DO NOTHING'
             elif len(self._on_conflict_updates) > 0:
-                conflict_query += ' DO UPDATE SET {updates}'.format(
-                    updates=','.join(
-                        '{field}={value}'.format(
-                            field=field.get_sql(**kwargs),
-                            value=value.get_sql(**kwargs)) for field, value in self._on_conflict_updates
+                if self._on_conflict_field:
+                    conflict_query += ' DO UPDATE SET {updates}'.format(
+                        updates=','.join(
+                            '{field}={value}'.format(
+                                field=field.get_sql(**kwargs),
+                                value=value.get_sql(**kwargs)) for field, value in self._on_conflict_updates
+                        )
                     )
-                )
+                else:
+                    raise QueryException('Can not have fieldless on conflict do update')
 
             return conflict_query
 

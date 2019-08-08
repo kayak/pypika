@@ -168,6 +168,14 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
             query = PostgreSQLQuery.update(self.table_abc).set('foo', 'bar').on_conflict(
                   'id').do_update(['name'], ["m"])
 
+    def test_insert_on_fieldless_conflict_do_nothing(self):
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict(None).do_nothing()
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) ON CONFLICT DO NOTHING', str(query))
+
+    def test_insert_on_fieldless_conflict_do_update_field(self):
+        with self.assertRaises(QueryException):
+            query = str(PostgreSQLQuery.into(self.table_abc).insert(1, "m").on_conflict(None).do_update(self.table_abc.name, "m"))
 
 class PostgresInsertIntoReturningTests(unittest.TestCase):
     table_abc = Table('abc')
