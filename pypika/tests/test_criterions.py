@@ -245,6 +245,13 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"foo">=1', str(c1))
         self.assertEqual('"crit"."foo">=-1', str(c2))
 
+    def test__criterion_bitwise_and(self):
+        c1 = Field("foo").bitwiseand(2)
+        c2 = Field("foo", table=self.t).bitwiseand(10) == 2
+
+        self.assertEqual('("foo" & 2)', str(c1))
+        self.assertEqual('("crit"."foo" & 10)=2', str(c2))
+
 
 class NotTests(unittest.TestCase):
     table_abc, table_efg = Table('abc', alias='cx0'), Table('efg', alias='cx1')
