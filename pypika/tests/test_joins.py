@@ -498,6 +498,14 @@ class UnionTests(unittest.TestCase):
         self.assertEqual('SELECT AVG("sq0"."t") FROM ((SELECT "t" FROM "abc") UNION (SELECT "t" FROM "efg")) "sq0"',
                          str(q))
 
+    def test_union_with_no_quote_char(self):
+        abc, efg = Tables('abc', 'efg')
+        hij = Query.from_(abc).select(abc.t).union(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual('SELECT AVG(sq0.t) FROM ((SELECT t FROM abc) UNION (SELECT t FROM efg)) sq0',
+                         q.get_sql(quote_char=None))
+
 
 class InsertQueryJoinTests(unittest.TestCase):
     def test_join_table_on_insert_query(self):

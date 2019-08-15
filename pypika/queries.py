@@ -333,7 +333,13 @@ class _UnionQuery(Selectable, Term):
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         union_template = ' UNION{type} {union}'
 
-        kwargs = {'quote_char': self.base_query.quote_char, 'dialect': self.base_query.dialect}
+        kwargs = {
+            'dialect': self.base_query.dialect,
+            # This initializes the quote char based on the base query, which could be a dialect specific query class
+            # This might be overridden if quote_char is set explicitly in kwargs
+            'quote_char': self.base_query.quote_char,
+            **kwargs,
+        }
         base_querystring = self.base_query.get_sql(subquery=self.base_query.wrap_union_queries, **kwargs)
 
         querystring = base_querystring
@@ -358,7 +364,7 @@ class _UnionQuery(Selectable, Term):
             querystring += self._offset_sql()
 
         if subquery:
-            querystring = '({query})'.format(query=querystring)
+            querystring = '({query})'.format(query=querystring, **kwargs)
 
         if with_alias:
             return alias_sql(querystring, self.alias or self._table_name, kwargs.get('quote_char'))
@@ -814,7 +820,7 @@ class QueryBuilder(Selectable, Term):
 
     def _validate_terms_and_append(self, *terms):
         """
-        Handy function for INSERT and REPLACE statements in order to check if 
+        Handy function for INSERT and REPLACE statements in order to check if
         terms are introduced and how append them to `self._values`
         """
         if not isinstance(terms[0], (list, tuple, set)):
