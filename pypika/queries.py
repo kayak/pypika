@@ -520,7 +520,8 @@ class QueryBuilder(Selectable, Term):
         self._prewheres = self._prewheres.replace_table(current_table, new_table) if self._prewheres else None
         self._groupbys = [groupby.replace_table(current_table, new_table) for groupby in self._groupbys]
         self._havings = self._havings.replace_table(current_table, new_table) if self._havings else None
-        self._orderbys = [orderby.replace_table(current_table, new_table) for orderby in self._orderbys]
+        self._orderbys = [(orderby[0].replace_table(current_table, new_table), orderby[1])
+                          for orderby in self._orderbys]
         self._joins = [join.replace_table(current_table, new_table) for join in self._joins]
 
         if current_table in self._select_star_tables:
