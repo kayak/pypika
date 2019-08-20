@@ -322,9 +322,15 @@ class MSSQLQueryBuilder(QueryBuilder):
     def get_sql(self, *args, **kwargs):
         return super(MSSQLQueryBuilder, self).get_sql(*args, groupby_alias=False, **kwargs)
 
+    def _top_sql(self):
+        if self._top:
+            return 'TOP ({}) '.format(self._top)
+        else:
+            return ''
+
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{top}{select}'.format(
-            top='TOP ({}) '.format(self._top) if self._top else '',
+            top=self._top_sql(),
             distinct='DISTINCT ' if self._distinct else '',
             select=','.join(term.get_sql(with_alias=True, subquery=True, **kwargs)
                             for term in self._selects),

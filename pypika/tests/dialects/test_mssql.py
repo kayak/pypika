@@ -6,7 +6,6 @@ from pypika.utils import QueryException
 
 
 class SelectTests(unittest.TestCase):
-    table_abc = Table('abc')
 
     def test_normal_select(self):
         q = MSSQLQuery.from_('abc').select('def')
