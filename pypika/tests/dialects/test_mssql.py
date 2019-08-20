@@ -21,7 +21,7 @@ class SelectTests(unittest.TestCase):
     def test_top_distinct_select(self):
         q = MSSQLQuery.from_('abc').select('def').top(10).distinct()
 
-        self.assertEqual('SELECT TOP (10) DISTINCT "def" FROM "abc"', str(q))
+        self.assertEqual('SELECT DISTINCT TOP (10) "def" FROM "abc"', str(q))
 
     def test_top_select(self):
         q = MSSQLQuery.from_('abc').select('def').top(10)
