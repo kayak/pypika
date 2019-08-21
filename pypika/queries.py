@@ -333,13 +333,11 @@ class _UnionQuery(Selectable, Term):
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         union_template = ' UNION{type} {union}'
 
-        kwargs = {
-            'dialect': self.base_query.dialect,
-            # This initializes the quote char based on the base query, which could be a dialect specific query class
-            # This might be overridden if quote_char is set explicitly in kwargs
-            'quote_char': self.base_query.quote_char,
-            **kwargs,
-        }
+        kwargs.setdefault('dialect', self.base_query.dialect)
+        # This initializes the quote char based on the base query, which could be a dialect specific query class
+        # This might be overridden if quote_char is set explicitly in kwargs
+        kwargs.setdefault('quote_char', self.base_query.quote_char)
+
         base_querystring = self.base_query.get_sql(subquery=self.base_query.wrap_union_queries, **kwargs)
 
         querystring = base_querystring
