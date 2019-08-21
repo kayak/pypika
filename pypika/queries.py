@@ -35,6 +35,10 @@ class Selectable:
     def __init__(self, alias):
         self.alias = alias
 
+    @builder
+    def as_(self, alias):
+        self.alias = alias
+
     def field(self, name):
         return Field(name, table=self)
 
@@ -79,6 +83,9 @@ class Schema:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __getattr__(self, item):
+        return Table(item, schema=self)
+
     def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape
         schema_sql = format_quotes(self._name, quote_char)
@@ -89,6 +96,11 @@ class Schema:
                         schema=schema_sql)
 
         return schema_sql
+
+
+class Database(Schema):
+    def __getattr__(self, item):
+        return Schema(item, parent=self)
 
 
 class Table(Selectable):
