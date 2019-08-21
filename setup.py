@@ -45,7 +45,7 @@ setup(
     license='Apache License Version 2.0',
 
     # Packages
-    packages=["pypika"],
+    packages=["pypika", "pypika.clickhouse"],
 
     # Include additional files into the package
     include_package_data=True,
