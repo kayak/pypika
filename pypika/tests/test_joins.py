@@ -125,6 +125,17 @@ class SelectQueryJoinTests(unittest.TestCase):
         self.assertEqual('SELECT * FROM "abc" '
                          'RIGHT JOIN "efg" ON "abc"."foo"="efg"."fiz" AND "abc"."bar"="efg"."buz"', str(q))
 
+    def test_join_on_subquery_criteria(self):
+        table_a, table_b, table_c = Tables('a', 'b', 'c')
+        subquery = Query.from_(table_c).select('id').limit(1)
+        query = Query.from_(table_a).select('*') \
+            .join(table_b).on((table_a.b_id == table_b.id) & (table_b.c_id == subquery))
+
+        self.assertEqual('SELECT * '
+                         'FROM "a" '
+                         'JOIN "b" ON "a"."b_id"="b"."id" AND "b"."c_id"='
+                         '(SELECT "id" FROM "c" LIMIT 1)', str(query))
+
     def test_use_different_table_objects_for_same_table(self):
         table = Table("t")
         q = Query.from_(table).select('*').where(Field('id', table=table) == 1)

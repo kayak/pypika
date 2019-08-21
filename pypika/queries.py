@@ -1189,7 +1189,7 @@ class JoinOn(Join):
         join_sql = super(JoinOn, self).get_sql(**kwargs)
         return '{join} ON {criterion}{collate}'.format(
               join=join_sql,
-              criterion=self.criterion.get_sql(**kwargs),
+              criterion=self.criterion.get_sql(subquery=True, **kwargs),
               collate=" COLLATE {}".format(self.collate) if self.collate else ""
         )
 
