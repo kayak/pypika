@@ -32,7 +32,7 @@ Installation
 
 .. _installation_start:
 
-|Brand| supports python ``3.3+``.  It may also work on pypy, cython, and jython, but is not being tested for these versions.
+|Brand| supports python ``3.4+``.  It may also work on pypy, cython, and jython, but is not being tested for these versions.
 
 To install |Brand| run the following command:
 
@@ -79,9 +79,17 @@ Alternatively, you can use the `Query.get_sql()` function:
 
     q.get_sql()
 
-Using ``pypika.Table``
+
+Tables, Columns, Schemas, and Databases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In simple queries like the above example, columns in the "from" table can be referenced by passing string names into
+the ``select`` query builder function. In more complex examples, the ``pypika.Table`` class should be used. Columns can be
+referenced as attributes on instances of ``pypika.Table``.
 
 .. code-block:: python
+
+    from pypika import Table, Query
 
     customers = Table('customers')
     q = Query.from_(customers).select(customers.id, customers.fname, customers.lname, customers.phone)
@@ -92,18 +100,42 @@ Both of the above examples result in the following SQL:
 
     SELECT id,fname,lname,phone FROM customers
 
-Using ``pypika.Table`` based select alias
-
-.. code-block:: python
-
-    customers = Table('customers')
-    q = customers.select(customers.id, customers.fname)
-
-query will return in the following SQL:
+An alias for the table can be given using the ``.as_`` function on ``pypika.Table``
 
 .. code-block:: sql
 
-    SELECT id, fname FROM customers
+    Table('x_view_customers').as_('customers')
+    q = Query.from_(customers).select(customers.id, customers.phone)
+
+.. code-block:: sql
+
+    SELECT id,phone FROM x_view_customers customers
+
+A schema can also be specified. Tables can be referenced as attributes on the schema.
+
+.. code-block:: sql
+
+    from pypika import Table, Query, Schema
+
+    views = Schema('views')
+    q = Query.from_(views.customers).select(customers.id, customers.phone)
+
+.. code-block:: sql
+
+    SELECT id,phone FROM views.customers
+
+Also references to databases can be used. Schemas can be referenced as attributes on the database.
+
+.. code-block:: sql
+
+    from pypika import Table, Query, Database
+
+    my_db = Database('my_db')
+    q = Query.from_(my_db.analytics.customers).select(customers.id, customers.phone)
+
+.. code-block:: sql
+
+    SELECT id,phone FROM my_db.analytics.customers
 
 
 Results can be ordered by using the following syntax:

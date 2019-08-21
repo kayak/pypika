@@ -54,6 +54,7 @@ from pypika.queries import (
     Query,
     Schema,
     Table,
+    Database,
     make_tables as Tables,
 )
 # noinspection PyUnresolvedReferences
