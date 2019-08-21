@@ -16,6 +16,7 @@ install:
     - "python setup.py install"
     - "pip install coverage"
     - "pip install coveralls"
+    - "pip install parameterized==0.7.0"
 
 script:
     - "coverage run --source=pypika setup.py test"
