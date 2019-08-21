@@ -303,9 +303,38 @@ class RedshiftQuery(Query):
 class MSSQLQueryBuilder(QueryBuilder):
     def __init__(self):
         super(MSSQLQueryBuilder, self).__init__(dialect=Dialects.MSSQL)
+        self._top = None
+
+    @builder
+    def top(self, value):
+        """
+        Implements support for simple TOP clauses.
+
+        Does not include support for PERCENT or WITH TIES.
+
+        https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql?view=sql-server-2017
+        """
+        try:
+            self._top = int(value)
+        except ValueError:
+            raise QueryException('TOP value must be an integer')
 
     def get_sql(self, *args, **kwargs):
         return super(MSSQLQueryBuilder, self).get_sql(*args, groupby_alias=False, **kwargs)
+
+    def _top_sql(self):
+        if self._top:
+            return 'TOP ({}) '.format(self._top)
+        else:
+            return ''
+
+    def _select_sql(self, **kwargs):
+        return 'SELECT {distinct}{top}{select}'.format(
+            top=self._top_sql(),
+            distinct='DISTINCT ' if self._distinct else '',
+            select=','.join(term.get_sql(with_alias=True, subquery=True, **kwargs)
+                            for term in self._selects),
+        )
 
 
 class MSSQLQuery(Query):
