@@ -19,7 +19,7 @@ class InsertTests(unittest.TestCase):
 class JSONObjectTests(unittest.TestCase):
     def test_json_value_from_dict(self):
         q = PostgreSQLQuery \
-            .select(JSON({"a":"foo"}))
+            .select(JSON({"a": "foo"}))
 
         self.assertEqual('SELECT \'{"a":"foo"}\'', str(q))
 
@@ -37,9 +37,15 @@ class JSONObjectTests(unittest.TestCase):
 
     def test_json_value_from_dict_recursive(self):
         q = PostgreSQLQuery \
-            .select(JSON({"a":[1, 2, 3], "b":{"c":"foo"}, "d":1}))
+            .select(JSON({"a": 'z', "b": {"c": "foo"}, "d": 1}))
 
-        self.assertEqual('SELECT \'{"a":[1,2,3],"b":{"c":"foo"},"d":1}\'', str(q))
+        # gotta split this one up to avoid the indeterminate order
+        sql = str(q)
+        start, end = 9, -2
+        self.assertEqual('SELECT \'{}\'', sql[:start] + sql[end:])
+
+        members_set = set(sql[start:end].split(','))
+        self.assertSetEqual({'"a":"z"', '"b":{"c":"foo"}', '"d":1'}, members_set)
 
 
 class JSONOperatorsTests(unittest.TestCase):
@@ -101,15 +107,21 @@ class JSONBOperatorsTests(unittest.TestCase):
 
     def test_json_contains_for_json(self):
         q = PostgreSQLQuery \
-            .select(JSON({"a":1, 'b':2}).contains({"a":1}))
+            .select(JSON({"a": 1, 'b': 2}).contains({"a": 1}))
 
-        self.assertEqual('SELECT \'{"a":1,"b":2}\'@>\'{"a":1}\'', str(q))
+        # gotta split this one up to avoid the indeterminate order
+        sql = str(q)
+        start, end = 9, -13
+        self.assertEqual('SELECT \'{}\'@>\'{"a":1}\'', sql[:start] + sql[end:])
+
+        members_set = set(sql[start:end].split(','))
+        self.assertSetEqual({'"a":1', '"b":2'}, members_set)
 
     def test_json_contains_for_field(self):
         q = PostgreSQLQuery \
             .from_(self.table_abc) \
             .select("*") \
-            .where(self.table_abc.json.contains({"dates":"2018-07-10 - 2018-07-17"}))
+            .where(self.table_abc.json.contains({"dates": "2018-07-10 - 2018-07-17"}))
 
         self.assertEqual('SELECT * '
                          'FROM "abc" '
@@ -119,7 +131,7 @@ class JSONBOperatorsTests(unittest.TestCase):
         q = PostgreSQLQuery \
             .from_(self.table_abc) \
             .select('*') \
-            .where(self.table_abc.json.contained_by({"dates":"2018-07-10 - 2018-07-17", "imported":"8"}))
+            .where(self.table_abc.json.contained_by({"dates": "2018-07-10 - 2018-07-17", "imported": "8"}))
 
         self.assertEqual(
               'SELECT * FROM "abc" '
