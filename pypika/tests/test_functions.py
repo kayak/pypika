@@ -604,6 +604,16 @@ class DateFunctionsTests(unittest.TestCase):
 
         self.assertEqual("SELECT CURRENT_TIME()", str(query))
 
+    def test_current_timestamp(self):
+        query = Query.select(fn.CurTimestamp())
+
+        self.assertEqual("SELECT CURRENT_TIMESTAMP", str(query))
+
+    def test_current_timestamp_with_alias(self):
+        query = Query.select(fn.CurTimestamp('ts'))
+
+        self.assertEqual("SELECT CURRENT_TIMESTAMP \"ts\"", str(query))
+
     def test_to_date(self):
         q1 = fn.ToDate('2019-06-21', 'yyyy-mm-dd')
         q2 = Query.from_(self.t).select(fn.ToDate('2019-06-21', 'yyyy-mm-dd'))

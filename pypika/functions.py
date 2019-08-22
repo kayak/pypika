@@ -243,6 +243,16 @@ class UtcTimestamp(Function):
         super(UtcTimestamp, self).__init__('UTC_TIMESTAMP', alias=alias)
 
 
+class CurTimestamp(Function):
+    def __init__(self, alias=None):
+        super(CurTimestamp, self).__init__('CURRENT_TIMESTAMP', alias=alias)
+
+    def get_function_sql(self, **kwargs):
+        # CURRENT_TIMESTAMP takes no arguments, so the SQL to generate is quite
+        # simple.  Note that empty parentheses have been omitted intentionally.
+        return 'CURRENT_TIMESTAMP'
+
+
 class CurDate(Function):
     def __init__(self, alias=None):
         super(CurDate, self).__init__('CURRENT_DATE', alias=alias)
