@@ -1,24 +1,26 @@
 import inspect
 import itertools
-import json
 import re
 from datetime import date
-
 from enum import Enum
+from typing import (
+    Iterable,
+    Union,
+)
 
 from pypika.enums import (
     Arithmetic,
     Boolean,
     Dialects,
     Equality,
+    JSONOperators,
     Matching,
-    PostgresOperators,
 )
 from pypika.utils import (
     CaseException,
-    QueryException,
     alias_sql,
     builder,
+    format_quotes,
     ignore_copy,
     resolve_is_aggregate,
 )
@@ -46,7 +48,8 @@ class Term:
     def tables_(self):
         return set()
 
-    def wrap_constant(self, val, wrapper_cls=None):
+    @staticmethod
+    def wrap_constant(val, wrapper_cls=None):
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
@@ -75,6 +78,20 @@ class Term:
         # Need to default here to avoid the recursion. ValueWrapper extends this class.
         wrapper_cls = wrapper_cls or ValueWrapper
         return wrapper_cls(val)
+
+    @staticmethod
+    def wrap_json(val, wrapper_cls=None):
+        from .queries import QueryBuilder
+
+        if isinstance(val, (Term, QueryBuilder, Interval)):
+            return val
+        if val is None:
+            return NullValue()
+        if isinstance(val, (str, int, bool)):
+            wrapper_cls = wrapper_cls or ValueWrapper
+            return wrapper_cls(val)
+
+        return JSON(val)
 
     def replace_table(self, current_table, new_table):
         """
@@ -215,12 +232,12 @@ class Term:
         return self.between(item.start, item.stop)
 
     def __str__(self):
-        return self.get_sql(quote_char='"')
+        return self.get_sql(quote_char='"', secondary_quote_char="'")
 
     def __hash__(self):
         return hash(self.get_sql(with_alias=True))
 
-    def get_sql(self):
+    def get_sql(self, **kwargs):
         raise NotImplementedError()
 
 
@@ -257,31 +274,96 @@ class ValueWrapper(Term):
     def fields(self):
         return []
 
-    def get_value_sql(self, quote_char=None, **kwargs):
+    def get_value_sql(self, **kwargs):
+        quote_char = kwargs.get('secondary_quote_char')
+
         # FIXME escape values
         if isinstance(self.value, Term):
-            return self.value.get_sql(quote_char=quote_char, **kwargs)
+            return self.value.get_sql(**kwargs)
         if isinstance(self.value, Enum):
             return self.value.value
         if isinstance(self.value, date):
-            return "'%s'" % self.value.isoformat()
+            value = self.value.isoformat()
+            return format_quotes(value, quote_char)
         if isinstance(self.value, basestring):
-            value = self.value.replace("'", "''")
-            return "'%s'" % value
+            value = self.value.replace(quote_char, quote_char * 2)
+            return format_quotes(value, quote_char)
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
         if self.value is None:
             return 'null'
         return str(self.value)
 
-    def get_sql(self, quote_char=None, **kwargs):
-        sql = self.get_value_sql(quote_char=quote_char, **kwargs)
+    def get_sql(self, quote_char=None, secondary_quote_char="'", **kwargs):
+        sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
         return alias_sql(sql, self.alias, quote_char)
+
+
+class JSON(Term):
+    table = None
+
+    def __init__(self, value, alias=None):
+        super().__init__(alias)
+        self.value = value
+
+    def _recursive_get_sql(self, value, **kwargs):
+        if isinstance(value, dict):
+            return self._get_dict_sql(value, **kwargs)
+        if isinstance(value, list):
+            return self._get_list_sql(value, **kwargs)
+        if isinstance(value, str):
+            return self._get_str_sql(value, **kwargs)
+        return str(value)
+
+    def _get_dict_sql(self, value, **kwargs):
+        pairs = ['{key}:{value}'
+                     .format(key=self._recursive_get_sql(k, **kwargs),
+                             value=self._recursive_get_sql(v, **kwargs))
+                 for k, v in value.items()]
+        return ''.join(['{', ','.join(pairs), '}'])
+
+    def _get_list_sql(self, value, **kwargs):
+        pairs = [self._recursive_get_sql(v, **kwargs) for v in value]
+        return ''.join(['[', ','.join(pairs), ']'])
+
+    @staticmethod
+    def _get_str_sql(value, quote_char='"', **kwargs):
+        return format_quotes(value, quote_char)
+
+    def get_sql(self, secondary_quote_char="'", **kwargs):
+        return format_quotes(self._recursive_get_sql(self.value), secondary_quote_char)
+
+    def get_json_value(self, key_or_index: Union[str, int]):
+        return BasicCriterion(JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index))
+
+    def get_text_value(self, key_or_index: Union[str, int]):
+        return BasicCriterion(JSONOperators.GET_TEXT_VALUE, self, self.wrap_constant(key_or_index))
+
+    def get_path_json_value(self, path_json: str):
+        return BasicCriterion(JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json))
+
+    def get_path_text_value(self, path_json: str):
+        return BasicCriterion(JSONOperators.GET_PATH_TEXT_VALUE, self, self.wrap_json(path_json))
+
+    def has_key(self, other):
+        return BasicCriterion(JSONOperators.HAS_KEY, self, self.wrap_json(other))
+
+    def contains(self, other):
+        return BasicCriterion(JSONOperators.CONTAINS, self, self.wrap_json(other))
+
+    def contained_by(self, other):
+        return BasicCriterion(JSONOperators.CONTAINED_BY, self, self.wrap_json(other))
+
+    def has_keys(self, other: Iterable):
+        return BasicCriterion(JSONOperators.HAS_KEYS, self, Array(*other))
+
+    def has_any_keys(self, other: Iterable):
+        return BasicCriterion(JSONOperators.HAS_ANY_KEYS, self, Array(*other))
 
 
 class Values(Term):
     def __init__(self, field, ):
-        super(Values, self).__init__(None)
+        super().__init__(None)
         self.field = Field(field) if not isinstance(field, Field) else field
 
     def get_sql(self, quote_char=None, **kwargs):
@@ -343,7 +425,7 @@ class EmptyCriterion:
         return other
 
 
-class Field(Criterion):
+class Field(Criterion, JSON):
     def __init__(self, name, alias=None, table=None):
         super(Field, self).__init__(alias)
         self.name = name
@@ -366,22 +448,19 @@ class Field(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the field with the tables replaced. 
+            A copy of the field with the tables replaced.
         """
         self.table = new_table if self.table == current_table else self.table
 
-    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
+    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, secondary_quote_char="'", **kwargs):
+        field_sql = format_quotes(self.name, quote_char)
+
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
-            field_sql = "{quote}{namespace}{quote}.{quote}{name}{quote}".format(
-                  namespace=self.table.alias or self.table._table_name,
-                  name=self.name,
-                  quote=quote_char or '',
-            )
-        else:
-            field_sql = "{quote}{name}{quote}".format(
-                  name=self.name,
-                  quote=quote_char or '',
+            field_sql = "{namespace}.{name}" \
+                .format(
+                  namespace=format_quotes(self.table.alias or self.table._table_name, quote_char),
+                  name=field_sql,
             )
 
         field_alias = getattr(self, 'alias', None)
@@ -389,6 +468,8 @@ class Field(Criterion):
             return field_sql
 
         return alias_sql(field_sql, field_alias, quote_char)
+
+    # JSON functions (for PostgreSQL)
 
 
 class Star(Field):
@@ -403,10 +484,9 @@ class Star(Field):
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, **kwargs):
         if self.table and (with_namespace or self.table.alias):
-            return "{quote}{namespace}{quote}.*".format(
-                  namespace=self.table.alias or getattr(self.table, '_table_name'),
-                  quote=quote_char or ''
-            )
+            namespace = self.table.alias or getattr(self.table, '_table_name')
+            return "{}.*" \
+                .format(format_quotes(namespace, quote_char))
 
         return '*'
 
@@ -451,10 +531,11 @@ class Tuple(Criterion):
 
 class Array(Tuple):
     def get_sql(self, **kwargs):
-        if kwargs['dialect'] == Dialects.POSTGRESQL:
-            template = 'ARRAY[{}]'
-        else:
-            template = '[{}]'
+        dialect = kwargs.get('dialect', None)
+        template = 'ARRAY[{}]' \
+            if dialect in (Dialects.POSTGRESQL, Dialects.REDSHIFT) \
+            else '[{}]'
+
         return template.format(
               ','.join(term.get_sql(**kwargs)
                        for term in self.values)
@@ -471,84 +552,6 @@ class Bracket(Tuple):
               alias=self.alias,
               quote_char=kwargs.get('quote_char', None),
         )
-
-
-class JSONField(Field):
-    DEFAULT_QUOTE_CHAR = '"'
-    EXPRESSION_QUOTE_CHAR = "'"
-
-    def __init__(self, val, alias=None, table=None, quote_char=DEFAULT_QUOTE_CHAR):
-        super().__init__(val, alias, table)
-        self.quote_char = quote_char
-
-    def get_sql(self, **kwargs):
-        if kwargs['dialect'] != Dialects.POSTGRESQL:
-            raise QueryException('Dialect `{}` does not support JSON field'.format(kwargs["dialect"]))
-
-        kwargs['quote_char'] = self.quote_char
-
-        # from __str__  sometimes, we can't get dialect, so if we can, we call .get_sql method
-        if hasattr(self.name, 'get_sql'):
-            name = self.name.get_sql(**kwargs)
-        else:
-            name = self.name
-
-        return '{quote}{val}{quote}'.format(
-              quote=self.quote_char,
-              val=name,
-        )
-
-    def has_key(self, other):
-        other = self._base_prepare(other)
-        return BasicCriterion(PostgresOperators.HAS_KEY, self, other)
-
-    def contains(self, other):
-        other = self._base_prepare(other)
-        return BasicCriterion(PostgresOperators.CONTAINS, self, other)
-
-    def contained_by(self, other):
-        other = self._base_prepare(other)
-        return BasicCriterion(PostgresOperators.CONTAINED_BY, self, other)
-
-    def has_keys(self, other):
-        if isinstance(other, list):
-            other = JSONField(Array(*other), quote_char='')
-        else:
-            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
-        return BasicCriterion(PostgresOperators.HAS_KEYS, self, other)
-
-    def has_any_keys(self, other):
-        if isinstance(other, list):
-            other = JSONField(Array(*other), quote_char='')
-        else:
-            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
-        return BasicCriterion(PostgresOperators.HAS_ANY_KEYS, self, other)
-
-    def get_value_by_key(self, other):
-        if isinstance(other, str):
-            other = JSONField(other, quote_char=self.EXPRESSION_QUOTE_CHAR)
-        elif isinstance(other, list) and len(other) == 2:
-            root_key = JSONField(other[0], quote_char=self.EXPRESSION_QUOTE_CHAR)
-            nested_key = JSONField(other[1], quote_char=self.EXPRESSION_QUOTE_CHAR)
-            return NestedCriterion(
-                  PostgresOperators.GET_JSON_VALUE, PostgresOperators.GET_TEXT_VALUE,
-                  self, root_key, nested_key,
-            )
-        else:
-            raise QueryException('Type `{}` does not support for this operation'.format(type(other)))
-        return BasicCriterion(PostgresOperators.GET_JSON_VALUE, self, other)
-
-    def _base_prepare(self, other):
-        if isinstance(other, str):
-            other = JSONField(other, quote_char=self.EXPRESSION_QUOTE_CHAR)
-        elif isinstance(other, (dict, list)):
-            other = JSONField(json.dumps(other), quote_char=self.EXPRESSION_QUOTE_CHAR)
-        elif isinstance(other, JSONField):
-            other.quote_char = self.EXPRESSION_QUOTE_CHAR
-        else:
-            raise QueryException('Type `{}` does not support'.format(type(other)))
-
-        return other
 
 
 class NestedCriterion(Criterion):
@@ -581,7 +584,7 @@ class NestedCriterion(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the criterion with the tables replaced. 
+            A copy of the criterion with the tables replaced.
         """
         self.left = self.left.replace_table(current_table, new_table)
         self.right = self.right.replace_table(current_table, new_table)
@@ -639,7 +642,7 @@ class BasicCriterion(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the criterion with the tables replaced. 
+            A copy of the criterion with the tables replaced.
         """
         self.left = self.left.replace_table(current_table, new_table)
         self.right = self.right.replace_table(current_table, new_table)
@@ -647,11 +650,11 @@ class BasicCriterion(Criterion):
     def fields(self):
         return self.left.fields() + self.right.fields()
 
-    def get_sql(self, with_alias=False, **kwargs):
+    def get_sql(self, quote_char='"', with_alias=False, **kwargs):
         sql = '{left}{comparator}{right}'.format(
               comparator=self.comparator.value,
-              left=self.left.get_sql(**kwargs),
-              right=self.right.get_sql(**kwargs),
+              left=self.left.get_sql(quote_char=quote_char, **kwargs),
+              right=self.right.get_sql(quote_char=quote_char, **kwargs),
         )
         if with_alias and self.alias:
             return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
@@ -694,7 +697,7 @@ class ContainsCriterion(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the criterion with the tables replaced. 
+            A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
 
@@ -739,7 +742,7 @@ class BetweenCriterion(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the criterion with the tables replaced. 
+            A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
 
@@ -781,8 +784,8 @@ class BitwiseAndCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         return "({term} & {value})".format(
-                term=self.term.get_sql(**kwargs),
-                value=self.value,
+              term=self.term.get_sql(**kwargs),
+              value=self.value,
         )
 
     def fields(self):
@@ -808,7 +811,7 @@ class NullCriterion(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the criterion with the tables replaced. 
+            A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
 
@@ -892,7 +895,7 @@ class ArithmeticExpression(Term):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the term with the tables replaced. 
+            A copy of the term with the tables replaced.
         """
         self.left = self.left.replace_table(current_table, new_table)
         self.right = self.right.replace_table(current_table, new_table)
@@ -944,7 +947,7 @@ class Case(Term):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the term with the tables replaced. 
+            A copy of the term with the tables replaced.
         """
         self._cases = [[criterion.replace_table(current_table, new_table), term.replace_table(current_table, new_table)]
                        for criterion, term
@@ -1046,7 +1049,7 @@ class Not(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the criterion with the tables replaced. 
+            A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
 
@@ -1095,7 +1098,7 @@ class Function(Criterion):
         :param new_table:
             The table to replace with.
         :return:
-            A copy of the criterion with the tables replaced. 
+            A copy of the criterion with the tables replaced.
         """
         self.args = [param.replace_table(current_table, new_table) for param in self.args]
 
