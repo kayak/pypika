@@ -14,8 +14,8 @@ class IfNull(Function):
     def _field_to_str(self, field):
         if field == 'NULL':
             return field
-        if isinstance(self._field, Field):
-            return self._field.get_sql()
+        if isinstance(field, Field):
+            return field.get_sql()
         return field
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None,
