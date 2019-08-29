@@ -50,6 +50,10 @@ class Selectable:
     def __getattr__(self, name):
         return self.field(name)
 
+    @ignore_copy
+    def __getitem__(self, name):
+        return self.field(name)
+
 
 class AliasedQuery(Selectable):
     def __init__(self, name, query=None):
@@ -393,7 +397,7 @@ class _UnionQuery(Selectable, Term):
         clauses = []
         selected_aliases = {s.alias for s in self.base_query._selects}
         for field, directionality in self._orderbys:
-            term = "{quote}{alias}{quote}".format(alias=field.alias, quote=quote_char or '') \
+            term = format_quotes(field.alias, quote_char) \
                 if field.alias and field.alias in selected_aliases \
                 else field.get_sql(quote_char=quote_char, **kwargs)
 
@@ -415,7 +419,12 @@ class QueryBuilder(Selectable, Term):
     state to be branched immutably.
     """
 
-    def __init__(self, quote_char='"', dialect=None, wrap_union_queries=True, wrapper_cls=ValueWrapper):
+    def __init__(self,
+                 quote_char='"',
+                 secondary_quote_char="'",
+                 dialect=None,
+                 wrap_union_queries=True,
+                 wrapper_cls=ValueWrapper):
         super(QueryBuilder, self).__init__(None)
 
         self._from = []
@@ -454,6 +463,7 @@ class QueryBuilder(Selectable, Term):
         self._foreign_table = False
 
         self.quote_char = quote_char
+        self.secondary_quote_char = secondary_quote_char
         self.dialect = dialect
         self.wrap_union_queries = wrap_union_queries
 
@@ -866,6 +876,7 @@ class QueryBuilder(Selectable, Term):
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         kwargs.setdefault('quote_char', self.quote_char)
+        kwargs.setdefault('secondary_quote_char', self.secondary_quote_char)
         kwargs.setdefault('dialect', self.dialect)
 
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
@@ -1058,10 +1069,7 @@ class QueryBuilder(Selectable, Term):
         selected_aliases = {s.alias for s in self._selects}
         for field in self._groupbys:
             if groupby_alias and field.alias and field.alias in selected_aliases:
-                clauses.append("{quote}{alias}{quote}".format(
-                      alias=field.alias,
-                      quote=quote_char or '',
-                ))
+                clauses.append(format_quotes(field.alias, quote_char))
             else:
                 clauses.append(field.get_sql(quote_char=quote_char, **kwargs))
 
@@ -1084,7 +1092,7 @@ class QueryBuilder(Selectable, Term):
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
         for field, directionality in self._orderbys:
-            term = "{quote}{alias}{quote}".format(alias=field.alias, quote=quote_char or '') \
+            term = format_quotes(field.alias, quote_char) \
                 if orderby_alias and field.alias and field.alias in selected_aliases \
                 else field.get_sql(quote_char=quote_char, **kwargs)
 
