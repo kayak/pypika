@@ -1,4 +1,5 @@
 import ast
+
 from setuptools import setup
 
 
@@ -15,7 +16,7 @@ def version():
             if len(node.targets) == 1:
                 name = node.targets[0]
                 if isinstance(name, ast.Name) and \
-                        name.id in ('__version__', '__version_info__', 'VERSION'):
+                      name.id in ('__version__', '__version_info__', 'VERSION'):
                     v = node.value
                     if isinstance(v, ast.Str):
                         return v.s
@@ -31,48 +32,52 @@ def version():
 
 
 setup(
-    # Application name:
-    name="PyPika",
+      # Application name:
+      name="PyPika",
 
-    # Version number:
-    version=version(),
+      # Version number:
+      version=version(),
 
-    # Application author details:
-    author="Timothy Heys",
-    author_email="theys@kayak.com",
+      # Application author details:
+      author="Timothy Heys",
+      author_email="theys@kayak.com",
 
-    # License
-    license='Apache License Version 2.0',
+      # License
+      license='Apache License Version 2.0',
 
-    # Packages
-    packages=["pypika", "pypika.clickhouse"],
+      # Packages
+      packages=["pypika", "pypika.clickhouse"],
 
-    # Include additional files into the package
-    include_package_data=True,
+      # Include additional files into the package
+      include_package_data=True,
 
-    # Details
-    url="https://github.com/kayak/pypika",
+      install_requires=[
+          'typing==3.6.2'
+      ],
 
-    description="A SQL query builder API for Python",
-    long_description=readme(),
+      # Details
+      url="https://github.com/kayak/pypika",
 
-    classifiers=[
-        'License :: OSI Approved :: Apache Software License',
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: PL/SQL',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: Scientific/Engineering :: Information Analysis',
-        'Topic :: Scientific/Engineering :: Mathematics',
-        'Operating System :: POSIX',
-        'Operating System :: MacOS :: MacOS X',
-        'Operating System :: Microsoft :: Windows',
-    ],
-    keywords=('pypika python query builder querybuilder sql mysql postgres psql oracle vertica aggregated '
-              'relational database rdbms business analytics bi data science analysis pandas '
-              'orm object mapper'),
+      description="A SQL query builder API for Python",
+      long_description=readme(),
 
-    # Dependent packages (distributions)
-    test_suite="pypika.tests",
+      classifiers=[
+          'License :: OSI Approved :: Apache Software License',
+          'Development Status :: 5 - Production/Stable',
+          'Intended Audience :: Developers',
+          'Programming Language :: Python :: 3',
+          'Programming Language :: PL/SQL',
+          'Topic :: Software Development :: Libraries :: Python Modules',
+          'Topic :: Scientific/Engineering :: Information Analysis',
+          'Topic :: Scientific/Engineering :: Mathematics',
+          'Operating System :: POSIX',
+          'Operating System :: MacOS :: MacOS X',
+          'Operating System :: Microsoft :: Windows',
+      ],
+      keywords=('pypika python query builder querybuilder sql mysql postgres psql oracle vertica aggregated '
+                'relational database rdbms business analytics bi data science analysis pandas '
+                'orm object mapper'),
+
+      # Dependent packages (distributions)
+      test_suite="pypika.tests",
 )
