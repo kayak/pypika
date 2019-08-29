@@ -66,7 +66,7 @@ def ignore_copy(func):
     """
 
     def _getattr(self, name):
-        if name in ['__copy__', '__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
+        if name in ['__copy__','__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
 
         return func(self, name)
@@ -100,10 +100,3 @@ def alias_sql(sql, alias, quote_char=None):
     if alias is None:
         return sql
     return '{sql} {alias}'.format(sql=sql, alias=format_quotes(alias, quote_char))
-
-
-def validate(*args, exc=None, type=None):
-    if type is not None:
-        for arg in args:
-            if not isinstance(arg, type):
-                raise exc
