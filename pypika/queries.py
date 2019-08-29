@@ -87,6 +87,7 @@ class Schema:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @ignore_copy
     def __getattr__(self, item):
         return Table(item, schema=self)
 
@@ -103,6 +104,7 @@ class Schema:
 
 
 class Database(Schema):
+    @ignore_copy
     def __getattr__(self, item):
         return Schema(item, parent=self)
 
