@@ -281,6 +281,11 @@ class AggregationTests(unittest.TestCase):
 
         self.assertEqual('SELECT STDDEV(\"foo\") FROM \"abc\"', str(q))
 
+    def test__approx_percentile(self):
+        q = Q.from_('abc').select(fn.ApproximatePercentile(F('foo'), 0.5))
+
+        self.assertEqual('SELECT APPROXIMATE_PERCENTILE(\"foo\" USING PARAMETERS percentile=0.5) FROM \"abc\"', str(q))
+
 
 class ConditionTests(unittest.TestCase):
     def test__case__raw(self):

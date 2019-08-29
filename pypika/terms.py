@@ -1081,7 +1081,7 @@ class Function(Criterion):
     @property
     def is_aggregate(self):
         """
-        This is a shortcut thst assumes if a function has a single argument and that argument is aggregated, then this
+        This is a shortcut that assumes if a function has a single argument and that argument is aggregated, then this
         function is also aggregated. A more sophisticated approach is needed, however it is unclear how that might work.
         :returns:
             True if the function accepts one argument and that argument is aggregate.
