@@ -87,6 +87,15 @@ class Floor(Function):
         super(Floor, self).__init__('FLOOR', term, alias=alias)
 
 
+class ApproximatePercentile(AggregateFunction):
+    def __init__(self, term, percentile, alias=None):
+        super(ApproximatePercentile, self).__init__('APPROXIMATE_PERCENTILE', term, alias=alias)
+        self.percentile = float(percentile)
+
+    def get_special_params_sql(self, **kwargs):
+        return 'USING PARAMETERS percentile={percentile}'.format(percentile=self.percentile)
+
+
 # Type Functions
 class Cast(Function):
     def __init__(self, term, as_type, alias=None):
