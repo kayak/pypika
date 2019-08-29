@@ -125,6 +125,7 @@ class Dialects(Enum):
     POSTGRESQL = 'postgressql'
     REDSHIFT = 'redshift'
     SQLLITE = 'sqllite'
+    SNOWFLAKE = 'snowflake'
 
 
 class PostgresOperators(Enum):

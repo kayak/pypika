@@ -18,6 +18,24 @@ from pypika.utils import (
 )
 
 
+class SnowFlakeQueryBuilder(QueryBuilder):
+    QUOTE_CHAR = None
+
+    def __init__(self):
+        super(SnowFlakeQueryBuilder, self).__init__(quote_char=self.QUOTE_CHAR,
+                                                    dialect=Dialects.SNOWFLAKE)
+
+
+class SnowflakeQuery(Query):
+    """
+    Defines a query class for use with Snowflake.
+    """
+
+    @classmethod
+    def _builder(cls):
+        return SnowFlakeQueryBuilder()
+
+
 class MySQLQueryBuilder(QueryBuilder):
     QUOTE_CHAR = '`'
 
