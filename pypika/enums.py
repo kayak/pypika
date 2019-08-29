@@ -127,7 +127,7 @@ class Dialects(Enum):
     SQLLITE = 'sqllite'
 
 
-class JSONOperators(Enum):
+class PostgresOperators(Enum):
     HAS_KEY = '?'
     CONTAINS = '@>'
     CONTAINED_BY = '<@'
@@ -135,6 +135,4 @@ class JSONOperators(Enum):
     HAS_ANY_KEYS = '?|'
     GET_JSON_VALUE = '->'
     GET_TEXT_VALUE = '->>'
-    GET_PATH_JSON_VALUE = '#>'
-    GET_PATH_TEXT_VALUE = '#>>'
 
