@@ -12,15 +12,11 @@ class TestSearchString(unittest.TestCase):
     @parameterized.expand([
         (
             IfNull(Field('name'),  Field('login')),
-            'ifNull("name","login")',
+            'ifNull(name,login)',
         ),
         (
             IfNull(Field('builder'), ToFixedString('pypika', 100)),
-            'ifNull("builder",toFixedString(\'pypika\',100))',
-        ),
-        (
-            IfNull('NULL', 1),
-            'ifNull(NULL,1)',
+            "ifNull(builder,toFixedString('pypika',100))",
         )
     ])
     def test_get_sql(self, func, expected):
