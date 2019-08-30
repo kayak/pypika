@@ -12,31 +12,41 @@ class QueryTablesTests(unittest.TestCase):
     table_a, table_b, table_c, table_d = Tables('a', 'b', 'c', 'd')
 
     def test_replace_table(self):
-        query = Query.from_(self.table_a).select(self.table_a.time)
+        query = Query \
+            .from_(self.table_a) \
+            .select(self.table_a.time)
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual('SELECT "time" FROM "b"', str(query))
 
     def test_replace_only_specified_table(self):
-        query = Query.from_(self.table_a).select(self.table_a.time)
+        query = Query \
+            .from_(self.table_a) \
+            .select(self.table_a.time)
         query = query.replace_table(self.table_b, self.table_c)
 
         self.assertEqual('SELECT "time" FROM "a"', str(query))
 
     def test_replace_insert_table(self):
-        query = Query.into(self.table_a).insert(1)
+        query = Query \
+            .into(self.table_a) \
+            .insert(1)
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual('INSERT INTO "b" VALUES (1)', str(query))
 
     def test_replace_update_table(self):
-        query = Query.update(self.table_a).set('foo', 'bar')
+        query = Query \
+            .update(self.table_a) \
+            .set('foo', 'bar')
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual('UPDATE "b" SET "foo"=\'bar\'', str(query))
 
     def test_replace_delete_table(self):
-        query = Query.from_(self.table_a).delete()
+        query = Query \
+            .from_(self.table_a) \
+            .delete()
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual('DELETE FROM "b"', str(query))
@@ -95,6 +105,17 @@ class QueryTablesTests(unittest.TestCase):
                          'WHEN "fname"=\'John\' THEN \'It was John\' '
                          'ELSE \'It was someone else.\' END "who_was_it" '
                          'FROM "b"', str(query))
+
+    def test_replace_orderby_table(self):
+        query = Query \
+            .from_(self.table_a) \
+            .select(self.table_a.customer) \
+            .orderby(self.table_a.customer)
+        query = query.replace_table(self.table_a, self.table_b)
+
+        self.assertEqual('SELECT "customer" '
+                         'FROM "b" '
+                         'ORDER BY "customer"', str(query))
 
     def test_is_joined(self):
         q = Query.from_(self.table_a).join(self.table_b).on(self.table_a.foo == self.table_b.boo)

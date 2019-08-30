@@ -35,6 +35,10 @@ class Selectable:
     def __init__(self, alias):
         self.alias = alias
 
+    @builder
+    def as_(self, alias):
+        self.alias = alias
+
     def field(self, name):
         return Field(name, table=self)
 
@@ -44,6 +48,10 @@ class Selectable:
 
     @ignore_copy
     def __getattr__(self, name):
+        return self.field(name)
+
+    @ignore_copy
+    def __getitem__(self, name):
         return self.field(name)
 
 
@@ -79,6 +87,10 @@ class Schema:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @ignore_copy
+    def __getattr__(self, item):
+        return Table(item, schema=self)
+
     def get_sql(self, quote_char=None, **kwargs):
         # FIXME escape
         schema_sql = format_quotes(self._name, quote_char)
@@ -89,6 +101,12 @@ class Schema:
                         schema=schema_sql)
 
         return schema_sql
+
+
+class Database(Schema):
+    @ignore_copy
+    def __getattr__(self, item):
+        return Schema(item, parent=self)
 
 
 class Table(Selectable):
@@ -333,13 +351,11 @@ class _UnionQuery(Selectable, Term):
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         union_template = ' UNION{type} {union}'
 
-        kwargs = {
-            'dialect': self.base_query.dialect,
-            # This initializes the quote char based on the base query, which could be a dialect specific query class
-            # This might be overridden if quote_char is set explicitly in kwargs
-            'quote_char': self.base_query.quote_char,
-            **kwargs,
-        }
+        kwargs.setdefault('dialect', self.base_query.dialect)
+        # This initializes the quote char based on the base query, which could be a dialect specific query class
+        # This might be overridden if quote_char is set explicitly in kwargs
+        kwargs.setdefault('quote_char', self.base_query.quote_char)
+
         base_querystring = self.base_query.get_sql(subquery=self.base_query.wrap_union_queries, **kwargs)
 
         querystring = base_querystring
@@ -383,7 +399,7 @@ class _UnionQuery(Selectable, Term):
         clauses = []
         selected_aliases = {s.alias for s in self.base_query._selects}
         for field, directionality in self._orderbys:
-            term = "{quote}{alias}{quote}".format(alias=field.alias, quote=quote_char or '') \
+            term = format_quotes(field.alias, quote_char) \
                 if field.alias and field.alias in selected_aliases \
                 else field.get_sql(quote_char=quote_char, **kwargs)
 
@@ -405,7 +421,12 @@ class QueryBuilder(Selectable, Term):
     state to be branched immutably.
     """
 
-    def __init__(self, quote_char='"', dialect=None, wrap_union_queries=True, wrapper_cls=ValueWrapper):
+    def __init__(self,
+                 quote_char='"',
+                 secondary_quote_char="'",
+                 dialect=None,
+                 wrap_union_queries=True,
+                 wrapper_cls=ValueWrapper):
         super(QueryBuilder, self).__init__(None)
 
         self._from = []
@@ -444,6 +465,7 @@ class QueryBuilder(Selectable, Term):
         self._foreign_table = False
 
         self.quote_char = quote_char
+        self.secondary_quote_char = secondary_quote_char
         self.dialect = dialect
         self.wrap_union_queries = wrap_union_queries
 
@@ -520,7 +542,8 @@ class QueryBuilder(Selectable, Term):
         self._prewheres = self._prewheres.replace_table(current_table, new_table) if self._prewheres else None
         self._groupbys = [groupby.replace_table(current_table, new_table) for groupby in self._groupbys]
         self._havings = self._havings.replace_table(current_table, new_table) if self._havings else None
-        self._orderbys = [orderby.replace_table(current_table, new_table) for orderby in self._orderbys]
+        self._orderbys = [(orderby[0].replace_table(current_table, new_table), orderby[1])
+                          for orderby in self._orderbys]
         self._joins = [join.replace_table(current_table, new_table) for join in self._joins]
 
         if current_table in self._select_star_tables:
@@ -855,6 +878,7 @@ class QueryBuilder(Selectable, Term):
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         kwargs.setdefault('quote_char', self.quote_char)
+        kwargs.setdefault('secondary_quote_char', self.secondary_quote_char)
         kwargs.setdefault('dialect', self.dialect)
 
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
@@ -1047,10 +1071,7 @@ class QueryBuilder(Selectable, Term):
         selected_aliases = {s.alias for s in self._selects}
         for field in self._groupbys:
             if groupby_alias and field.alias and field.alias in selected_aliases:
-                clauses.append("{quote}{alias}{quote}".format(
-                      alias=field.alias,
-                      quote=quote_char or '',
-                ))
+                clauses.append(format_quotes(field.alias, quote_char))
             else:
                 clauses.append(field.get_sql(quote_char=quote_char, **kwargs))
 
@@ -1073,7 +1094,7 @@ class QueryBuilder(Selectable, Term):
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
         for field, directionality in self._orderbys:
-            term = "{quote}{alias}{quote}".format(alias=field.alias, quote=quote_char or '') \
+            term = format_quotes(field.alias, quote_char) \
                 if orderby_alias and field.alias and field.alias in selected_aliases \
                 else field.get_sql(quote_char=quote_char, **kwargs)
 
@@ -1190,7 +1211,7 @@ class JoinOn(Join):
         join_sql = super(JoinOn, self).get_sql(**kwargs)
         return '{join} ON {criterion}{collate}'.format(
               join=join_sql,
-              criterion=self.criterion.get_sql(**kwargs),
+              criterion=self.criterion.get_sql(subquery=True, **kwargs),
               collate=" COLLATE {}".format(self.collate) if self.collate else ""
         )
 

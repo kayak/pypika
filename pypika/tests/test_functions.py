@@ -281,6 +281,11 @@ class AggregationTests(unittest.TestCase):
 
         self.assertEqual('SELECT STDDEV(\"foo\") FROM \"abc\"', str(q))
 
+    def test__approx_percentile(self):
+        q = Q.from_('abc').select(fn.ApproximatePercentile(F('foo'), 0.5))
+
+        self.assertEqual('SELECT APPROXIMATE_PERCENTILE(\"foo\" USING PARAMETERS percentile=0.5) FROM \"abc\"', str(q))
+
 
 class ConditionTests(unittest.TestCase):
     def test__case__raw(self):
@@ -603,6 +608,16 @@ class DateFunctionsTests(unittest.TestCase):
         query = Query.select(fn.CurTime())
 
         self.assertEqual("SELECT CURRENT_TIME()", str(query))
+
+    def test_current_timestamp(self):
+        query = Query.select(fn.CurTimestamp())
+
+        self.assertEqual("SELECT CURRENT_TIMESTAMP", str(query))
+
+    def test_current_timestamp_with_alias(self):
+        query = Query.select(fn.CurTimestamp('ts'))
+
+        self.assertEqual("SELECT CURRENT_TIMESTAMP \"ts\"", str(query))
 
     def test_to_date(self):
         q1 = fn.ToDate('2019-06-21', 'yyyy-mm-dd')

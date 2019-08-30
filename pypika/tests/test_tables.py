@@ -1,13 +1,46 @@
 import unittest
 
 from pypika import (
+    Database,
     Schema,
     Table,
-    Tables
+    Tables,
 )
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
+
+
+class TableStructureTests(unittest.TestCase):
+    def test_table_sql(self):
+        table = Table('test_table')
+
+        self.assertEqual('"test_table"', str(table))
+
+    def test_table_with_alias(self):
+        table = Table('test_table').as_('my_table')
+
+        self.assertEqual('"test_table" "my_table"', table.get_sql(with_alias=True, quote_char='"'))
+
+    def test_schema_table_attr(self):
+        table = Schema('x_schema').test_table
+
+        self.assertEqual('"x_schema"."test_table"', str(table))
+
+    def test_table_with_schema_arg(self):
+        table = Table("test_table", schema=Schema('x_schema'))
+
+        self.assertEqual('"x_schema"."test_table"', str(table))
+
+    def test_database_schema_table_attr(self):
+        table = Database('x_db').x_schema.test_table
+
+        self.assertEqual('"x_db"."x_schema"."test_table"', str(table))
+
+    def test_table_with_schema_and_schema_parent_arg(self):
+        table = Table("test_table", schema=Schema('x_schema', parent=Database('x_db')))
+
+        self.assertEqual('"x_db"."x_schema"."test_table"', str(table))
 
 
 class TableEqualityTests(unittest.TestCase):
