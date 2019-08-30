@@ -1,4 +1,5 @@
 import unittest
+from collections import OrderedDict
 
 from pypika import (
     JSON,
@@ -131,8 +132,12 @@ class JSONBOperatorsTests(unittest.TestCase):
         q = PostgreSQLQuery \
             .from_(self.table_abc) \
             .select('*') \
-            .where(self.table_abc.json.contained_by({"dates": "2018-07-10 - 2018-07-17", "imported": "8"}))
-
+            .where(self.table_abc.json.contained_by(
+                OrderedDict([
+                    ('dates', '2018-07-10 - 2018-07-17'),
+                    ('imported', '8'),
+                ])
+            ))
         self.assertEqual(
               'SELECT * FROM "abc" '
               'WHERE "json"<@\'{"dates":"2018-07-10 - 2018-07-17","imported":"8"}\'',
