@@ -42,7 +42,7 @@ class TestMultiIfCondition(unittest.TestCase):
             )),
             'multiIf(filmmaker IS NULL,'
             'toFixedString(\'Tarantino\',20),'
-            '"filmmaker"=toFixedString(\'undefined\',20),'
+            'filmmaker=toFixedString(\'undefined\',20),'
             'toFixedString(\'Tarantino\',20),filmmaker)'
         ),
         (
@@ -55,11 +55,11 @@ class TestMultiIfCondition(unittest.TestCase):
                 ToFixedString('light', 20),
                 ToFixedString('undefined', 20)
             )),
-            'multiIf("color"=toFixedString(\'black\',20),'
+            'multiIf(color=toFixedString(\'black\',20),'
             'toFixedString(\'dark\',20),'
-            '"color"=toFixedString(\'grey\',20),'
+            'color=toFixedString(\'grey\',20),'
             'toFixedString(\'dark\',20),'
-            '"color"=toFixedString(\'white\',20),'
+            'color=toFixedString(\'white\',20),'
             'toFixedString(\'light\',20),'
             'toFixedString(\'undefined\',20))'
         ),

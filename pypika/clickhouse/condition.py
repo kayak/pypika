@@ -1,3 +1,4 @@
+from pypika import utils
 from pypika.terms import Function
 
 
@@ -8,17 +9,18 @@ class If(Function):
         self._condition = condition
         self.alias = alias
         self.schema = schema
-        self.args = ()
         self.name = 'if'
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None,
                 **kwargs):
-        return '{name}({condition},{then},{else_}){alias}'.format(
-            name=self.name,
-            condition=self._condition,
-            then=self._then,
-            else_=self._else_,
-            alias=' ' + self.alias if self.alias else ''
+        return utils.alias_sql(
+            '{name}({condition},{then},{else_})'.format(
+                name=self.name,
+                condition=self._condition,
+                then=self._then,
+                else_=self._else_,
+            ),
+            self.alias
         )
 
 
@@ -30,13 +32,21 @@ class MultiIf(Function):
         self._conditions = conditions
         self.alias = alias
         self.schema = schema
-        self.args = ()
         self.name = 'multiIf'
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None,
                 **kwargs):
-        return '{name}({conditions}){alias}'.format(
-            name=self.name,
-            conditions=','.join(i.get_sql() for i in self._conditions),
-            alias=' ' + self.alias if self.alias else ''
+        return utils.alias_sql(
+            '{name}({conditions})'.format(
+                name=self.name,
+                conditions=','.join(
+                    i.get_sql(
+                        with_namespace=with_namespace,
+                        quote_char=quote_char,
+                        dialect=dialect
+                    )
+                    for i in self._conditions
+                ),
+            ),
+            self.alias
         )
