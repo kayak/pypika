@@ -33,20 +33,20 @@ class TestMultiIfCondition(unittest.TestCase):
 
     @parameterized.expand([
         (
-            MultiIf((
+            MultiIf(
                 Field('filmmaker').isnull(),
                 ToFixedString('Tarantino', 20),
                 Field('filmmaker') == ToFixedString('undefined', 20),
                 ToFixedString('Tarantino', 20),
                 Field('filmmaker')
-            )),
+            ),
             'multiIf(filmmaker IS NULL,'
             'toFixedString(\'Tarantino\',20),'
             'filmmaker=toFixedString(\'undefined\',20),'
             'toFixedString(\'Tarantino\',20),filmmaker)'
         ),
         (
-            MultiIf((
+            MultiIf(
                 Field('color') == ToFixedString('black', 20),
                 ToFixedString('dark', 20),
                 Field('color') == ToFixedString('grey', 20),
@@ -54,7 +54,7 @@ class TestMultiIfCondition(unittest.TestCase):
                 Field('color') == ToFixedString('white', 20),
                 ToFixedString('light', 20),
                 ToFixedString('undefined', 20)
-            )),
+            ),
             'multiIf(color=toFixedString(\'black\',20),'
             'toFixedString(\'dark\',20),'
             'color=toFixedString(\'grey\',20),'

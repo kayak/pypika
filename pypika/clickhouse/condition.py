@@ -25,28 +25,5 @@ class If(Function):
 
 
 class MultiIf(Function):
-    def __init__(self, conditions: tuple, alias: str = None, schema: str = None):
-        """
-        :param conditions: condition1, then1, condition2, then2...else
-        """
-        self._conditions = conditions
-        self.alias = alias
-        self.schema = schema
-        self.name = 'multiIf'
-
-    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None,
-                **kwargs):
-        return utils.alias_sql(
-            '{name}({conditions})'.format(
-                name=self.name,
-                conditions=','.join(
-                    i.get_sql(
-                        with_namespace=with_namespace,
-                        quote_char=quote_char,
-                        dialect=dialect
-                    )
-                    for i in self._conditions
-                ),
-            ),
-            self.alias
-        )
+    def __init__(self, *conditions, **kwargs):
+        super().__init__('multiIf', *conditions, **kwargs)
