@@ -14,7 +14,7 @@ class TestIfCondition(unittest.TestCase):
     @parameterized.expand([
         (
             If(Field('filmmaker').isnull(), ToFixedString('Tarantino', 20), Field('filmmaker')),
-            'if("filmmaker" IS NULL,toFixedString(\'Tarantino\',20),"filmmaker")'
+            'if(filmmaker IS NULL,toFixedString(\'Tarantino\',20),filmmaker)'
         ),
         (
             If(
@@ -22,7 +22,7 @@ class TestIfCondition(unittest.TestCase):
                 ToFixedString('yes', 3),
                 ToFixedString('no', 3)
             ),
-            'if("created"="updated",toFixedString(\'yes\',3),toFixedString(\'no\',3))'
+            'if(created=updated,toFixedString(\'yes\',3),toFixedString(\'no\',3))'
         ),
     ])
     def test_get_sql(self, func, expected):
