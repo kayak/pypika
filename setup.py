@@ -51,9 +51,7 @@ setup(
       # Include additional files into the package
       include_package_data=True,
 
-      install_requires=[
-          'typing==3.6.2'
-      ],
+      install_requires=[],
 
       # Details
       url="https://github.com/kayak/pypika",
