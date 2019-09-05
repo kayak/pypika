@@ -3,6 +3,7 @@ import itertools
 import re
 from datetime import date
 from enum import Enum
+
 from typing import (
     Iterable,
     Union,
@@ -415,6 +416,9 @@ class Criterion(Term):
 
 
 class EmptyCriterion:
+    is_aggregate = None
+    tables_ = set()
+
     def __and__(self, other):
         return other
 
@@ -423,6 +427,7 @@ class EmptyCriterion:
 
     def __xor__(self, other):
         return other
+
 
 
 class Field(Criterion, JSON):
