@@ -13,6 +13,7 @@ class ToFixedString(Function):
         self.alias = alias
         self.name = 'toFixedString'
         self.schema = schema
+        self.args = ()
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None,
                 **kwargs):
