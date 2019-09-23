@@ -7,7 +7,10 @@ from pypika import (
     Table,
     functions as fn,
 )
-from pypika.terms import ValueWrapper
+from pypika.terms import (
+    ValueWrapper,
+    Negative,
+)
 
 
 class IsAggregateTests(unittest.TestCase):
@@ -33,6 +36,10 @@ class IsAggregateTests(unittest.TestCase):
 
     def test__agg_func_is_aggregate(self):
         v = fn.Sum(Field('foo'))
+        self.assertTrue(v.is_aggregate)
+
+    def test__negative_agg_func_is_aggregate(self):
+        v = Negative(fn.Sum(Field('foo')))
         self.assertTrue(v.is_aggregate)
 
     def test__agg_func_arithmetic_is_aggregate(self):

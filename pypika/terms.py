@@ -261,6 +261,10 @@ class Negative(Term):
         super(Negative, self).__init__()
         self.term = term
 
+    @property
+    def is_aggregate(self):
+        return self.term.is_aggregate
+
     def get_sql(self, **kwargs):
         return '-{term}'.format(term=self.term.get_sql(**kwargs))
 
@@ -427,7 +431,6 @@ class EmptyCriterion:
 
     def __xor__(self, other):
         return other
-
 
 
 class Field(Criterion, JSON):
