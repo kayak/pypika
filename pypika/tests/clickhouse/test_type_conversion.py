@@ -2,7 +2,9 @@ import unittest
 
 from parameterized import parameterized
 
+from pypika import ClickHouseQuery
 from pypika import Field
+from pypika import Table
 from pypika.clickhouse.type_conversion import (
     ToString,
     ToInt8,
@@ -38,6 +40,7 @@ class TestBasicTypeConverters(unittest.TestCase):
         ('toFloat64("field_name")', ToFloat64(Field('field_name')),),
         ('toDate("field_name")', ToDate(Field('field_name')),),
         ('toDateTime("field_name")', ToDateTime(Field('field_name')),),
+        ('toFixedString("field_name",100)', ToFixedString(Field('field_name'), 100),),
     ])
     def test_basic_types_field(self, expected, func):
         self.assertEqual(func, expected)
@@ -57,6 +60,7 @@ class TestBasicTypeConverters(unittest.TestCase):
         ("toFloat64('100')", ToFloat64('100'),),
         ("toDate('100')", ToDate('100'),),
         ("toDateTime('100')", ToDateTime('100'),),
+        ("toFixedString('100',100)", ToFixedString('100', 100),),
     ])
     def test_basic_types_value(self, expected, func):
         self.assertEqual(func, expected)
@@ -64,15 +68,15 @@ class TestBasicTypeConverters(unittest.TestCase):
 
 class TestToFixedString(unittest.TestCase):
 
-    @parameterized.expand([
-        (
-            ToFixedString(Field('field_name'), 100),
-            'toFixedString("field_name",100)',
-        ),
-        (
-            ToFixedString('100', 100),
-            "toFixedString('100',100)",
-        ),
-    ])
-    def test_get_sql(self, func, expected):
-        self.assertEqual(func.get_sql(), expected)
+    def test_get_sql_with_table(self):
+        table = Table('example')
+        query = ClickHouseQuery.from_(table).select(
+            table.name,
+        ).where(
+            table.name == ToFixedString('name', 50),
+        )
+
+        self.assertEqual(
+            'SELECT "name" FROM "example" WHERE "name"=toFixedString(\'name\',50)',
+            query.get_sql()
+        )
