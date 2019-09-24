@@ -255,15 +255,15 @@ class JoinBehaviorTests(unittest.TestCase):
                          'JOIN "abc" "abc2" ON "abc"."foo"="abc2"."bar"', str(q))
 
     def test_join_same_table_with_prefixes(self):
-        table1 = Table('abc', alias='x')
-        table2 = Table('abc', alias='y')
+        table1 = Table('abc').as_('x')
+        table2 = Table('abc').as_('y')
         q = Query.from_(table1).join(table2).on(table1.foo == table2.bar).select(table1.foo, table2.buz)
 
         self.assertEqual('SELECT "x"."foo","y"."buz" FROM "abc" "x" '
                          'JOIN "abc" "y" ON "x"."foo"="y"."bar"', str(q))
 
     def test_join_table_twice(self):
-        table1, table2 = Table('efg', alias='efg1'), Table('efg', alias='efg2')
+        table1, table2 = Table('efg').as_('efg1'), Table('efg').as_('efg2')
         q = Query.from_(self.table_abc) \
             .join(table1).on(self.table_abc.foo == table1.bar) \
             .join(table2).on(self.table_abc.foo == table2.bam) \
@@ -386,7 +386,7 @@ class JoinBehaviorTests(unittest.TestCase):
                          ') "sq0" '
                          'ON "sq0"."x"="abc"."id"', str(test_query))
 
-    def test_join_query_with_alias(self):
+    def test_join_query_with_column_alias(self):
         subquery = Query.from_(self.table_efg) \
             .select(self.table_efg.base_id.as_('x'), self.table_efg.fizz, self.table_efg.buzz) \
             .as_('subq')
@@ -399,6 +399,23 @@ class JoinBehaviorTests(unittest.TestCase):
         self.assertEqual('SELECT "abc"."foo","subq"."fizz","subq"."buzz" '
                          'FROM "abc" JOIN ('
                          'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
+                         ') "subq" '
+                         'ON "subq"."x"="abc"."id"', str(test_query))
+
+    def test_join_query_with_table_alias(self):
+        xxx = self.table_efg.as_('xxx')
+        subquery = Query.from_(xxx) \
+            .select(xxx.base_id, xxx.fizz, xxx.buzz) \
+            .as_('subq')
+
+        test_query = Query.from_(self.table_abc) \
+            .join(subquery) \
+            .on(subquery.x == self.table_abc.id) \
+            .select(self.table_abc.foo, subquery.fizz, subquery.buzz)
+
+        self.assertEqual('SELECT "abc"."foo","subq"."fizz","subq"."buzz" '
+                         'FROM "abc" JOIN ('
+                         'SELECT "xxx"."base_id","xxx"."fizz","xxx"."buzz" FROM "efg" "xxx"'
                          ') "subq" '
                          'ON "subq"."x"="abc"."id"', str(test_query))
 

@@ -21,8 +21,8 @@ from pypika.utils import (
     QueryException,
     RollupException,
     UnionException,
-    alias_sql,
     builder,
+    format_alias_sql,
     format_quotes,
     ignore_copy,
 )
@@ -127,15 +127,17 @@ class Table(Selectable):
         self._table_name = name
         self._schema = self._init_schema(schema)
 
-    def get_sql(self, quote_char=None, **kwargs):
+    def get_sql(self, **kwargs):
+        quote_char = kwargs.get('quote_char')
         # FIXME escape
         table_sql = format_quotes(self._table_name, quote_char)
 
         if self._schema is not None:
             table_sql = '{schema}.{table}' \
-                .format(schema=self._schema.get_sql(quote_char=quote_char, **kwargs),
+                .format(schema=self._schema.get_sql(**kwargs),
                         table=table_sql)
-        return alias_sql(table_sql, self.alias, quote_char)
+
+        return format_alias_sql(table_sql, self.alias, **kwargs)
 
     def __str__(self):
         return self.get_sql(quote_char='"')
@@ -354,7 +356,7 @@ class _UnionQuery(Selectable, Term):
         kwargs.setdefault('dialect', self.base_query.dialect)
         # This initializes the quote char based on the base query, which could be a dialect specific query class
         # This might be overridden if quote_char is set explicitly in kwargs
-        kwargs.setdefault('quote_char', self.base_query.quote_char)
+        kwargs.setdefault('quote_char', self.base_query.QUOTE_CHAR)
 
         base_querystring = self.base_query.get_sql(subquery=self.base_query.wrap_union_queries, **kwargs)
 
@@ -383,7 +385,7 @@ class _UnionQuery(Selectable, Term):
             querystring = '({query})'.format(query=querystring, **kwargs)
 
         if with_alias:
-            return alias_sql(querystring, self.alias or self._table_name, kwargs.get('quote_char'))
+            return format_alias_sql(querystring, self.alias or self._table_name, **kwargs)
 
         return querystring
 
@@ -420,10 +422,11 @@ class QueryBuilder(Selectable, Term):
     Query Builder is the main class in pypika which stores the state of a query and offers functions which allow the
     state to be branched immutably.
     """
+    QUOTE_CHAR = '"'
+    SECONDARY_QUOTE_CHAR = "'"
+    ALIAS_QUOTE_CHAR = None
 
     def __init__(self,
-                 quote_char='"',
-                 secondary_quote_char="'",
                  dialect=None,
                  wrap_union_queries=True,
                  wrapper_cls=ValueWrapper):
@@ -464,8 +467,6 @@ class QueryBuilder(Selectable, Term):
         self._subquery_count = 0
         self._foreign_table = False
 
-        self.quote_char = quote_char
-        self.secondary_quote_char = secondary_quote_char
         self.dialect = dialect
         self.wrap_union_queries = wrap_union_queries
 
@@ -856,7 +857,7 @@ class QueryBuilder(Selectable, Term):
                                  for value in values])
 
     def __str__(self):
-        return self.get_sql(quote_char=self.quote_char, dialect=self.dialect)
+        return self.get_sql(dialect=self.dialect)
 
     def __repr__(self):
         return self.__str__()
@@ -876,10 +877,14 @@ class QueryBuilder(Selectable, Term):
     def __hash__(self):
         return hash(self.alias) + sum(hash(clause) for clause in self._from)
 
-    def get_sql(self, with_alias=False, subquery=False, **kwargs):
-        kwargs.setdefault('quote_char', self.quote_char)
-        kwargs.setdefault('secondary_quote_char', self.secondary_quote_char)
+    def _set_kwargs_defaults(self, kwargs):
+        kwargs.setdefault('quote_char', self.QUOTE_CHAR)
+        kwargs.setdefault('secondary_quote_char', self.SECONDARY_QUOTE_CHAR)
+        kwargs.setdefault('alias_quote_char', self.ALIAS_QUOTE_CHAR)
         kwargs.setdefault('dialect', self.dialect)
+
+    def get_sql(self, with_alias=False, subquery=False, **kwargs):
+        self._set_kwargs_defaults(kwargs)
 
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
             return ''
@@ -893,12 +898,12 @@ class QueryBuilder(Selectable, Term):
         has_subquery_from_clause = 0 < len(self._from) and isinstance(self._from[0], QueryBuilder)
         has_reference_to_foreign_table = self._foreign_table
 
-        kwargs['with_namespace'] = any((
+        kwargs['with_namespace'] = any([
             has_joins,
             has_multiple_from_clauses,
             has_subquery_from_clause,
             has_reference_to_foreign_table
-        ))
+        ])
 
         if self._update_table:
             querystring = self._update_sql(**kwargs)
@@ -980,7 +985,7 @@ class QueryBuilder(Selectable, Term):
             querystring = '({query})'.format(query=querystring)
 
         if with_alias:
-            return alias_sql(querystring, self.alias, kwargs.get('quote_char'))
+            return format_alias_sql(querystring, self.alias, **kwargs)
 
         return querystring
 
@@ -1057,7 +1062,7 @@ class QueryBuilder(Selectable, Term):
     def _where_sql(self, quote_char=None, **kwargs):
         return ' WHERE {where}'.format(where=self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs))
 
-    def _group_sql(self, quote_char=None, groupby_alias=True, **kwargs):
+    def _group_sql(self, quote_char=None, alias_quote_char=None, groupby_alias=True, **kwargs):
         """
         Produces the GROUP BY part of the query.  This is a list of fields. The clauses are stored in the query under
         self._groupbys as a list fields.
@@ -1071,16 +1076,18 @@ class QueryBuilder(Selectable, Term):
         selected_aliases = {s.alias for s in self._selects}
         for field in self._groupbys:
             if groupby_alias and field.alias and field.alias in selected_aliases:
-                clauses.append(format_quotes(field.alias, quote_char))
+                clauses.append(format_quotes(field.alias, alias_quote_char or quote_char))
             else:
-                clauses.append(field.get_sql(quote_char=quote_char, **kwargs))
+                clauses.append(field.get_sql(quote_char=quote_char, alias_quote_char=alias_quote_char, **kwargs))
 
         sql = ' GROUP BY {groupby}'.format(groupby=','.join(clauses))
+
         if self._with_totals:
             return sql + ' WITH TOTALS'
+
         return sql
 
-    def _orderby_sql(self, quote_char=None, orderby_alias=True, **kwargs):
+    def _orderby_sql(self, quote_char=None, alias_quote_char=None, orderby_alias=True, **kwargs):
         """
         Produces the ORDER BY part of the query.  This is a list of fields and possibly their directionality, ASC or
         DESC. The clauses are stored in the query under self._orderbys as a list of tuples containing the field and
@@ -1094,9 +1101,9 @@ class QueryBuilder(Selectable, Term):
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
         for field, directionality in self._orderbys:
-            term = format_quotes(field.alias, quote_char) \
+            term = format_quotes(field.alias, alias_quote_char or quote_char) \
                 if orderby_alias and field.alias and field.alias in selected_aliases \
-                else field.get_sql(quote_char=quote_char, **kwargs)
+                else field.get_sql(quote_char=quote_char, alias_quote_char=alias_quote_char, **kwargs)
 
             clauses.append('{term} {orient}'.format(term=term, orient=directionality.value)
                            if directionality is not None else term)

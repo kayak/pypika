@@ -1,6 +1,7 @@
 import inspect
 import itertools
 import re
+from copy import copy
 from datetime import date
 from enum import Enum
 
@@ -19,7 +20,7 @@ from pypika.enums import (
 )
 from pypika.utils import (
     CaseException,
-    alias_sql,
+    format_alias_sql,
     builder,
     format_quotes,
     ignore_copy,
@@ -280,7 +281,7 @@ class ValueWrapper(Term):
         return []
 
     def get_value_sql(self, **kwargs):
-        quote_char = kwargs.get('secondary_quote_char')
+        quote_char = kwargs.get('secondary_quote_char') or ''
 
         # FIXME escape values
         if isinstance(self.value, Term):
@@ -301,7 +302,7 @@ class ValueWrapper(Term):
 
     def get_sql(self, quote_char=None, secondary_quote_char="'", **kwargs):
         sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
-        return alias_sql(sql, self.alias, quote_char)
+        return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
 
 
 class JSON(Term):
@@ -381,7 +382,7 @@ class NullValue(Term):
 
     def get_sql(self, quote_char=None, **kwargs):
         sql = 'NULL'
-        return alias_sql(sql, self.alias, quote_char)
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class Criterion(Term):
@@ -472,12 +473,10 @@ class Field(Criterion, JSON):
             )
 
         field_alias = getattr(self, 'alias', None)
-        if not with_alias or field_alias is None:
-            return field_sql
+        if with_alias:
+            return format_alias_sql(field_sql, field_alias, quote_char=quote_char, **kwargs)
 
-        return alias_sql(field_sql, field_alias, quote_char)
-
-    # JSON functions (for PostgreSQL)
+        return field_sql
 
 
 class Star(Field):
@@ -555,11 +554,8 @@ class Bracket(Tuple):
         super(Bracket, self).__init__(term)
 
     def get_sql(self, **kwargs):
-        return alias_sql(
-              sql=super(Bracket, self).get_sql(**kwargs),
-              alias=self.alias,
-              quote_char=kwargs.get('quote_char', None),
-        )
+        sql = super(Bracket, self).get_sql(**kwargs)
+        return format_alias_sql(sql=sql, alias=self.alias, **kwargs)
 
 
 class NestedCriterion(Criterion):
@@ -606,8 +602,9 @@ class NestedCriterion(Criterion):
               nested_comparator=self.nested_comparator.value,
               nested=self.nested.get_sql(**kwargs)
         )
-        if with_alias and self.alias:
-            return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
+
+        if with_alias:
+            return format_alias_sql(sql=sql, alias=self.alias, **kwargs)
 
         return sql
 
@@ -923,10 +920,10 @@ class ArithmeticExpression(Term):
               right=("({})" if is_mul and is_right_add else "{}").format(self.right.get_sql(**kwargs)),
         )
 
-        if not with_alias or self.alias is None:
-            return arithmatic_sql
+        if with_alias:
+            return format_alias_sql(arithmatic_sql, self.alias, **kwargs)
 
-        return alias_sql(arithmatic_sql, self.alias, quote_char)
+        return arithmatic_sql
 
 
 class Case(Term):
@@ -981,10 +978,10 @@ class Case(Term):
 
         case_sql = 'CASE {cases}{else_} END'.format(cases=cases, else_=else_)
 
-        if not with_alias or self.alias is None:
-            return case_sql
+        if with_alias:
+            return format_alias_sql(case_sql, self.alias, **kwargs)
 
-        return alias_sql(case_sql, self.alias, kwargs.get('quote_char'))
+        return case_sql
 
     def fields(self):
         fields = []
@@ -1022,11 +1019,10 @@ class Not(Criterion):
     def fields(self):
         return self.term.fields() if self.term.fields else []
 
-    def get_sql(self, quote_char=None, **kwargs):
+    def get_sql(self, **kwargs):
         kwargs['subcriterion'] = True
-        sql = "NOT {term}".format(term=self.term.get_sql(quote_char=quote_char,
-                                                         **kwargs))
-        return alias_sql(sql, self.alias, quote_char=quote_char)
+        sql = "NOT {term}".format(term=self.term.get_sql(**kwargs))
+        return format_alias_sql(sql, self.alias, **kwargs)
 
     @ignore_copy
     def __getattr__(self, name):
@@ -1134,10 +1130,10 @@ class Function(Criterion):
                 .format(schema=self.schema.get_sql(quote_char=quote_char, dialect=dialect, **kwargs),
                         function=function_sql)
 
-        if not with_alias or self.alias is None:
-            return function_sql
+        if with_alias:
+            return format_alias_sql(function_sql, self.alias, quote_char=quote_char, **kwargs)
 
-        return alias_sql(function_sql, self.alias, quote_char)
+        return function_sql
 
 
 class AggregateFunction(Function):
