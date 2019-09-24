@@ -94,6 +94,11 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" "bar" FROM "abc"', str(q))
 
+    def test_select__column__single__table_alias__str(self):
+        q = Query.from_(self.table_abc.as_('fizzbuzz')).select(self.table_abc.foo.as_('bar'))
+
+        self.assertEqual('SELECT "foo" "bar" FROM "abc" "fizzbuzz"', str(q))
+
     def test_select__column__single__field(self):
         t = Table('abc')
         q = Query.from_(t).select(t.foo)

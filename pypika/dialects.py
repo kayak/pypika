@@ -20,10 +20,10 @@ from pypika.utils import (
 
 class SnowFlakeQueryBuilder(QueryBuilder):
     QUOTE_CHAR = None
+    ALIAS_QUOTE_CHAR = '"'
 
     def __init__(self):
-        super(SnowFlakeQueryBuilder, self).__init__(quote_char=self.QUOTE_CHAR,
-                                                    dialect=Dialects.SNOWFLAKE)
+        super(SnowFlakeQueryBuilder, self).__init__(dialect=Dialects.SNOWFLAKE)
 
 
 class SnowflakeQuery(Query):
@@ -40,8 +40,7 @@ class MySQLQueryBuilder(QueryBuilder):
     QUOTE_CHAR = '`'
 
     def __init__(self):
-        super(MySQLQueryBuilder, self).__init__(quote_char=self.QUOTE_CHAR,
-                                                dialect=Dialects.MYSQL,
+        super(MySQLQueryBuilder, self).__init__(dialect=Dialects.MYSQL,
                                                 wrap_union_queries=False)
         self._duplicate_updates = []
         self._modifiers = []
@@ -56,20 +55,19 @@ class MySQLQueryBuilder(QueryBuilder):
         field = Field(field) if not isinstance(field, Field) else field
         self._duplicate_updates.append((field, ValueWrapper(value)))
 
-    def get_sql(self, with_alias=False, subquery=False, **kwargs):
-        querystring = super(MySQLQueryBuilder, self).get_sql(with_alias, subquery, **kwargs)
+    def get_sql(self, **kwargs):
+        self._set_kwargs_defaults(kwargs)
+        querystring = super(MySQLQueryBuilder, self).get_sql(**kwargs)
         if querystring and self._duplicate_updates:
             querystring += self._on_duplicate_key_update_sql(**kwargs)
         return querystring
 
     def _on_duplicate_key_update_sql(self, **kwargs):
-        return ' ON DUPLICATE KEY UPDATE {updates}'.format(
-            updates=','.join(
-                '{field}={value}'.format(
-                    field=field.get_sql(**kwargs),
-                    value=value.get_sql(**kwargs)) for field, value in self._duplicate_updates
-            )
-        )
+        return ' ON DUPLICATE KEY UPDATE {updates}' \
+            .format(updates=','.join('{field}={value}'
+                                     .format(field=field.get_sql(**kwargs),
+                                             value=value.get_sql(**kwargs))
+                                     for field, value in self._duplicate_updates))
 
     @builder
     def modifier(self, value):
@@ -212,11 +210,11 @@ class PostgreQueryBuilder(QueryBuilder):
             elif len(self._on_conflict_updates) > 0:
                 if self._on_conflict_field:
                     conflict_query += ' DO UPDATE SET {updates}'.format(
-                        updates=','.join(
-                            '{field}={value}'.format(
-                                field=field.get_sql(**kwargs),
-                                value=value.get_sql(**kwargs)) for field, value in self._on_conflict_updates
-                        )
+                          updates=','.join(
+                                '{field}={value}'.format(
+                                      field=field.get_sql(**kwargs),
+                                      value=value.get_sql(**kwargs)) for field, value in self._on_conflict_updates
+                          )
                     )
                 else:
                     raise QueryException('Can not have fieldless on conflict do update')
@@ -242,8 +240,8 @@ class PostgreQueryBuilder(QueryBuilder):
             if not any([self._insert_table, self._update_table, self._delete_from]):
                 raise QueryException('Returning can\'t be used in this query')
             if (
-                    field.table not in {self._insert_table, self._update_table}
-                    and term not in self._from
+                  field.table not in {self._insert_table, self._update_table}
+                  and term not in self._from
             ):
                 raise QueryException('You can\'t return from other tables')
 
@@ -286,8 +284,8 @@ class PostgreQueryBuilder(QueryBuilder):
 
     def _returning_sql(self, **kwargs):
         return ' RETURNING {returning}'.format(
-            returning=','.join(term.get_sql(with_alias=True, **kwargs)
-                               for term in self._returns),
+              returning=','.join(term.get_sql(with_alias=True, **kwargs)
+                                 for term in self._returns),
         )
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
@@ -348,10 +346,10 @@ class MSSQLQueryBuilder(QueryBuilder):
 
     def _select_sql(self, **kwargs):
         return 'SELECT {distinct}{top}{select}'.format(
-            top=self._top_sql(),
-            distinct='DISTINCT ' if self._distinct else '',
-            select=','.join(term.get_sql(with_alias=True, subquery=True, **kwargs)
-                            for term in self._selects),
+              top=self._top_sql(),
+              distinct='DISTINCT ' if self._distinct else '',
+              select=','.join(term.get_sql(with_alias=True, subquery=True, **kwargs)
+                              for term in self._selects),
         )
 
 
@@ -386,6 +384,7 @@ class SQLLiteQuery(Query):
     """
     Defines a query class for use with Microsoft SQL Server.
     """
+
     @classmethod
     def _builder(cls):
         return QueryBuilder(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper)

@@ -96,10 +96,10 @@ def format_quotes(value, quote_char):
         .format(value=value, quote=quote_char or '')
 
 
-def alias_sql(sql, alias, quote_char=None):
+def format_alias_sql(sql, alias, quote_char=None, alias_quote_char=None, **kwargs):
     if alias is None:
         return sql
-    return '{sql} {alias}'.format(sql=sql, alias=format_quotes(alias, quote_char))
+    return '{sql} {alias}'.format(sql=sql, alias=format_quotes(alias, alias_quote_char or quote_char))
 
 
 def validate(*args, exc=None, type=None):

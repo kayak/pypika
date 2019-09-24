@@ -43,7 +43,7 @@ class QuoteTests(unittest.TestCase):
                          'FROM `efg`'
                          ') `sq1` ON `sq0`.`foo`=`sq1`.`foo_two`', self.query.get_sql(quote_char='`'))
 
-    def test_remove_quote_char_in_complex_query(self):
+    def test_no_quote_char_in_complex_query(self):
         self.assertEqual('SELECT '
                          'sq0.foo,sq0.fizzbuzz,'
                          'sq1.foo_two,sq1.bar '
