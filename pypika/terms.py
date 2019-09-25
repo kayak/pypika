@@ -1,7 +1,6 @@
 import inspect
 import itertools
 import re
-from copy import copy
 from datetime import date
 from enum import Enum
 
@@ -20,8 +19,8 @@ from pypika.enums import (
 )
 from pypika.utils import (
     CaseException,
-    format_alias_sql,
     builder,
+    format_alias_sql,
     format_quotes,
     ignore_copy,
     resolve_is_aggregate,
@@ -380,7 +379,7 @@ class NullValue(Term):
     def fields(self):
         return []
 
-    def get_sql(self, quote_char=None, **kwargs):
+    def get_sql(self, **kwargs):
         sql = 'NULL'
         return format_alias_sql(sql, self.alias, **kwargs)
 

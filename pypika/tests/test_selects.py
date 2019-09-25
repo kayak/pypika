@@ -1,24 +1,24 @@
-# coding: utf-8
 import unittest
 
 from pypika import (
     AliasedQuery,
     Case,
+    ClickHouseQuery,
     EmptyCriterion,
     Field as F,
     MSSQLQuery,
     MySQLQuery,
+    NullValue,
     OracleQuery,
     Order,
     PostgreSQLQuery,
     Query,
     QueryException,
     RedshiftQuery,
+    SQLLiteQuery,
     Table,
     Tables,
     VerticaQuery,
-    ClickHouseQuery,
-    SQLLiteQuery,
     functions as fn,
 )
 from pypika.terms import ValueWrapper
@@ -235,12 +235,12 @@ class SelectTests(unittest.TestCase):
 
     def test_table_select_alias_with_offset_and_limit(self):
         self.assertEqual(
-            self.table_abc.select("foo")[10:10],
-            Query.from_('abc').select('foo')[10:10]
+              self.table_abc.select("foo")[10:10],
+              Query.from_('abc').select('foo')[10:10]
         )
         self.assertEqual(
-            self.table_abc.select(self.table_abc.foo)[10:10],
-            Query.from_('abc').select('foo')[10:10]
+              self.table_abc.select(self.table_abc.foo)[10:10],
+              Query.from_('abc').select('foo')[10:10]
         )
 
 
@@ -268,7 +268,7 @@ class WhereTests(unittest.TestCase):
 
     def test_where_field_equals_where_two_not(self):
         q = Query.from_(self.t).select('*').where(
-            (self.t.foo == 1).negate()
+              (self.t.foo == 1).negate()
         ).where((self.t.bar == self.t.baz).negate())
 
         self.assertEqual('SELECT * FROM "abc" WHERE NOT "foo"=1 AND NOT "bar"="baz"', str(q))
@@ -419,8 +419,8 @@ class GroupByTests(unittest.TestCase):
             .groupby(bar)
 
         self.assertEqual(
-            'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
-            q.get_sql(groupby_alias=False))
+              'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
+              q.get_sql(groupby_alias=False))
 
     def test_groupby__no_alias_platforms(self):
         bar = self.t.bar.as_('bar01')
@@ -430,8 +430,8 @@ class GroupByTests(unittest.TestCase):
                 .groupby(bar)
 
             self.assertEqual(
-                'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
-                str(q)
+                  'SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"',
+                  str(q)
             )
 
     def test_groupby__alias_platforms(self):
@@ -446,11 +446,11 @@ class GroupByTests(unittest.TestCase):
                 if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
 
             self.assertEqual(
-                'SELECT SUM({quote_char}foo{quote_char}),{quote_char}bar{quote_char} '
-                '{quote_char}bar01{quote_char} '
-                'FROM {quote_char}abc{quote_char} '
-                'GROUP BY {quote_char}bar01{quote_char}'.format(quote_char=quote_char),
-                str(q)
+                  'SELECT SUM({quote_char}foo{quote_char}),{quote_char}bar{quote_char} '
+                  '{quote_char}bar01{quote_char} '
+                  'FROM {quote_char}abc{quote_char} '
+                  'GROUP BY {quote_char}bar01{quote_char}'.format(quote_char=quote_char),
+                  str(q)
             )
 
     def test_groupby__alias_with_join(self):
@@ -467,14 +467,14 @@ class GroupByTests(unittest.TestCase):
 
     def test_groupby_with_case_uses_the_alias(self):
         q = Query.from_(self.t).select(
-            fn.Sum(self.t.foo).as_('bar'),
-            Case()
-                .when(self.t.fname == "Tom", "It was Tom")
-                .else_("It was someone else.").as_('who_was_it')
+              fn.Sum(self.t.foo).as_('bar'),
+              Case()
+                  .when(self.t.fname == "Tom", "It was Tom")
+                  .else_("It was someone else.").as_('who_was_it')
         ).groupby(
-            Case()
-                .when(self.t.fname == "Tom", "It was Tom")
-                .else_("It was someone else.").as_('who_was_it')
+              Case()
+                  .when(self.t.fname == "Tom", "It was Tom")
+                  .else_("It was someone else.").as_('who_was_it')
         )
 
         self.assertEqual("SELECT SUM(\"foo\") \"bar\","
@@ -529,22 +529,22 @@ class HavingTests(unittest.TestCase):
 
     def test_having_greater_than(self):
         q = Query.from_(self.table_abc).select(
-            self.table_abc.foo, fn.Sum(self.table_abc.bar)
+              self.table_abc.foo, fn.Sum(self.table_abc.bar)
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            fn.Sum(self.table_abc.bar) > 1
+              fn.Sum(self.table_abc.bar) > 1
         )
 
         self.assertEqual('SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar")>1', str(q))
 
     def test_having_and(self):
         q = Query.from_(self.table_abc).select(
-            self.table_abc.foo, fn.Sum(self.table_abc.bar)
+              self.table_abc.foo, fn.Sum(self.table_abc.bar)
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            (fn.Sum(self.table_abc.bar) > 1) & (fn.Sum(self.table_abc.bar) < 100)
+              (fn.Sum(self.table_abc.bar) > 1) & (fn.Sum(self.table_abc.bar) < 100)
         )
 
         self.assertEqual('SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar")>1 AND SUM("bar")<100',
@@ -552,17 +552,17 @@ class HavingTests(unittest.TestCase):
 
     def test_having_join_and_equality(self):
         q = Query.from_(self.table_abc).join(
-            self.table_efg
+              self.table_efg
         ).on(
-            self.table_abc.foo == self.table_efg.foo
+              self.table_abc.foo == self.table_efg.foo
         ).select(
-            self.table_abc.foo, fn.Sum(self.table_efg.bar), self.table_abc.buz
+              self.table_abc.foo, fn.Sum(self.table_efg.bar), self.table_abc.buz
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            self.table_abc.buz == 'fiz'
+              self.table_abc.buz == 'fiz'
         ).having(
-            fn.Sum(self.table_efg.bar) > 100
+              fn.Sum(self.table_efg.bar) > 100
         )
 
         self.assertEqual('SELECT "abc"."foo",SUM("efg"."bar"),"abc"."buz" FROM "abc" '
@@ -572,61 +572,61 @@ class HavingTests(unittest.TestCase):
 
     def test_mysql_query_uses_backtick_quote_chars(self):
         q = MySQLQuery.from_(self.table_abc).select(
-            self.table_abc.foo
+              self.table_abc.foo
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            self.table_abc.buz == 'fiz'
+              self.table_abc.buz == 'fiz'
         )
         self.assertEqual("SELECT `foo` FROM `abc` GROUP BY `foo` HAVING `buz`='fiz'", str(q))
 
     def test_vertica_query_uses_double_quote_chars(self):
         q = VerticaQuery.from_(self.table_abc).select(
-            self.table_abc.foo
+              self.table_abc.foo
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            self.table_abc.buz == 'fiz'
+              self.table_abc.buz == 'fiz'
         )
         self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
 
     def test_mssql_query_uses_double_quote_chars(self):
         q = MSSQLQuery.from_(self.table_abc).select(
-            self.table_abc.foo
+              self.table_abc.foo
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            self.table_abc.buz == 'fiz'
+              self.table_abc.buz == 'fiz'
         )
         self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
 
     def test_oracle_query_uses_double_quote_chars(self):
         q = OracleQuery.from_(self.table_abc).select(
-            self.table_abc.foo
+              self.table_abc.foo
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            self.table_abc.buz == 'fiz'
+              self.table_abc.buz == 'fiz'
         )
         self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
 
     def test_postgres_query_uses_double_quote_chars(self):
         q = PostgreSQLQuery.from_(self.table_abc).select(
-            self.table_abc.foo
+              self.table_abc.foo
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            self.table_abc.buz == 'fiz'
+              self.table_abc.buz == 'fiz'
         )
         self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
 
     def test_redshift_query_uses_double_quote_chars(self):
         q = RedshiftQuery.from_(self.table_abc).select(
-            self.table_abc.foo
+              self.table_abc.foo
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         ).having(
-            self.table_abc.buz == 'fiz'
+              self.table_abc.buz == 'fiz'
         )
         self.assertEqual("SELECT \"foo\" FROM \"abc\" GROUP BY \"foo\" HAVING \"buz\"='fiz'", str(q))
 
@@ -666,8 +666,8 @@ class OrderByTests(unittest.TestCase):
             .orderby(bar)
 
         self.assertEqual(
-            'SELECT SUM("foo"),"bar" "bar01" FROM "abc" ORDER BY "bar"',
-            q.get_sql(orderby_alias=False))
+              'SELECT SUM("foo"),"bar" "bar01" FROM "abc" ORDER BY "bar"',
+              q.get_sql(orderby_alias=False))
 
     def test_orderby_alias(self):
         bar = self.t.bar.as_('bar01')
@@ -676,8 +676,9 @@ class OrderByTests(unittest.TestCase):
             .orderby(bar)
 
         self.assertEqual(
-            'SELECT SUM("foo"),"bar" "bar01" FROM "abc" ORDER BY "bar01"',
-            q.get_sql())
+              'SELECT SUM("foo"),"bar" "bar01" FROM "abc" ORDER BY "bar01"',
+              q.get_sql())
+
 
 class AliasTests(unittest.TestCase):
     t = Table('abc')
@@ -775,6 +776,11 @@ class AliasTests(unittest.TestCase):
         table = Table('abc', schema='schema', alias='alias')
         self.assertEqual('"schema"."abc" "alias"', str(table))
 
+    def test_null_value_with_alias(self):
+        q = Query.select(NullValue().as_('abcdef'))
+
+        self.assertEqual('SELECT NULL "abcdef"', str(q))
+
 
 class SubqueryTests(unittest.TestCase):
     maxDiff = None
@@ -783,7 +789,7 @@ class SubqueryTests(unittest.TestCase):
 
     def test_where__in(self):
         q = Query.from_(self.table_abc).select('*').where(self.table_abc.foo.isin(
-            Query.from_(self.table_efg).select(self.table_efg.foo).where(self.table_efg.bar == 0)
+              Query.from_(self.table_efg).select(self.table_efg.foo).where(self.table_efg.bar == 0)
         ))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" IN (SELECT "foo" FROM "efg" WHERE "bar"=0)', str(q))
@@ -792,7 +798,7 @@ class SubqueryTests(unittest.TestCase):
         subquery = Query.from_('efg').select('fiz', 'buz').where(F('buz') == 0)
 
         q = Query.from_(self.table_abc).join(subquery).on(
-            self.table_abc.bar == subquery.buz
+              self.table_abc.bar == subquery.buz
         ).select(self.table_abc.foo, subquery.fiz)
 
         self.assertEqual('SELECT "abc"."foo","sq0"."fiz" FROM "abc" '
@@ -830,8 +836,8 @@ class SubqueryTests(unittest.TestCase):
     def test_where__equality(self):
         subquery = Query.from_('efg').select('fiz').where(F('buz') == 0)
         query = Query.from_(self.table_abc).select(
-            self.table_abc.foo,
-            self.table_abc.bar
+              self.table_abc.foo,
+              self.table_abc.bar
         ).where(self.table_abc.bar == subquery)
 
         self.assertEqual('SELECT "foo","bar" FROM "abc" '
@@ -839,9 +845,9 @@ class SubqueryTests(unittest.TestCase):
 
     def test_select_from_nested_query(self):
         subquery = Query.from_(self.table_abc).select(
-            self.table_abc.foo,
-            self.table_abc.bar,
-            (self.table_abc.fizz + self.table_abc.buzz).as_('fizzbuzz'),
+              self.table_abc.foo,
+              self.table_abc.bar,
+              (self.table_abc.fizz + self.table_abc.buzz).as_('fizzbuzz'),
         )
 
         query = Query.from_(subquery).select(subquery.foo, subquery.bar, subquery.fizzbuzz)
@@ -854,21 +860,21 @@ class SubqueryTests(unittest.TestCase):
 
     def test_select_from_nested_query_with_join(self):
         subquery1 = Query.from_(self.table_abc).select(
-            self.table_abc.foo,
-            fn.Sum(self.table_abc.fizz + self.table_abc.buzz).as_('fizzbuzz'),
+              self.table_abc.foo,
+              fn.Sum(self.table_abc.fizz + self.table_abc.buzz).as_('fizzbuzz'),
         ).groupby(
-            self.table_abc.foo
+              self.table_abc.foo
         )
 
         subquery2 = Query.from_(self.table_efg).select(
-            self.table_efg.foo.as_('foo_two'),
-            self.table_efg.bar,
+              self.table_efg.foo.as_('foo_two'),
+              self.table_efg.bar,
         )
 
         query = Query.from_(subquery1).select(
-            subquery1.foo, subquery1.fizzbuzz
+              subquery1.foo, subquery1.fizzbuzz
         ).join(subquery2).on(subquery1.foo == subquery2.foo_two).select(
-            subquery2.foo_two, subquery2.bar
+              subquery2.foo_two, subquery2.bar
         )
 
         self.assertEqual('SELECT '
@@ -920,8 +926,8 @@ class SubqueryTests(unittest.TestCase):
                       .select('*'))
 
         self.assertEqual(
-            'WITH an_alias AS (SELECT "fizz" FROM "efg") SELECT * FROM an_alias',
-            str(test_query))
+              'WITH an_alias AS (SELECT "fizz" FROM "efg") SELECT * FROM an_alias',
+              str(test_query))
 
     def test_join_with_with(self):
         sub_query = (Query
@@ -934,9 +940,9 @@ class SubqueryTests(unittest.TestCase):
                       .on(AliasedQuery('an_alias').fizz == self.table_abc.buzz)
                       .select('*'))
         self.assertEqual(
-            'WITH an_alias AS (SELECT "fizz" FROM "efg") '
-            'SELECT * FROM "abc" JOIN an_alias ON "an_alias"."fizz"="abc"."buzz"',
-            str(test_query))
+              'WITH an_alias AS (SELECT "fizz" FROM "efg") '
+              'SELECT * FROM "abc" JOIN an_alias ON "an_alias"."fizz"="abc"."buzz"',
+              str(test_query))
 
 
 class QuoteTests(unittest.TestCase):
