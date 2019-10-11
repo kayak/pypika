@@ -73,3 +73,6 @@ ENV/
 
 # OS X
 .DS_Store
+
+# misc
+/playground.py
