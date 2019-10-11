@@ -65,6 +65,7 @@ from pypika.terms import (
     Criterion,
     EmptyCriterion,
     Field,
+    Index,
     Interval,
     JSON,
     Not,

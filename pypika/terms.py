@@ -478,6 +478,18 @@ class Field(Criterion, JSON):
         return field_sql
 
 
+class Index(Term):
+    def __init__(self, name, alias=None):
+        super(Index, self).__init__(alias)
+        self.name = name
+
+    def fields(self):
+        return None
+
+    def get_sql(self, quote_char=None, secondary_quote_char="'", **kwargs):
+        return format_quotes(self.name, quote_char)
+
+
 class Star(Field):
     def __init__(self, table=None):
         super(Star, self).__init__('*', table=table)

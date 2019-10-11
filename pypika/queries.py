@@ -10,6 +10,7 @@ from pypika.terms import (
     EmptyCriterion,
     Field,
     Function,
+    Index,
     Rollup,
     Star,
     Term,
@@ -628,10 +629,10 @@ class QueryBuilder(Selectable, Term):
     @builder
     def force_index(self, *terms):
         for term in terms:
-            if isinstance(term, Field):
+            if isinstance(term, Index):
                 self._force_indexes.append(term)
             elif isinstance(term, str):
-                self._force_indexes.append(Field(term, table=self._from[0]))
+                self._force_indexes.append(Index(term))
         if len(self._force_indexes) == 0:
             raise TypeError("No proper index provided for FORCE INDEX.")
 
@@ -1071,7 +1072,7 @@ class QueryBuilder(Selectable, Term):
 
     def _force_index_sql(self, **kwargs):
         return ' FORCE INDEX({indexes})'.format(indexes=','.join(
-            index.get_sql(with_alias=True, subquery=True, **kwargs)
+            index.get_sql(with_alias=False, subquery=True, **kwargs)
             for index in self._force_indexes),
         )
 
