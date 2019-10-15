@@ -4,6 +4,7 @@ from pypika.enums import Dialects
 from pypika.queries import (
     Query,
     QueryBuilder,
+    Table,
 )
 from pypika.terms import (
     ArithmeticExpression,
@@ -103,7 +104,7 @@ class MySQLLoadQueryBuilder:
 
     @builder
     def into(self, table):
-        self._into_table = table
+        self._into_table = table if isinstance(table, Table) else Table(table)
 
     def get_sql(self, *args, **kwargs):
         querystring = ''
@@ -172,7 +173,7 @@ class VerticaCopyQueryBuilder:
 
     @builder
     def copy_(self, table):
-        self._copy_table = table
+        self._copy_table = table if isinstance(table, Table) else Table(table)
 
     def get_sql(self, *args, **kwargs):
         querystring = ''
