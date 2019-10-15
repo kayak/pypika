@@ -92,6 +92,41 @@ class MySQLQueryBuilder(QueryBuilder):
         )
 
 
+class MySQLLoadQueryBuilder:
+    def __init__(self):
+        self._load_file = None
+        self._into_table = None
+
+    @builder
+    def load(self, fp):
+        self._load_file = fp
+
+    @builder
+    def into(self, table):
+        self._into_table = table
+
+    def get_sql(self, *args, **kwargs):
+        querystring = ''
+        if self._load_file and self._into_table:
+            querystring += self._load_file_sql(**kwargs)
+            querystring += self._into_table_sql(**kwargs)
+            querystring += self._options_sql(**kwargs)
+
+        return querystring
+
+    def _load_file_sql(self, **kwargs):
+        return 'LOAD DATA LOCAL INFILE \'{}\''.format(self._load_file)
+
+    def _into_table_sql(self, **kwargs):
+        return ' INTO TABLE `{}`'.format(self._into_table.get_sql(**kwargs))
+
+    def _options_sql(self, **kwargs):
+        return ' FIELDS TERMINATED BY \',\''
+
+    def __str__(self):
+        return self.get_sql()
+
+
 class MySQLQuery(Query):
     """
     Defines a query class for use with MySQL.
@@ -100,6 +135,10 @@ class MySQLQuery(Query):
     @classmethod
     def _builder(cls):
         return MySQLQueryBuilder()
+
+    @classmethod
+    def load(cls, fp):
+        return MySQLLoadQueryBuilder().load(fp)
 
 
 class VerticaQueryBuilder(QueryBuilder):
@@ -122,6 +161,41 @@ class VerticaQueryBuilder(QueryBuilder):
         return sql
 
 
+class VerticaCopyQueryBuilder:
+    def __init__(self):
+        self._copy_table = None
+        self._from_file = None
+
+    @builder
+    def from_file(self, fp):
+        self._from_file = fp
+
+    @builder
+    def copy_(self, table):
+        self._copy_table = table
+
+    def get_sql(self, *args, **kwargs):
+        querystring = ''
+        if self._copy_table and self._from_file:
+            querystring += self._copy_table_sql(**kwargs)
+            querystring += self._from_file_sql(**kwargs)
+            querystring += self._options_sql(**kwargs)
+
+        return querystring
+
+    def _copy_table_sql(self, **kwargs):
+        return 'COPY \"{}\"'.format(self._copy_table.get_sql(**kwargs))
+
+    def _from_file_sql(self, **kwargs):
+        return ' FROM \"{}\"'.format(self._from_file)
+
+    def _options_sql(self, **kwargs):
+        return ' PARSER fcsvparser()'
+
+    def __str__(self):
+        return self.get_sql()
+
+
 class VerticaQuery(Query):
     """
     Defines a query class for use with Vertica.
@@ -130,6 +204,10 @@ class VerticaQuery(Query):
     @classmethod
     def _builder(cls):
         return VerticaQueryBuilder()
+
+    @classmethod
+    def from_file(cls, fp):
+        return VerticaCopyQueryBuilder().from_file(fp)
 
 
 class OracleQueryBuilder(QueryBuilder):
