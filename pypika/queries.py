@@ -627,14 +627,12 @@ class QueryBuilder(Selectable, Term):
         self._replace = True
 
     @builder
-    def force_index(self, *terms):
-        for term in terms:
-            if isinstance(term, Index):
-                self._force_indexes.append(term)
-            elif isinstance(term, str):
-                self._force_indexes.append(Index(term))
-        if len(self._force_indexes) == 0:
-            raise TypeError("No proper index provided for FORCE INDEX.")
+    def force_index(self, term, *terms):
+        for t in (term, *terms):
+            if isinstance(t, Index):
+                self._force_indexes.append(t)
+            elif isinstance(t, str):
+                self._force_indexes.append(Index(t))
 
     @builder
     def distinct(self):
@@ -1071,8 +1069,8 @@ class QueryBuilder(Selectable, Term):
         ))
 
     def _force_index_sql(self, **kwargs):
-        return ' FORCE INDEX({indexes})'.format(indexes=','.join(
-            index.get_sql(with_alias=False, subquery=True, **kwargs)
+        return ' FORCE INDEX ({indexes})'.format(indexes=','.join(
+            index.get_sql(**kwargs)
             for index in self._force_indexes),
         )
 
