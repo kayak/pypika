@@ -197,6 +197,21 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10 OFFSET 10', str(q1))
 
+    def test_select_with_force_index(self):
+        q = Query.from_('abc').select('foo').force_index('egg')
+
+        self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg")', str(q))
+
+    def test_select_with_force_index_multiple_indexes(self):
+        q = Query.from_('abc').select('foo').force_index('egg', 'bacon')
+
+        self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg","bacon")', str(q))
+
+    def test_select_with_force_index_multiple_calls(self):
+        q = Query.from_('abc').select('foo').force_index('egg',).force_index('spam')
+
+        self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg","spam")', str(q))
+
     def test_mysql_query_uses_backtick_quote_chars(self):
         q = MySQLQuery.from_('abc').select('foo', 'bar')
 
@@ -343,6 +358,10 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc"', str(q1))
 
+    def test_select_with_force_index_and_where(self):
+        q = Query.from_('abc').select('foo').where(self.t.foo == self.t.bar).force_index('egg')
+
+        self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo"="bar"', str(q))
 
 class PreWhereTests(WhereTests):
     t = Table('abc')
