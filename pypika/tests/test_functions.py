@@ -400,6 +400,16 @@ class StringTests(unittest.TestCase):
 
         self.assertEqual("SELECT SUBSTRING(\"foo\",2,6) FROM \"abc\"", str(q))
 
+    def test__raw__sql_on_select(self):
+        q = Q.from_(self.t).select(fn.Raw('current_date'))
+
+        self.assertEqual("SELECT current_date FROM \"abc\"", str(q))
+
+    def test__raw__sql_on_where(self):
+        q = Q.from_(self.t).select('foo').where(fn.Raw('foo != bar'))
+
+        self.assertEqual("SELECT \"foo\" FROM \"abc\" WHERE foo != bar", str(q))
+
 
 class SplitPartFunctionTests(unittest.TestCase):
     t = T('abc')

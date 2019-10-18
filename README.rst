@@ -660,6 +660,27 @@ using the ``when`` method and to set the default value using ``else_``.
     SELECT "id",CASE WHEN "fname"='Tom' THEN 'It was Tom' WHEN "fname"='John' THEN 'It was John' ELSE 'It was someone else.' END "who_was_it" FROM "customers"
 
 
+Raw SQL
+"""""""""""""""
+
+Raw SQL allows us to use any string on queries, as some functions that are not covered by PyPika in some
+different dialects.
+
+
+.. code-block:: python
+
+    from pypika import functions as fn
+
+    customers = Tables('customers')
+    q = Query.from_(customers).select(
+        customers.id,
+        fn.Raw('current_date'),
+    )
+
+.. code-block:: sql
+
+    SELECT id,current_date FROM customers
+
 Inserting Data
 ^^^^^^^^^^^^^^
 

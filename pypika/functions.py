@@ -40,6 +40,14 @@ class Count(DistinctOptionFunction):
         is_star = isinstance(param, str) and '*' == param
         super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)
 
+class Raw(Function):
+    def __init__(self, term):
+        self.term = term
+        super(Raw, self).__init__(term)
+
+    def get_function_sql(self, **kwargs):
+        return self.term
+
 
 # Arithmetic Functions
 class Sum(DistinctOptionFunction):
@@ -302,3 +310,4 @@ class IfNull(Function):
 class NVL(Function):
     def __init__(self, condition, term, alias=None):
         super(NVL, self).__init__('NVL', condition, term, alias=alias)
+
