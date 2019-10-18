@@ -6,6 +6,7 @@ from pypika import (
     ClickHouseQuery,
     EmptyCriterion,
     Field as F,
+    Index,
     MSSQLQuery,
     MySQLQuery,
     NullValue,
@@ -199,6 +200,12 @@ class SelectTests(unittest.TestCase):
 
     def test_select_with_force_index(self):
         q = Query.from_('abc').select('foo').force_index('egg')
+
+        self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg")', str(q))
+
+    def test_select_with_force_index_with_index_object(self):
+        index = Index('egg')
+        q = Query.from_('abc').select('foo').force_index(index)
 
         self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg")', str(q))
 
