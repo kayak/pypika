@@ -710,7 +710,7 @@ class ContainsCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         # FIXME escape
-        return "{term} {not_}IN {container}".format(
+        return '{term} {not_}IN ({container})'.format(
               term=self.term.get_sql(**kwargs),
               container=self.container.get_sql(**kwargs),
               not_='NOT ' if self._is_negated else ''
