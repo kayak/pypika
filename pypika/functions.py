@@ -41,9 +41,9 @@ class Count(DistinctOptionFunction):
         super(Count, self).__init__('COUNT', Star() if is_star else param, alias=alias)
 
 class Raw(Function):
-    def __init__(self, term):
+    def __init__(self, term, alias=None):
         self.term = term
-        super(Raw, self).__init__(term)
+        super(Raw, self).__init__(term, alias=alias)
 
     def get_function_sql(self, **kwargs):
         return self.term

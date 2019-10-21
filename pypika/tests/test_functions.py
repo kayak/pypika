@@ -405,6 +405,11 @@ class StringTests(unittest.TestCase):
 
         self.assertEqual("SELECT current_date FROM \"abc\"", str(q))
 
+    def test__raw__sql_on_select_with_alias(self):
+        q = Q.from_(self.t).select(fn.Raw('current_date', 'now'))
+
+        self.assertEqual("SELECT current_date \"now\" FROM \"abc\"", str(q))
+
     def test__raw__sql_on_where(self):
         q = Q.from_(self.t).select('foo').where(fn.Raw('foo != bar'))
 
