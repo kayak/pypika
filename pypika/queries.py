@@ -10,6 +10,7 @@ from pypika.terms import (
     EmptyCriterion,
     Field,
     Function,
+    Index,
     Rollup,
     Star,
     Term,
@@ -440,6 +441,7 @@ class QueryBuilder(Selectable, Term):
 
         self._with = []
         self._selects = []
+        self._force_indexes = []
         self._columns = []
         self._values = []
         self._distinct = False
@@ -623,6 +625,14 @@ class QueryBuilder(Selectable, Term):
         else:
             self._validate_terms_and_append(*terms)
         self._replace = True
+
+    @builder
+    def force_index(self, term, *terms):
+        for t in (term, *terms):
+            if isinstance(t, Index):
+                self._force_indexes.append(t)
+            elif isinstance(t, str):
+                self._force_indexes.append(Index(t))
 
     @builder
     def distinct(self):
@@ -954,6 +964,9 @@ class QueryBuilder(Selectable, Term):
         if self._from:
             querystring += self._from_sql(**kwargs)
 
+        if self._force_indexes:
+            querystring += self._force_index_sql(**kwargs)
+
         if self._joins:
             querystring += " " + " ".join(join.get_sql(**kwargs)
                                           for join in self._joins)
@@ -1054,6 +1067,12 @@ class QueryBuilder(Selectable, Term):
               clause.get_sql(subquery=True, with_alias=True, **kwargs)
               for clause in self._from
         ))
+
+    def _force_index_sql(self, **kwargs):
+        return ' FORCE INDEX ({indexes})'.format(indexes=','.join(
+            index.get_sql(**kwargs)
+            for index in self._force_indexes),
+        )
 
     def _prewhere_sql(self, quote_char=None, **kwargs):
         return ' PREWHERE {prewhere}'.format(
