@@ -77,6 +77,16 @@ class Abs(AggregateFunction):
         super(Abs, self).__init__('ABS', term, alias=alias)
 
 
+class First(AggregateFunction):
+    def __init__(self, term, alias=None):
+        super(First, self).__init__('FIRST', term, alias=alias)
+
+
+class Last(AggregateFunction):
+    def __init__(self, term, alias=None):
+        super(Last, self).__init__('LAST', term, alias=alias)
+
+
 class Sqrt(Function):
     def __init__(self, term, alias=None):
         super(Sqrt, self).__init__('SQRT', term, alias=alias)
@@ -279,7 +289,7 @@ class Extract(Function):
 
     def get_special_params_sql(self, **kwargs):
         return 'FROM {field}'.format(
-            field=self.field,
+              field=self.field,
         )
 
 
