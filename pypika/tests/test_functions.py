@@ -261,6 +261,16 @@ class AggregationTests(unittest.TestCase):
 
         self.assertEqual('SELECT AVG(\"foo\") FROM \"abc\"', str(q))
 
+    def test__first(self):
+        q = Q.from_('abc').select(fn.First(F('foo')))
+
+        self.assertEqual('SELECT FIRST(\"foo\") FROM \"abc\"', str(q))
+
+    def test__last(self):
+        q = Q.from_('abc').select(fn.Last(F('foo')))
+
+        self.assertEqual('SELECT LAST(\"foo\") FROM \"abc\"', str(q))
+
     def test__min(self):
         q = Q.from_('abc').select(fn.Min(F('foo')))
 
