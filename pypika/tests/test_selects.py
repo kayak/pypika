@@ -794,6 +794,11 @@ class SubqueryTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" IN (SELECT "foo" FROM "efg" WHERE "bar"=0)', str(q))
 
+    def test_where__in_nested(self):
+        q = Query.from_(self.table_abc).select('*').where(self.table_abc.foo).isin(self.table_efg.select('*'))
+
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo" IN (SELECT * FROM "efg")', str(q))
+
     def test_join(self):
         subquery = Query.from_('efg').select('fiz', 'buz').where(F('buz') == 0)
 
