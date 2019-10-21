@@ -73,6 +73,7 @@ from pypika.terms import (
     Parameter,
     Rollup,
     Tuple,
+    CustomFunction,
 )
 # noinspection PyUnresolvedReferences
 from pypika.utils import (
@@ -82,6 +83,7 @@ from pypika.utils import (
     QueryException,
     RollupException,
     UnionException,
+    FunctionException,
 )
 
 __author__ = 'Timothy Heys'

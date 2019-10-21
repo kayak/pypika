@@ -31,6 +31,9 @@ class RollupException(Exception):
 class DialectNotSupported(Exception):
     pass
 
+class FunctionException(Exception):
+    pass
+
 
 def builder(func):
     """
