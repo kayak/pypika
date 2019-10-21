@@ -347,17 +347,15 @@ Grouping allows for aggregated results and works similar to ``SELECT`` clauses.
     from pypika import functions as fn
 
     customers = Table('customers')
-    q = Query.from_(customers).where(
-        customers.age >= 18
-    ).groupby(
-        customers.id
-    ).select(
-        customers.id, fn.Sum(customers.revenue)
-    )
+    q = Query \
+        .from_(customers) \
+        .where(customers.age >= 18) \
+        .groupby(customers.id) \
+        .select(customers.id, fn.Sum(customers.revenue))
 
 .. code-block:: sql
 
-    SELECT id,SUM(revenue) FROM customers WHERE age>=18 GROUP BY id ORDER BY id ASC
+    SELECT id,SUM("revenue") FROM "customers" WHERE "age">=18 GROUP BY "id"
 
 After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes available.  The method
 ``Query.having()`` takes a ``Criterion`` parameter similar to the method ``Query.where()``.
@@ -367,15 +365,12 @@ After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes ava
     from pypika import functions as fn
 
     payments = Table('payments')
-    q = Query.from_(payments).where(
-        payments.transacted[date(2015, 1, 1):date(2016, 1, 1)]
-    ).groupby(
-        payments.customer_id
-    ).having(
-        fn.Sum(payments.total) >= 1000
-    ).select(
-        payments.customer_id, fn.Sum(payments.total)
-    )
+    q = Query \
+        .from_(payments) \
+        .where(payments.transacted[date(2015, 1, 1):date(2016, 1, 1)]) \
+        .groupby(payments.customer_id) \
+        .having(fn.Sum(payments.total) >= 1000) \
+        .select(payments.customer_id, fn.Sum(payments.total))
 
 .. code-block:: sql
 
