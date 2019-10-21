@@ -483,7 +483,7 @@ class Index(Term):
         super(Index, self).__init__(alias)
         self.name = name
 
-    def get_sql(self, quote_char=None, secondary_quote_char="'", **kwargs):
+    def get_sql(self, quote_char=None, **kwargs):
         return format_quotes(self.name, quote_char)
 
 
