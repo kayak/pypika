@@ -1,7 +1,13 @@
 # coding: utf-8
 import unittest
 
-from pypika import Query, Tables, analytics as an, JoinType, Order
+from pypika import (
+    JoinType,
+    Order,
+    Query,
+    Tables,
+    analytics as an,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -526,6 +532,13 @@ class RankTests(unittest.TestCase):
                          'ROWS BETWEEN CURRENT ROW AND 8 FOLLOWING'
                          ') '
                          'FROM "abc"', str(q))
+
+    def test_empty_over(self):
+        query = Query.from_(self.table_abc).select(an.Sum(self.table_abc.fizz).over())
+
+        self.assertEqual('SELECT '
+                         'SUM("fizz") OVER() '
+                         'FROM "abc"', str(query))
 
     def test_rows_called_twice_raises_attribute_error(self):
         with self.assertRaises(AttributeError):
