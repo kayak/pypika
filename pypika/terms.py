@@ -1146,13 +1146,16 @@ class AnalyticFunction(Function):
         super(AnalyticFunction, self).__init__(name, *args, **kwargs)
         self._partition = []
         self._orderbys = []
+        self._include_over = False
 
     @builder
     def over(self, *terms):
+        self._include_over = True
         self._partition += terms
 
     @builder
     def orderby(self, *terms, **kwargs):
+        self._include_over = True
         self._orderbys += [(term, kwargs.get('order'))
                            for term in terms]
 
@@ -1187,7 +1190,7 @@ class AnalyticFunction(Function):
         function_sql = super(AnalyticFunction, self).get_function_sql(**kwargs)
         partition_sql = self.get_partition_sql(**kwargs)
 
-        if not partition_sql:
+        if not self._include_over:
             return function_sql
 
         return '{function_sql} OVER({partition_sql})'.format(
