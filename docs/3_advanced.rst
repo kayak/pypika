@@ -43,6 +43,23 @@ The `ROLLUP` modifier allows for aggregating to higher levels that the given gro
 
     SELECT "id","category",SUM("price") FROM "products" GROUP BY ROLLUP("id","category")
 
+Pseudo Column
+------------------
+
+A pseudo-column is an SQL assigned value (pseudo-field) used in the same context as an column, but not stored on disk.
+The pseudo-column can change from database to database, so here it's possible to define them.
+
+.. code-block:: python
+
+    from pypika import Query, PseudoColumn
+
+    CurrentDate = PseudoColumn('current_date')
+
+    Query.from_('products').select(CurrentDate)
+
+.. code-block:: sql
+
+    SELECT current_date FROM "products"
 
 Analytic Queries
 ----------------
