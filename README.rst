@@ -655,6 +655,34 @@ using the ``when`` method and to set the default value using ``else_``.
     SELECT "id",CASE WHEN "fname"='Tom' THEN 'It was Tom' WHEN "fname"='John' THEN 'It was John' ELSE 'It was someone else.' END "who_was_it" FROM "customers"
 
 
+With Clause
+"""""""""""""""
+
+With clause allows give a sub-query block a name, which can be referenced in several places within the main SQL query.
+The SQL WITH clause is basically a drop-in replacement to the normal sub-query. 
+
+.. code-block:: python
+
+    from pypika import Table, AliasedQuery, Query
+
+    customers = Table('customers')
+
+    sub_query = (Query
+                .from_(customers)
+                .select('*'))
+
+    test_query = (Query
+                .with_(sub_query, "an_alias")
+                .from_(AliasedQuery("an_alias"))
+                .select('*'))
+
+You can use as much as `.with_()` as you want.
+
+.. code-block:: sql
+
+    WITH an_alias AS (SELECT * FROM "customers") SELECT * FROM an_alias
+
+
 Inserting Data
 ^^^^^^^^^^^^^^
 
