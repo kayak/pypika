@@ -628,6 +628,30 @@ There are several string operations and function wrappers included in |Brand|.  
     SELECT id,CONCAT(fname, ' ', lname) full_name FROM customers
 
 
+Custom Functions
+"""""""""""""""""
+
+Custom Functions allows us to use any function on queries, as some functions are not covered by PyPika as default, we can appeal
+to Custom functions.
+
+.. code-block:: python
+
+    from pypika import CustomFunction
+
+    customers = Tables('customers')
+    DateDiff = CustomFunction('DATE_DIFF', ['interval', 'start_date', 'end_date'])
+
+    q = Query.from_(customers).select(
+        customers.id,
+        customers.fname,
+        customers.lname,
+        DateDiff('day', customers.created_date, customers.updated_date)
+    )
+
+.. code-block:: sql
+
+    SELECT id,fname,lname,DATE_DIFF('day',created_date,updated_date) FROM customers
+    
 Case Statements
 """""""""""""""
 

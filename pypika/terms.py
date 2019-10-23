@@ -19,6 +19,7 @@ from pypika.enums import (
 )
 from pypika.utils import (
     CaseException,
+    FunctionException,
     builder,
     format_alias_sql,
     format_quotes,
@@ -1067,6 +1068,31 @@ class Not(Criterion):
     @property
     def tables_(self):
         return self.term.tables_
+
+
+class CustomFunction():
+    def __init__(self, name, params=None):
+        self.name = name
+        self.params = params
+
+    def __call__(self, *args, **kwargs):
+        if not self._has_params():
+            return Function(self.name, alias=kwargs.get('alias'))
+
+        if not self._is_valid_function_call(*args):
+            raise FunctionException("Function {name} require these arguments ({params}), ({args}) passed".format(
+                                        name=self.name,
+                                        params=', '.join(str(p) for p in self.params),
+                                        args=', '.join(str(p) for p in args)
+                                    ))
+
+        return Function(self.name, *args, alias=kwargs.get('alias'))
+
+    def _has_params(self):
+        return self.params is not None
+
+    def _is_valid_function_call(self, *args):
+        return len(args) == len(self.params)
 
 
 class Function(Criterion):
