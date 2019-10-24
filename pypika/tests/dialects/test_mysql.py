@@ -1,7 +1,9 @@
 import unittest
 
-from pypika import Table
-from pypika.dialects import MySQLQuery
+from pypika import (
+    Table,
+    MySQLQuery,
+)
 
 
 class SelectTests(unittest.TestCase):
