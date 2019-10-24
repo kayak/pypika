@@ -4,6 +4,7 @@ from pypika.enums import Dialects
 from pypika.queries import (
     Query,
     QueryBuilder,
+    CreateQueryBuilder,
     Table,
 )
 from pypika.terms import (
@@ -162,6 +163,50 @@ class VerticaQueryBuilder(QueryBuilder):
         return sql
 
 
+class VerticaCreateQueryBuilder(CreateQueryBuilder):
+    def __init__(self):
+        super(VerticaCreateQueryBuilder, self).__init__(dialect=Dialects.VERTICA)
+        self._local = False
+        self._preserve_rows = False
+
+    @builder
+    def local(self):
+        if not self._temporary:
+            raise AttributeError("'Query' object has no attribute temporary")
+
+        self._local = True
+
+    @builder
+    def preserve_rows(self):
+        if not self._temporary:
+            raise AttributeError("'Query' object has no attribute temporary")
+
+        self._preserve_rows = True
+
+    def _create_table_sql(self, **kwargs):
+        return 'CREATE {local}{temporary}TABLE {table}'.format(
+              local='LOCAL ' if self._local else '',
+              temporary='TEMPORARY ' if self._temporary else '',
+              table=self._create_table.get_sql(**kwargs),
+        )
+
+    def _columns_sql(self, **kwargs):
+        return ' ({columns}){preserve_rows}'.format(
+              columns=','.join(column.get_sql(**kwargs)
+                               for column in self._columns),
+              preserve_rows=self._preserve_rows_sql()
+        )
+
+    def _as_select_sql(self, **kwargs):
+        return '{preserve_rows} AS ({query})'.format(
+              preserve_rows=self._preserve_rows_sql(),
+              query=self._as_select.get_sql(**kwargs),
+        )
+
+    def _preserve_rows_sql(self):
+        return ' ON COMMIT PRESERVE ROWS' if self._preserve_rows else ''
+
+
 class VerticaCopyQueryBuilder:
     def __init__(self):
         self._copy_table = None
@@ -185,13 +230,13 @@ class VerticaCopyQueryBuilder:
         return querystring
 
     def _copy_table_sql(self, **kwargs):
-        return 'COPY \"{}\"'.format(self._copy_table.get_sql(**kwargs))
+        return 'COPY "{}"'.format(self._copy_table.get_sql(**kwargs))
 
     def _from_file_sql(self, **kwargs):
-        return ' FROM \"{}\"'.format(self._from_file)
+        return ' FROM LOCAL \'{}\''.format(self._from_file)
 
     def _options_sql(self, **kwargs):
-        return ' PARSER fcsvparser()'
+        return ' PARSER fcsvparser(header=false)'
 
     def __str__(self):
         return self.get_sql()
@@ -209,6 +254,10 @@ class VerticaQuery(Query):
     @classmethod
     def from_file(cls, fp):
         return VerticaCopyQueryBuilder().from_file(fp)
+
+    @classmethod
+    def create_table(cls, table):
+        return VerticaCreateQueryBuilder().create_table(table)
 
 
 class OracleQueryBuilder(QueryBuilder):

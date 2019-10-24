@@ -54,8 +54,10 @@ from pypika.queries import (
     Query,
     Schema,
     Table,
+    Column,
     Database,
     make_tables as Tables,
+    make_columns as Columns,
 )
 # noinspection PyUnresolvedReferences
 from pypika.terms import (

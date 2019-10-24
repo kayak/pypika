@@ -206,9 +206,9 @@ class Table(Selectable):
 
 def make_tables(*names, **kwargs):
     """
-        Shortcut to create many tables. If `names` param is a tuple, the first
-        position will refer to the `_table_name` while the second will be its `alias`.
-        Any other data structure will be treated as a whole as the `_table_name`
+    Shortcut to create many tables. If `names` param is a tuple, the first
+    position will refer to the `_table_name` while the second will be its `alias`.
+    Any other data structure will be treated as a whole as the `_table_name`.
     """
     tables = []
     for name in names:
@@ -218,6 +218,42 @@ def make_tables(*names, **kwargs):
             t = Table(name=name, schema=kwargs.get('schema'))
         tables.append(t)
     return tables
+
+
+class Column:
+    def __init__(self, column_name, column_type=None):
+        self.name = column_name
+        self.type = column_type
+
+    def get_sql(self, **kwargs):
+        quote_char = kwargs.get('quote_char')
+
+        column_sql = '{name}{type}'.format(
+              name=format_quotes(self.name, quote_char),
+              type=' {}'.format(self.type) if self.type else '',
+        )
+
+        return column_sql
+
+    def __str__(self):
+        return self.get_sql(quote_char='"')
+
+
+def make_columns(*names):
+    """
+    Shortcut to create many columns. If `names` param is a tuple, the first
+    position will refer to the `name` while the second will be its `type`.
+    Any other data structure will be treated as a whole as the `name`.
+    """
+    columns = []
+    for name in names:
+        if isinstance(name, tuple) and len(name) == 2:
+            column = Column(column_name=name[0], column_type=name[1])
+        else:
+            column = Column(column_name=name)
+        columns.append(column)
+
+    return columns
 
 
 class Query:
@@ -247,6 +283,18 @@ class Query:
         :returns QueryBuilder
         """
         return cls._builder().from_(table)
+
+    @classmethod
+    def create_table(cls, table):
+        """
+        Query builder entry point. Initializes query building and sets the table name to be created. When using this
+        function, the query becomes a CREATE statement.
+
+        :param table: An instance of a Table object or a string table name.
+
+        :return: CreateQueryBuilder
+        """
+        return CreateQueryBuilder().create_table(table)
 
     @classmethod
     def into(cls, table):
@@ -1298,3 +1346,98 @@ class JoinUsing(Join):
         """
         self.item = new_table if self.item == current_table else self.item
         self.fields = [field.replace_table(current_table, new_table) for field in self.fields]
+
+
+class CreateQueryBuilder:
+    """
+    Query builder used to build CREATE queries.
+    """
+    QUOTE_CHAR = '"'
+    SECONDARY_QUOTE_CHAR = "'"
+    ALIAS_QUOTE_CHAR = None
+
+    def __init__(self, dialect=None):
+        self._create_table = None
+        self._temporary = False
+        self._as_select = None
+        self._columns = []
+        self.dialect = dialect
+
+    def _set_kwargs_defaults(self, kwargs):
+        kwargs.setdefault('quote_char', self.QUOTE_CHAR)
+        kwargs.setdefault('secondary_quote_char', self.SECONDARY_QUOTE_CHAR)
+        kwargs.setdefault('dialect', self.dialect)
+
+    def get_sql(self, **kwargs):
+        self._set_kwargs_defaults(kwargs)
+
+        if not self._create_table:
+            return ''
+
+        if not self._columns and not self._as_select:
+            return ''
+
+        querystring = self._create_table_sql(**kwargs)
+
+        if self._columns:
+            querystring += self._columns_sql(**kwargs)
+        else:
+            querystring += self._as_select_sql(**kwargs)
+
+        return querystring
+
+    @builder
+    def create_table(self, table):
+        if self._create_table:
+            raise AttributeError("'Query' object already has attribute create_table")
+
+        self._create_table = table if isinstance(table, Table) else Table(table)
+
+    @builder
+    def temporary(self):
+        self._temporary = True
+
+    @builder
+    def columns(self, *columns):
+        if self._as_select:
+            raise AttributeError("'Query' object already has attribute as_select")
+
+        for column in columns:
+            if isinstance(column, str):
+                column = Column(column)
+            elif isinstance(column, tuple):
+                column = Column(column_name=column[0], column_type=column[1])
+            self._columns.append(column)
+
+    @builder
+    def as_select(self, query_builder):
+        if self._columns:
+            raise AttributeError("'Query' object already has attribute columns")
+
+        if not isinstance(query_builder, QueryBuilder):
+            raise TypeError("Expected 'item' to be instance of QueryBuilder")
+
+        self._as_select = query_builder
+
+    def _create_table_sql(self, **kwargs):
+        return 'CREATE {temporary}TABLE {table}'.format(
+              temporary='TEMPORARY ' if self._temporary else '',
+              table=self._create_table.get_sql(**kwargs),
+        )
+
+    def _columns_sql(self, **kwargs):
+        return ' ({columns})'.format(
+              columns=','.join(column.get_sql(**kwargs)
+                               for column in self._columns)
+        )
+
+    def _as_select_sql(self, **kwargs):
+        return ' AS ({query})'.format(
+              query=self._as_select.get_sql(**kwargs),
+        )
+
+    def __str__(self):
+        return self.get_sql()
+
+    def __repr__(self):
+        return self.__str__()
