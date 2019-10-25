@@ -651,7 +651,7 @@ to Custom functions.
 .. code-block:: sql
 
     SELECT id,fname,lname,DATE_DIFF('day',created_date,updated_date) FROM customers
-    
+
 Case Statements
 """""""""""""""
 
@@ -683,7 +683,7 @@ With Clause
 """""""""""""""
 
 With clause allows give a sub-query block a name, which can be referenced in several places within the main SQL query.
-The SQL WITH clause is basically a drop-in replacement to the normal sub-query. 
+The SQL WITH clause is basically a drop-in replacement to the normal sub-query.
 
 .. code-block:: python
 
@@ -843,7 +843,7 @@ PyPika allows update queries to be constructed with or without where clauses.
 
     Query.update(customers).set(customers.last_login, '2017-01-01 10:00:00')
 
-    Query.update(customers).set(customers.lname, smith).where(customers.id == 10)
+    Query.update(customers).set(customers.lname, 'smith').where(customers.id == 10)
 
 .. code-block:: sql
 
