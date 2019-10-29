@@ -1325,7 +1325,7 @@ class JoinUsing(Join):
         join_sql = super(JoinUsing, self).get_sql(**kwargs)
         return '{join} USING ({fields})'.format(
               join=join_sql,
-              fields=','.join(str(field) for field in self.fields)
+              fields=','.join(field.get_sql(**kwargs) for field in self.fields)
         )
 
     def validate(self, _from, _joins):

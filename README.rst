@@ -441,7 +441,7 @@ Example of a join using `USING`
     history, customers = Tables('history', 'customers')
     q = Query.from_(history).join(
         customers
-    ).on(
+    ).using(
         'customer_id'
     ).select(
         history.star

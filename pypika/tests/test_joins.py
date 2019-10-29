@@ -92,6 +92,11 @@ class SelectQueryJoinTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" USING ("foo","bar")', str(query))
 
+    def test_join_using_with_quote_char(self):
+        query = Query.from_(self.table0).join(self.table1).using('foo', 'bar').select('*')
+
+        self.assertEqual('SELECT * FROM abc JOIN efg USING (foo,bar)', query.get_sql(quote_char=''))
+
     def test_join_using_without_fields_raises_exception(self):
         with self.assertRaises(JoinException):
             query = Query.from_(self.table0).join(self.table1).using()
