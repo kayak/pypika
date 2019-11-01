@@ -387,21 +387,47 @@ a ``USING`` or ``ON`` clauses.  The ``USING`` clause can be used when both table
 the ``ON`` clause can be used with a criterion. To perform a join, ``...join()`` can be chained but then must be
 followed immediately by ``...on(<criterion>)`` or ``...using(*field)``.
 
+
+Join Types
+~~~~~~~~~~
+
+All join types are supported by |Brand|.
+
+.. code-block:: python
+
+    Query \
+        .from_(base_table)
+        ...
+        .join(join_table, JoinType.left)
+        ...
+
+
+.. code-block:: python
+
+    Query \
+        .from_(base_table)
+        ...
+        .left_join(join_table) \
+        .right_join(join_table) \
+        .inner_join(join_table) \
+        .outer_join(join_table) \
+        .cross_join(join_table) \
+        ...
+
+See the list of join types here :py:meth:`pypika.enums.JoinTypes`
+
 Example of a join using `ON`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
     history, customers = Tables('history', 'customers')
-    q = Query.from_(history).join(
-        customers
-    ).on(
-        history.customer_id == customers.id
-    ).select(
-        history.star
-    ).where(
-        customers.id == 5
-    )
+    q = Query \
+        .from_(history) \
+        .join(customers) \
+        .on(history.customer_id == customers.id) \
+        .select(history.star) \
+        .where(customers.id == 5)
 
 
 .. code-block:: sql
@@ -417,15 +443,12 @@ Example of a join using `ON`
 .. code-block:: python
 
     history, customers = Tables('history', 'customers')
-    q = Query.from_(history).join(
-        customers
-    ).on_field(
-        'customer_id', 'group'
-    ).select(
-        history.star
-    ).where(
-        customers.group == 'A'
-    )
+    q = Query \
+        .from_(history) \
+        .join(customers) \
+        .on_field('customer_id', 'group') \
+        .select(history.star) \
+        .where(customers.group == 'A')
 
 
 .. code-block:: sql
@@ -439,15 +462,12 @@ Example of a join using `USING`
 .. code-block:: python
 
     history, customers = Tables('history', 'customers')
-    q = Query.from_(history).join(
-        customers
-    ).using(
-        'customer_id'
-    ).select(
-        history.star
-    ).where(
-        customers.id == 5
-    )
+    q = Query \
+        .from_(history) \
+        .join(customers) \
+        .using('customer_id') \
+        .select(history.star) \
+        .where(customers.id == 5)
 
 
 .. code-block:: sql
