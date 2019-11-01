@@ -90,4 +90,4 @@ from pypika.utils import (
 
 __author__ = 'Timothy Heys'
 __email__ = 'theys@kayak.com'
-__version__ = '0.35.15'
+__version__ = '0.35.16'
