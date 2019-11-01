@@ -783,6 +783,21 @@ class QueryBuilder(Selectable, Term):
 
         raise ValueError("Cannot join on type '%s'" % type(item))
 
+    def inner_join(self, item):
+        return self.join(item, JoinType.inner)
+
+    def left_join(self, item):
+        return self.join(item, JoinType.left)
+
+    def right_join(self, item):
+        return self.join(item, JoinType.right)
+
+    def outer_join(self, item):
+        return self.join(item, JoinType.outer)
+
+    def cross_join(self, item):
+        return self.join(item, JoinType.cross)
+
     @builder
     def limit(self, limit):
         self._limit = limit
@@ -1118,8 +1133,8 @@ class QueryBuilder(Selectable, Term):
 
     def _force_index_sql(self, **kwargs):
         return ' FORCE INDEX ({indexes})'.format(indexes=','.join(
-            index.get_sql(**kwargs)
-            for index in self._force_indexes),
+              index.get_sql(**kwargs)
+              for index in self._force_indexes),
         )
 
     def _prewhere_sql(self, quote_char=None, **kwargs):

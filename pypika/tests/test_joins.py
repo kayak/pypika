@@ -20,32 +20,107 @@ __email__ = "theys@kayak.com"
 class SelectQueryJoinTests(unittest.TestCase):
     table0, table1, hij = Tables('abc', 'efg', 'hij')
 
-    def test_left_join(self):
-        query = Query.from_(self.table0).join(self.table1, how=JoinType.left).on(
-            self.table0.foo == self.table1.bar).select('*')
-
-        self.assertEqual('SELECT * FROM "abc" LEFT JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query))
-
-    def test_right_join(self):
-        q = Query.from_(self.table0).join(self.table1, how=JoinType.right).on(
-            self.table0.foo == self.table1.bar).select('*')
-
-        self.assertEqual('SELECT * FROM "abc" RIGHT JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
-
-    def test_inner_join(self):
-        query = Query.from_(self.table0).join(self.table1).on(
-            self.table0.foo == self.table1.bar).select('*')
-        query_explicit = Query.from_(self.table0).join(self.table1, how=JoinType.inner).on(
-            self.table0.foo == self.table1.bar).select('*')
+    def test_default_join_type(self):
+        query = Query \
+            .from_(self.table0) \
+            .join(self.table1) \
+            .on(self.table0.foo == self.table1.bar). \
+            select('*')
 
         self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query))
-        self.assertEqual('SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"', str(query_explicit))
+
+    def test_inner_join(self):
+        expected = 'SELECT * FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"'
+
+        with self.subTest('join with enum'):
+            query = Query \
+                .from_(self.table0) \
+                .join(self.table1, how=JoinType.inner) \
+                .on(self.table0.foo == self.table1.bar).select('*')
+            self.assertEqual(expected, str(query))
+
+        with self.subTest('join function'):
+            query = Query \
+                .from_(self.table0) \
+                .inner_join(self.table1) \
+                .on(self.table0.foo == self.table1.bar).select('*')
+            self.assertEqual(expected, str(query))
+
+    def test_left_join(self):
+        expected = 'SELECT * FROM "abc" LEFT JOIN "efg" ON "abc"."foo"="efg"."bar"'
+
+        with self.subTest('join with enum'):
+            query = Query \
+                .from_(self.table0) \
+                .join(self.table1, how=JoinType.left) \
+                .on(self.table0.foo == self.table1.bar) \
+                .select('*')
+
+            self.assertEqual(expected, str(query))
+
+        with self.subTest('join function'):
+            query = Query \
+                .from_(self.table0) \
+                .left_join(self.table1) \
+                .on(self.table0.foo == self.table1.bar).select('*')
+            self.assertEqual(expected, str(query))
+
+    def test_right_join(self):
+        expected = 'SELECT * FROM "abc" RIGHT JOIN "efg" ON "abc"."foo"="efg"."bar"'
+
+        with self.subTest('join with enum'):
+            query = Query \
+                .from_(self.table0) \
+                .join(self.table1, how=JoinType.right) \
+                .on(self.table0.foo == self.table1.bar) \
+                .select('*')
+
+            self.assertEqual(expected, str(query))
+
+        with self.subTest('join function'):
+            query = Query \
+                .from_(self.table0) \
+                .right_join(self.table1) \
+                .on(self.table0.foo == self.table1.bar).select('*')
+            self.assertEqual(expected, str(query))
 
     def test_outer_join(self):
-        q = Query.from_(self.table0).join(self.table1, how=JoinType.outer).on(
-              self.table0.foo == self.table1.bar).select('*')
+        expected = 'SELECT * FROM "abc" FULL OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"'
 
-        self.assertEqual('SELECT * FROM "abc" FULL OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"', str(q))
+        with self.subTest('join with enum'):
+            query = Query \
+                .from_(self.table0) \
+                .join(self.table1, how=JoinType.outer) \
+                .on(self.table0.foo == self.table1.bar) \
+                .select('*')
+
+            self.assertEqual(expected, str(query))
+
+        with self.subTest('join function'):
+            query = Query \
+                .from_(self.table0) \
+                .outer_join(self.table1) \
+                .on(self.table0.foo == self.table1.bar).select('*')
+            self.assertEqual(expected, str(query))
+
+    def test_cross_join(self):
+        expected = 'SELECT * FROM "abc" CROSS JOIN "efg" ON "abc"."foo"="efg"."bar"'
+
+        with self.subTest('join with enum'):
+            query = Query \
+                .from_(self.table0) \
+                .join(self.table1, how=JoinType.cross) \
+                .on(self.table0.foo == self.table1.bar) \
+                .select('*')
+
+            self.assertEqual(expected, str(query))
+
+        with self.subTest('join function'):
+            query = Query \
+                .from_(self.table0) \
+                .cross_join(self.table1) \
+                .on(self.table0.foo == self.table1.bar).select('*')
+            self.assertEqual(expected, str(query))
 
     def test_left_outer_join(self):
         q = Query.from_(self.table0).join(self.table1, how=JoinType.left_outer).on(
@@ -75,8 +150,8 @@ class SelectQueryJoinTests(unittest.TestCase):
                          'AND "abc"."bar"="efg"."bar"', str(query))
 
     def test_join_on_field_multi_with_extra_join(self):
-        query = Query.from_(self.table0)\
-            .join(self.hij).on_field("buzz")\
+        query = Query.from_(self.table0) \
+            .join(self.hij).on_field("buzz") \
             .join(self.table1).on_field("foo", "bar").select('*')
 
         self.assertEqual('SELECT * FROM "abc" JOIN "hij" ON "abc"."buzz"="hij"."buzz" '
@@ -99,24 +174,24 @@ class SelectQueryJoinTests(unittest.TestCase):
 
     def test_join_using_without_fields_raises_exception(self):
         with self.assertRaises(JoinException):
-            query = Query.from_(self.table0).join(self.table1).using()
+            Query.from_(self.table0).join(self.table1).using()
 
     def test_join_on_field_without_fields_raises_exception(self):
         with self.assertRaises(JoinException):
-            query = Query.from_(self.table0).join(self.table1).on_field()
+            Query.from_(self.table0).join(self.table1).on_field()
 
     def test_join_arithmetic_field(self):
         q = Query.from_(self.table0).join(self.table1).on(
-            self.table0.dt == (self.table1.dt - Interval(weeks=1))).select('*')
+              self.table0.dt == (self.table1.dt - Interval(weeks=1))).select('*')
 
         self.assertEqual('SELECT * FROM "abc" '
                          'JOIN "efg" ON "abc"."dt"="efg"."dt"-INTERVAL \'1 WEEK\'', str(q))
 
     def test_join_with_arithmetic_function_in_select(self):
         q = Query.from_(
-            self.table0,
+              self.table0,
         ).join(self.table1).on(
-            self.table0.dt == (self.table1.dt - Interval(weeks=1))
+              self.table0.dt == (self.table1.dt - Interval(weeks=1))
         ).select(self.table0.fiz - self.table0.buz, self.table1.star)
 
         self.assertEqual('SELECT "abc"."fiz"-"abc"."buz","efg".* FROM "abc" '
@@ -124,7 +199,7 @@ class SelectQueryJoinTests(unittest.TestCase):
 
     def test_join_on_complex_criteria(self):
         q = Query.from_(self.table0).join(self.table1, how=JoinType.right).on(
-            (self.table0.foo == self.table1.fiz) & (self.table0.bar == self.table1.buz)
+              (self.table0.foo == self.table1.fiz) & (self.table0.bar == self.table1.buz)
         ).select('*')
 
         self.assertEqual('SELECT * FROM "abc" '
@@ -168,8 +243,8 @@ class SelectQueryJoinTests(unittest.TestCase):
         q_b = Query.from_(table_b).select('*').join(q_a).cross().select('*')
 
         self.assertEqual(
-            'SELECT * FROM "b" CROSS JOIN (SELECT * FROM "a") "sq0"',
-            str(q_b)
+              'SELECT * FROM "b" CROSS JOIN (SELECT * FROM "a") "sq0"',
+              str(q_b)
         )
 
     def test_join_on_collate(self):
@@ -188,10 +263,10 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_select__ordered_select_clauses(self):
         q = Query.from_(self.table_abc).join(self.table_efg).on(self.table_abc.foo == self.table_efg.bar).select(
-            self.table_abc.baz,
-            self.table_efg.buz,
-            self.table_abc.fiz,
-            self.table_efg.bam,
+              self.table_abc.baz,
+              self.table_efg.buz,
+              self.table_abc.fiz,
+              self.table_efg.bam,
         )
 
         self.assertEqual('SELECT "abc"."baz","efg"."buz","abc"."fiz","efg"."bam" FROM "abc" '
@@ -199,9 +274,9 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_select__star_for_table(self):
         q = Query.from_(self.table_abc).join(self.table_efg).on(
-            self.table_abc.foo == self.table_efg.bar
+              self.table_abc.foo == self.table_efg.bar
         ).join(self.table_hij).on(
-            self.table_abc.buz == self.table_hij.bam
+              self.table_abc.buz == self.table_hij.bam
         ).select(self.table_abc.star).select(self.table_efg.star).select(self.table_hij.star)
 
         self.assertEqual('SELECT "abc".*,"efg".*,"hij".* FROM "abc" '
@@ -210,13 +285,13 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_select__star_for_table__replacement(self):
         q = Query.from_(self.table_abc).join(self.table_efg).on(
-            self.table_abc.foo == self.table_efg.bar
+              self.table_abc.foo == self.table_efg.bar
         ).join(self.table_hij).on(
-            self.table_abc.buz == self.table_hij.bam
+              self.table_abc.buz == self.table_hij.bam
         ).select(
-            self.table_abc.foo, self.table_efg.bar, self.table_hij.bam
+              self.table_abc.foo, self.table_efg.bar, self.table_hij.bam
         ).select(
-            self.table_abc.star, self.table_efg.star, self.table_hij.star
+              self.table_abc.star, self.table_efg.star, self.table_hij.star
         )
 
         self.assertEqual('SELECT "abc".*,"efg".*,"hij".* FROM "abc" '
@@ -225,11 +300,11 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_select_fields_with_where(self):
         q = Query.from_(self.table_abc).join(
-            self.table_efg).on(self.table_abc.foo == self.table_efg.bar
-                               ).join(
-            self.table_hij).on(self.table_abc.buz == self.table_hij.bam
-                               ).select(
-            self.table_abc.foo, self.table_efg.bar, self.table_hij.bam
+              self.table_efg).on(self.table_abc.foo == self.table_efg.bar
+                                 ).join(
+              self.table_hij).on(self.table_abc.buz == self.table_hij.bam
+                                 ).select(
+              self.table_abc.foo, self.table_efg.bar, self.table_hij.bam
         ).where(self.table_abc.foo > 1).where(self.table_efg.bar != 2)
 
         self.assertEqual('SELECT "abc"."foo","efg"."bar","hij"."bam" FROM "abc" '
@@ -280,9 +355,9 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_select__fields_after_table_star(self):
         q = Query.from_(self.table_abc).join(self.table_efg).on(self.table_abc.foo == self.table_efg.bar).select(
-            self.table_abc.star,
-            self.table_efg.bar).select(
-            self.table_abc.foo)
+              self.table_abc.star,
+              self.table_efg.bar).select(
+              self.table_abc.foo)
 
         self.assertEqual('SELECT "abc".*,"efg"."bar" FROM "abc" JOIN "efg" ON "abc"."foo"="efg"."bar"',
                          str(q))
@@ -292,7 +367,7 @@ class JoinBehaviorTests(unittest.TestCase):
             Query.from_(self.table_abc).join('this is a string')
 
     def test_immutable__tables(self):
-        query1 = Query.from_(self.table_abc)\
+        query1 = Query.from_(self.table_abc) \
             .select(self.table_abc.foo)
         query2 = Query.from_(self.table_abc) \
             .join(self.table_efg).on(self.table_abc.foo == self.table_efg.bar) \
@@ -324,12 +399,12 @@ class JoinBehaviorTests(unittest.TestCase):
         Query.from_(self.table_abc).groupby(self.table_abc.foo).having(self.table_efg.bar)
 
         subquery = Query.from_(self.table_efg).select(
-            self.table_efg.id
+              self.table_efg.id
         ).where(self.table_efg.abc_id == self.table_abc.id)
         query = Query.from_(self.table_abc).select(subquery.as_('efg_id').limit(1))
         self.assertEqual(
-            'SELECT (SELECT "efg"."id" FROM "efg" WHERE "efg"."abc_id"="abc"."id" LIMIT 1) "efg_id" FROM "abc"',
-            str(query)
+              'SELECT (SELECT "efg"."id" FROM "efg" WHERE "efg"."abc_id"="abc"."id" LIMIT 1) "efg_id" FROM "abc"',
+              str(query)
         )
 
     def test_ignore_table_references(self):
@@ -339,7 +414,7 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_prefixes_added_to_groupby(self):
         test_query = Query.from_(self.table_abc).join(self.table_efg).on(
-            self.table_abc.foo == self.table_efg.bar
+              self.table_abc.foo == self.table_efg.bar
         ).select(self.table_abc.foo, fn.Sum(self.table_efg.buz)).groupby(self.table_abc.foo)
 
         self.assertEqual('SELECT "abc"."foo",SUM("efg"."buz") FROM "abc" '
@@ -348,7 +423,7 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_prefixes_added_to_orderby(self):
         test_query = Query.from_(self.table_abc).join(self.table_efg).on(
-            self.table_abc.foo == self.table_efg.bar
+              self.table_abc.foo == self.table_efg.bar
         ).select(self.table_abc.foo, self.table_efg.buz).orderby(self.table_abc.foo)
 
         self.assertEqual('SELECT "abc"."foo","efg"."buz" FROM "abc" '
@@ -357,7 +432,7 @@ class JoinBehaviorTests(unittest.TestCase):
 
     def test_prefixes_added_to_function_in_orderby(self):
         test_query = Query.from_(self.table_abc).join(self.table_efg).on(
-            self.table_abc.foo == self.table_efg.bar
+              self.table_abc.foo == self.table_efg.bar
         ).select(self.table_abc.foo, self.table_efg.buz).orderby(fn.Date(self.table_abc.foo))
 
         self.assertEqual('SELECT "abc"."foo","efg"."buz" FROM "abc" '
@@ -443,18 +518,18 @@ class UnionTests(unittest.TestCase):
         query4 = Query.from_(table4).select(table4.faz)
 
         self.assertEqual(
-            '(SELECT "foo" FROM "abc") UNION '
-            '(SELECT "bar" FROM "efg") UNION '
-            '(SELECT "baz" FROM "hij") UNION '
-            '(SELECT "faz" FROM "lmn")',
-            str(query1 + query2 + query3 + query4)
+              '(SELECT "foo" FROM "abc") UNION '
+              '(SELECT "bar" FROM "efg") UNION '
+              '(SELECT "baz" FROM "hij") UNION '
+              '(SELECT "faz" FROM "lmn")',
+              str(query1 + query2 + query3 + query4)
         )
         self.assertEqual(
-            '(SELECT "foo" FROM "abc") UNION '
-            '(SELECT "bar" FROM "efg") UNION '
-            '(SELECT "baz" FROM "hij") UNION '
-            '(SELECT "faz" FROM "lmn")',
-            str(query1.union(query2).union(query3).union(query4))
+              '(SELECT "foo" FROM "abc") UNION '
+              '(SELECT "bar" FROM "efg") UNION '
+              '(SELECT "baz" FROM "hij") UNION '
+              '(SELECT "faz" FROM "lmn")',
+              str(query1.union(query2).union(query3).union(query4))
         )
 
     def test_union_all(self):
