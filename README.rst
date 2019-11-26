@@ -414,7 +414,7 @@ All join types are supported by |Brand|.
         .cross_join(join_table) \
         ...
 
-See the list of join types here :py:meth:`pypika.enums.JoinTypes`
+See the list of join types here ``pypika.enums.JoinTypes``
 
 Example of a join using `ON`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -649,7 +649,7 @@ There are several string operations and function wrappers included in |Brand|.  
 
 
 Custom Functions
-"""""""""""""""""
+""""""""""""""""
 
 Custom Functions allows us to use any function on queries, as some functions are not covered by PyPika as default, we can appeal
 to Custom functions.
