@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+      - id: black
+        language_version: python3.6
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: node_modules/.bin/eslint
+        language: node
+        files: \.jsx?$
+        args: ['--fix']

@@ -13,13 +13,13 @@ matrix:
     dist: xenial
 
 install:
-    - "python setup.py install"
+    - "poetry install"
     - "pip install coverage"
     - "pip install coveralls"
     - "pip install parameterized==0.7.0"
 
 script:
-    - "coverage run --source=pypika setup.py test"
+    - "coverage run --source=poetry run test"
 
 after_success:
     coveralls

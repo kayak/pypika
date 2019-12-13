@@ -30,7 +30,6 @@ pypika.utils
 This contains all of the utility classes such as exceptions and decorators.
 
 """
-# noinspection PyUnresolvedReferences
 from pypika.dialects import (
     ClickHouseQuery,
     Dialects,
@@ -42,29 +41,27 @@ from pypika.dialects import (
     SQLLiteQuery,
     VerticaQuery,
 )
-# noinspection PyUnresolvedReferences
 from pypika.enums import (
     DatePart,
     JoinType,
     Order,
 )
-# noinspection PyUnresolvedReferences
 from pypika.queries import (
     AliasedQuery,
+    Column,
+    Database,
     Query,
     Schema,
     Table,
-    Column,
-    Database,
-    make_tables as Tables,
     make_columns as Columns,
+    make_tables as Tables,
 )
-# noinspection PyUnresolvedReferences
 from pypika.terms import (
     Array,
     Bracket,
     Case,
     Criterion,
+    CustomFunction,
     EmptyCriterion,
     Field,
     Index,
@@ -75,19 +72,29 @@ from pypika.terms import (
     Parameter,
     Rollup,
     Tuple,
-    CustomFunction,
 )
-# noinspection PyUnresolvedReferences
 from pypika.utils import (
     CaseException,
+    FunctionException,
     GroupingException,
     JoinException,
     QueryException,
     RollupException,
     UnionException,
-    FunctionException,
 )
 
-__author__ = 'Timothy Heys'
-__email__ = 'theys@kayak.com'
-__version__ = '0.35.17'
+
+def __metadata():
+    import pkg_resources
+    from email import message_from_string
+
+    pkg_info = pkg_resources.get_distribution('pypika')
+    metadata = message_from_string(pkg_info.get_metadata('PKG-INFO'))
+    return (
+        metadata.get('Author'),
+        metadata.get('Author-email'),
+        pkg_info.version,
+    )
+
+
+(__author__, __email__, __version__,) = __metadata()

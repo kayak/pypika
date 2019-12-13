@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "pypika"
+version = "0.35.17"
+description = "A SQL query builder API for Python"
+authors = ["Timothy Heys <theys@kayak.com>"]
+license = "Apache-2.0"
+classifiers=[
+    'License :: OSI Approved :: Apache Software License',
+    'Development Status :: 5 - Production/Stable',
+    'Intended Audience :: Developers',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: PL/SQL',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Topic :: Scientific/Engineering :: Information Analysis',
+    'Topic :: Scientific/Engineering :: Mathematics',
+    'Operating System :: POSIX',
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: Microsoft :: Windows',
+]
+keywords=[
+    "query builder",
+    "sql",
+    "business analytics",
+    "data science",
+    "analysis",
+    "pandas",
+]
+
+[tool.poetry.dependencies]
+python = "^3.4"
+
+[tool.poetry.dev-dependencies]
+Sphinx = "1.6.5"
+parameterized = "0.7.0"
+sphinx-rtd-theme = "0.2.4"
+black =  { version = "^19.10b0", python = "^3.6" }
+bumpversion = "0.5.3"
+pre-commit = "1.18.3"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
