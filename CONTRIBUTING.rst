@@ -69,10 +69,11 @@ Publishing
 
 To publish a new version:
 
-- Checkout the master brand
+- Checkout the master branch
 - Run the `Poetry Version <https://python-poetry.org/docs/cli/#version>`_ command with the appropriate version bump type.
 - Run the `Poetry Publish <https://python-poetry.org/docs/cli/#publish>`_ command
 
+.. note:: Always bump the version from the master branch, never in a feature branch. This is to avoid conflicts.
 
 .. _Pypika GitHub Project: https://github.com/kayak/pypika/pulls
 .. _Poetry: https://python-poetry.org/
