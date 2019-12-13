@@ -30,14 +30,14 @@ keywords=[
 python = "^3.4"
 
 [tool.poetry.dev-dependencies]
-Sphinx = "1.6.5"
 parameterized = "0.7.0"
-sphinx-rtd-theme = "0.2.4"
 black =  { version = "^19.10b0", python = "^3.6" }
 pre-commit = "1.18.3"
+Sphinx = { version = "1.6.5", optional = true }
+sphinx-rtd-theme = { version = "0.2.4", optional = true }
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry==1.0.0"]
 build-backend = "poetry.masonry.api"
 
 [tool.black]
