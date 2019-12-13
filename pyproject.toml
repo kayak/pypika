@@ -34,7 +34,6 @@ Sphinx = "1.6.5"
 parameterized = "0.7.0"
 sphinx-rtd-theme = "0.2.4"
 black =  { version = "^19.10b0", python = "^3.6" }
-bumpversion = "0.5.3"
 pre-commit = "1.18.3"
 
 [build-system]

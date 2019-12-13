@@ -1,2 +1,5 @@
+include pyproject.toml
 include README.rst
-include requirements.txt
+include CONTRIBUTING.rst
+include LICENSE.txt
+include poetry.lock
