@@ -1,25 +1,35 @@
 language: python
 
 python:
-    - "3.5"
-    - "3.6"
-    - "3.7"
+  - "3.5"
+  - "3.6"
+  - "3.7"
 
 matrix:
   include:
-  - python: "3.7"
-    dist: xenial
-  - python: "pypy3.5"
-    dist: xenial
+    - python: "3.7"
+      dist: xenial
+    - python: "pypy3.5"
+      dist: xenial
+
+before_install:
+  - pip install poetry
+  - pip install coverage
+  - pip install coveralls
 
 install:
-    - "poetry install"
-    - "pip install coverage"
-    - "pip install coveralls"
-    - "pip install parameterized==0.7.0"
+  - poetry install
 
 script:
-    - "coverage run --source=poetry run test"
+  - poetry run coverage run --source=pypika -m unittest discover -b
 
 after_success:
-    coveralls
+  coveralls
+
+deploy:
+  provider: script
+  script: poetry publish
+  on:
+    tags: true
+
+
