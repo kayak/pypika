@@ -13,6 +13,7 @@ matrix:
       dist: xenial
 
 before_install:
+  - pip install --upgrade pip
   - pip install poetry
   - pip install coverage
   - pip install coveralls
@@ -25,6 +26,14 @@ script:
 
 after_success:
   coveralls
+
+before_deploy:
+  # User and password environment variables are set as hidden variables through
+  # the web interface in the project settings.
+  - pip install --upgrade pip
+  - pip install poetry
+  - poetry config http-basic.pypi $PYPI_USER $PYPI_PASS
+  - poetry build
 
 deploy:
   provider: script
