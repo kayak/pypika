@@ -8,16 +8,14 @@ from pypika.clickhouse.nullable_arg import IfNull
 
 
 class TestSearchString(unittest.TestCase):
-
-    @parameterized.expand([
-        (
-            IfNull(Field('name'),  Field('login')),
-            'ifNull(name,login)',
-        ),
-        (
-            IfNull(Field('builder'), ToFixedString('pypika', 100)),
-            "ifNull(builder,toFixedString('pypika',100))",
-        )
-    ])
+    @parameterized.expand(
+        [
+            (IfNull(Field("name"), Field("login")), "ifNull(name,login)",),
+            (
+                IfNull(Field("builder"), ToFixedString("pypika", 100)),
+                "ifNull(builder,toFixedString('pypika',100))",
+            ),
+        ]
+    )
     def test_get_sql(self, func, expected):
         self.assertEqual(func.get_sql(), expected)

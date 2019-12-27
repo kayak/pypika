@@ -4,7 +4,9 @@ from pypika.terms import Function, Field
 
 
 class Array:
-    def __init__(self, values: list, converter_cls=None, converter_options: dict = None):
+    def __init__(
+        self, values: list, converter_cls=None, converter_options: dict = None
+    ):
         self._values = values
         self._converter_cls = converter_cls
         self._converter_options = converter_options or dict()
@@ -15,7 +17,7 @@ class Array:
             for value in self._values:
                 converter = self._converter_cls(value, **self._converter_options)
                 converted.append(converter.get_sql())
-            return ''.join(['[', ','.join(converted), ']'])
+            return "".join(["[", ",".join(converted), "]"])
         return str(self._values)
 
 
@@ -25,25 +27,31 @@ class HasAny(Function):
         left_array: Array or Field,
         right_array: Array or Field,
         alias: str = None,
-        schema: str = None
+        schema: str = None,
     ):
         self._left_array = left_array
         self._right_array = right_array
         self.alias = alias
         self.schema = schema
         self.args = ()
-        self.name = 'hasAny'
+        self.name = "hasAny"
 
-    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None,
-                **kwargs):
+    def get_sql(
+        self,
+        with_alias=False,
+        with_namespace=False,
+        quote_char=None,
+        dialect=None,
+        **kwargs
+    ):
 
         left = self._left_array.get_sql()
         right = self._right_array.get_sql()
-        return '{name}({left},{right}){alias}'.format(
+        return "{name}({left},{right}){alias}".format(
             name=self.name,
             left='"%s"' % left if isinstance(self._left_array, Field) else left,
             right='"%s"' % right if isinstance(self._right_array, Field) else right,
-            alias=' ' + self.alias if self.alias else ''
+            alias=" " + self.alias if self.alias else "",
         )
 
 
@@ -54,13 +62,19 @@ class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
         self.name = self.clickhouse_function()
         self._array = array
 
-    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None,
-                **kwargs):
+    def get_sql(
+        self,
+        with_alias=False,
+        with_namespace=False,
+        quote_char=None,
+        dialect=None,
+        **kwargs
+    ):
         array = self._array.get_sql()
-        return '{name}({array}){alias}'.format(
+        return "{name}({array}){alias}".format(
             name=self.name,
             array='"%s"' % array if isinstance(self._array, Field) else array,
-            alias=' ' + self.alias if self.alias else ''
+            alias=" " + self.alias if self.alias else "",
         )
 
     @classmethod
@@ -72,16 +86,16 @@ class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
 class NotEmpty(_AbstractArrayFunction):
     @classmethod
     def clickhouse_function(cls) -> str:
-        return 'notEmpty'
+        return "notEmpty"
 
 
 class Empty(_AbstractArrayFunction):
     @classmethod
     def clickhouse_function(cls) -> str:
-        return 'empty'
+        return "empty"
 
 
 class Length(_AbstractArrayFunction):
     @classmethod
     def clickhouse_function(cls) -> str:
-        return 'length'
+        return "length"

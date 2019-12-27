@@ -9,16 +9,15 @@ from pypika.terms import Star
 
 
 class TablesTests(unittest.TestCase):
-
     def test__criterion_replace_table_with_value(self):
-        table = Table('a')
+        table = Table("a")
 
-        c = (Field('foo') > 1).replace_table(None, table)
+        c = (Field("foo") > 1).replace_table(None, table)
         self.assertEqual(c.left, table)
         self.assertEqual(c.tables_, {table})
 
     def test__case_tables(self):
-        table = Table('a')
+        table = Table("a")
 
         c = Case().when(table.a == 1, 2 * table.a)
         self.assertIsInstance(c.tables_, set)
@@ -30,7 +29,7 @@ class TablesTests(unittest.TestCase):
         self.assertEqual(star.tables_, {})
 
     def test__table_star_tables(self):
-        table = Table('a')
+        table = Table("a")
         star = Star(table=table)
 
         self.assertEqual(star.tables_, {table})

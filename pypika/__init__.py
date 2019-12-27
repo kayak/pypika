@@ -42,12 +42,14 @@ from pypika.dialects import (
     SQLLiteQuery,
     VerticaQuery,
 )
+
 # noinspection PyUnresolvedReferences
 from pypika.enums import (
     DatePart,
     JoinType,
     Order,
 )
+
 # noinspection PyUnresolvedReferences
 from pypika.queries import (
     AliasedQuery,
@@ -59,6 +61,7 @@ from pypika.queries import (
     make_tables as Tables,
     make_columns as Columns,
 )
+
 # noinspection PyUnresolvedReferences
 from pypika.terms import (
     Array,
@@ -77,6 +80,7 @@ from pypika.terms import (
     Tuple,
     CustomFunction,
 )
+
 # noinspection PyUnresolvedReferences
 from pypika.utils import (
     CaseException,
@@ -88,6 +92,6 @@ from pypika.utils import (
     FunctionException,
 )
 
-__author__ = 'Timothy Heys'
-__email__ = 'theys@kayak.com'
-__version__ = '0.35.17'
+__author__ = "Timothy Heys"
+__email__ = "theys@kayak.com"
+__version__ = "0.35.17"

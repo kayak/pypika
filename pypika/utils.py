@@ -1,5 +1,3 @@
-# coding: utf-8
-
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
@@ -30,6 +28,7 @@ class RollupException(Exception):
 
 class DialectNotSupported(Exception):
     pass
+
 
 class FunctionException(Exception):
     pass
@@ -69,8 +68,16 @@ def ignore_copy(func):
     """
 
     def _getattr(self, name):
-        if name in ['__copy__', '__deepcopy__', '__getstate__', '__setstate__', '__getnewargs__']:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+        if name in [
+            "__copy__",
+            "__deepcopy__",
+            "__getstate__",
+            "__setstate__",
+            "__getnewargs__",
+        ]:
+            raise AttributeError(
+                "'%s' object has no attribute '%s'" % (self.__class__.__name__, name)
+            )
 
         return func(self, name)
 
@@ -86,23 +93,22 @@ def resolve_is_aggregate(values):
     :return: If all values are True or None, True is returned.  If all values are None, None is returned. Otherwise,
         False is returned.
     """
-    result = [x
-              for x in values
-              if x is not None]
+    result = [x for x in values if x is not None]
     if result:
         return all(result)
     return None
 
 
 def format_quotes(value, quote_char):
-    return '{quote}{value}{quote}' \
-        .format(value=value, quote=quote_char or '')
+    return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
 
 
 def format_alias_sql(sql, alias, quote_char=None, alias_quote_char=None, **kwargs):
     if alias is None:
         return sql
-    return '{sql} {alias}'.format(sql=sql, alias=format_quotes(alias, alias_quote_char or quote_char))
+    return "{sql} {alias}".format(
+        sql=sql, alias=format_quotes(alias, alias_quote_char or quote_char)
+    )
 
 
 def validate(*args, exc=None, type=None):
