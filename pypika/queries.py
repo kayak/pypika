@@ -11,6 +11,7 @@ from pypika.terms import (
     Field,
     Function,
     Index,
+    Node,
     Rollup,
     Star,
     Term,
@@ -32,7 +33,7 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class Selectable:
+class Selectable(Node):
     def __init__(self, alias):
         self.alias = alias
 
@@ -54,6 +55,9 @@ class Selectable:
     @ignore_copy
     def __getitem__(self, name):
         return self.field(name)
+
+    def get_table_name(self):
+        return self.alias
 
 
 class AliasedQuery(Selectable):
@@ -131,6 +135,9 @@ class Table(Selectable):
         super(Table, self).__init__(alias)
         self._table_name = name
         self._schema = self._init_schema(schema)
+
+    def get_table_name(self):
+        return self.alias or self._table_name
 
     def get_sql(self, **kwargs):
         quote_char = kwargs.get("quote_char")
@@ -838,6 +845,8 @@ class QueryBuilder(Selectable, Term):
             return Joiner(self, item, how, type_label="table")
 
         elif isinstance(item, QueryBuilder):
+            if item.alias is None:
+                self._tag_subquery(item)
             return Joiner(self, item, how, type_label="subquery")
 
         elif isinstance(item, AliasedQuery):
@@ -890,11 +899,15 @@ class QueryBuilder(Selectable, Term):
         return self.union_all(other)
 
     @builder
+    def slice(self, slice):
+        self._offset = slice.start
+        self._limit = slice.stop
+
+    @builder
     def __getitem__(self, item):
         if not isinstance(item, slice):
-            raise TypeError("Query' object is not subscriptable")
-        self._offset = item.start
-        self._limit = item.stop
+            return super().__getitem__(item)
+        return self.slice(item)
 
     @staticmethod
     def _list_aliases(field_set, quote_char=None):
@@ -937,17 +950,13 @@ class QueryBuilder(Selectable, Term):
     def _select_other(self, function):
         self._selects.append(function)
 
-    def fields(self):
+    def fields_(self):
         # Don't return anything here. Subqueries have their own fields.
         return []
 
     def do_join(self, join):
         base_tables = self._from + [self._update_table] + self._with
-
         join.validate(base_tables, self._joins)
-
-        if isinstance(join.item, QueryBuilder) and join.item.alias is None:
-            self._tag_subquery(join.item)
 
         table_in_query = any(
             isinstance(clause, Table) and join.item in base_tables
@@ -970,14 +979,16 @@ class QueryBuilder(Selectable, Term):
         """
         base_tables = self._from + [self._update_table]
 
-        for field in term.fields():
+        for field in term.fields_():
             table_in_base_tables = field.table in base_tables
             table_in_joins = field.table in [join.item for join in self._joins]
-            if (
-                field.table is not None
-                and not table_in_base_tables
-                and not table_in_joins
-                and field.table != self._update_table
+            if all(
+                [
+                    field.table is not None,
+                    not table_in_base_tables,
+                    not table_in_joins,
+                    field.table != self._update_table,
+                ]
             ):
                 return False
         return True
@@ -1431,7 +1442,7 @@ class JoinOn(Join):
         )
 
     def validate(self, _from, _joins):
-        criterion_tables = set([f.table for f in self.criterion.fields()])
+        criterion_tables = set([f.table for f in self.criterion.fields_()])
         available_tables = set(_from) | {join.item for join in _joins} | {self.item}
         missing_tables = criterion_tables - available_tables
         if missing_tables:
