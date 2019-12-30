@@ -1,9 +1,7 @@
 import inspect
-import itertools
 import re
 from datetime import date
 from enum import Enum
-
 from typing import (
     Iterable,
     Union,
@@ -36,7 +34,15 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class Term:
+class Node:
+    def nodes_(self):
+        yield self
+
+    def find_(self, type):
+        return [node for node in self.nodes_() if isinstance(node, type)]
+
+
+class Term(Node):
     is_aggregate = False
 
     def __init__(self, alias=None):
@@ -48,7 +54,12 @@ class Term:
 
     @property
     def tables_(self):
-        return set()
+        from pypika import Table
+
+        return set(self.find_(Table))
+
+    def fields_(self):
+        return set(self.find_(Field))
 
     @staticmethod
     def wrap_constant(val, wrapper_cls=None):
@@ -108,9 +119,6 @@ class Term:
             Self.
         """
         return self
-
-    def fields(self):
-        return [self]
 
     def eq(self, other):
         return self == other
@@ -254,9 +262,6 @@ class Parameter(Term):
         super(Parameter, self).__init__()
         self.placeholder = placeholder
 
-    def fields(self):
-        return []
-
     def get_sql(self, **kwargs):
         return str(self.placeholder)
 
@@ -280,9 +285,6 @@ class ValueWrapper(Term):
     def __init__(self, value, alias=None):
         super(ValueWrapper, self).__init__(alias)
         self.value = value
-
-    def fields(self):
-        return []
 
     def get_value_sql(self, **kwargs):
         quote_char = kwargs.get("secondary_quote_char") or ""
@@ -398,9 +400,6 @@ class Values(Term):
 
 
 class NullValue(Term):
-    def fields(self):
-        return []
-
     def get_sql(self, **kwargs):
         sql = "NULL"
         return format_alias_sql(sql, self.alias, **kwargs)
@@ -434,9 +433,6 @@ class Criterion(Term):
 
         return crit
 
-    def fields(self):
-        raise NotImplementedError()
-
     def get_sql(self):
         raise NotImplementedError()
 
@@ -461,12 +457,10 @@ class Field(Criterion, JSON):
         self.name = name
         self.table = table
 
-    def fields(self):
-        return [self]
-
-    @property
-    def tables_(self):
-        return {self.table}
+    def nodes_(self):
+        yield self
+        if self.table is not None:
+            yield from self.table.nodes_()
 
     @builder
     def replace_table(self, current_table, new_table):
@@ -494,11 +488,9 @@ class Field(Criterion, JSON):
 
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
+            table_name = self.table.get_table_name()
             field_sql = "{namespace}.{name}".format(
-                namespace=format_quotes(
-                    self.table.alias or self.table._table_name, quote_char
-                ),
-                name=field_sql,
+                namespace=format_quotes(table_name, quote_char), name=field_sql,
             )
 
         field_alias = getattr(self, "alias", None)
@@ -523,11 +515,10 @@ class Star(Field):
     def __init__(self, table=None):
         super(Star, self).__init__("*", table=table)
 
-    @property
-    def tables_(self):
-        if self.table is None:
-            return {}
-        return {self.table}
+    def nodes_(self):
+        yield self
+        if self.table is not None:
+            yield from self.table.nodes_()
 
     def get_sql(
         self, with_alias=False, with_namespace=False, quote_char=None, **kwargs
@@ -544,8 +535,10 @@ class Tuple(Criterion):
         super(Tuple, self).__init__()
         self.values = [self.wrap_constant(value) for value in values]
 
-    def fields(self):
-        return list(itertools.chain(*[value.fields() for value in self.values]))
+    def nodes_(self):
+        yield self
+        for value in self.values:
+            yield from value.nodes_()
 
     def get_sql(self, **kwargs):
         return "({})".format(",".join(term.get_sql(**kwargs) for term in self.values))
@@ -602,22 +595,17 @@ class NestedCriterion(Criterion):
         self.right = right
         self.nested = nested
 
-    def fields(self):
-        return list(
-            itertools.chain(
-                self.right.fields(), self.left.fields(), self.nested.fields()
-            )
-        )
+    def nodes_(self):
+        yield self
+        yield from self.right.nodes_()
+        yield from self.left.nodes_()
+        yield from self.nested.nodes_()
 
     @property
     def is_aggregate(self):
         return resolve_is_aggregate(
             [term.is_aggregate for term in [self.left, self.right, self.nested]]
         )
-
-    @property
-    def tables_(self):
-        return self.left.tables_ | self.right.tables_ | self.nested.tables_
 
     @builder
     def replace_table(self, current_table, new_table):
@@ -670,15 +658,16 @@ class BasicCriterion(Criterion):
         self.left = left
         self.right = right
 
+    def nodes_(self):
+        yield self
+        yield from self.right.nodes_()
+        yield from self.left.nodes_()
+
     @property
     def is_aggregate(self):
         return resolve_is_aggregate(
             [term.is_aggregate for term in [self.left, self.right]]
         )
-
-    @property
-    def tables_(self):
-        return self.left.tables_ | self.right.tables_
 
     @builder
     def replace_table(self, current_table, new_table):
@@ -694,9 +683,6 @@ class BasicCriterion(Criterion):
         """
         self.left = self.left.replace_table(current_table, new_table)
         self.right = self.right.replace_table(current_table, new_table)
-
-    def fields(self):
-        return self.left.fields() + self.right.fields()
 
     def get_sql(self, quote_char='"', with_alias=False, **kwargs):
         sql = "{left}{comparator}{right}".format(
@@ -727,9 +713,10 @@ class ContainsCriterion(Criterion):
         self.container = container
         self._is_negated = False
 
-    @property
-    def tables_(self):
-        return self.term.tables_
+    def nodes_(self):
+        yield self
+        yield from self.term.nodes_()
+        yield from self.container.nodes_()
 
     @property
     def is_aggregate(self):
@@ -749,9 +736,6 @@ class ContainsCriterion(Criterion):
         """
         self.term = self.term.replace_table(current_table, new_table)
 
-    def fields(self):
-        return self.term.fields() if self.term.fields else []
-
     def get_sql(self, subquery=None, **kwargs):
         return "{term} {not_}IN {container}".format(
             term=self.term.get_sql(**kwargs),
@@ -759,9 +743,9 @@ class ContainsCriterion(Criterion):
             not_="NOT " if self._is_negated else "",
         )
 
+    @builder
     def negate(self):
         self._is_negated = True
-        return self
 
 
 class BetweenCriterion(Criterion):
@@ -771,9 +755,11 @@ class BetweenCriterion(Criterion):
         self.start = start
         self.end = end
 
-    @property
-    def tables_(self):
-        return self.term.tables_
+    def nodes_(self):
+        yield self
+        yield from self.term.nodes_()
+        yield from self.start.nodes_()
+        yield from self.end.nodes_()
 
     @property
     def is_aggregate(self):
@@ -801,9 +787,6 @@ class BetweenCriterion(Criterion):
             end=self.end.get_sql(**kwargs),
         )
 
-    def fields(self):
-        return self.term.fields() if self.term.fields else []
-
 
 class BitwiseAndCriterion(Criterion):
     def __init__(self, term, value, alias=None):
@@ -811,9 +794,10 @@ class BitwiseAndCriterion(Criterion):
         self.term = term
         self.value = value
 
-    @property
-    def tables_(self):
-        return self.term.tables_
+    def nodes_(self):
+        yield self
+        yield from self.term.nodes_()
+        yield from self.value.nodes_()
 
     @builder
     def replace_table(self, current_table, new_table):
@@ -834,18 +818,15 @@ class BitwiseAndCriterion(Criterion):
             term=self.term.get_sql(**kwargs), value=self.value,
         )
 
-    def fields(self):
-        return self.term.fields() if self.term.fields else []
-
 
 class NullCriterion(Criterion):
     def __init__(self, term, alias=None):
         super(NullCriterion, self).__init__(alias)
         self.term = term
 
-    @property
-    def tables_(self):
-        return self.term.tables_
+    def nodes_(self):
+        yield self
+        yield from self.term.nodes_()
 
     @builder
     def replace_table(self, current_table, new_table):
@@ -864,14 +845,8 @@ class NullCriterion(Criterion):
     def get_sql(self, **kwargs):
         return "{term} IS NULL".format(term=self.term.get_sql(**kwargs),)
 
-    def fields(self):
-        return self.term.fields() if self.term.fields else []
-
 
 class ComplexCriterion(BasicCriterion):
-    def fields(self):
-        return self.left.fields() + self.right.fields()
-
     def get_sql(self, subcriterion=False, **kwargs):
         sql = "{left} {comparator} {right}".format(
             comparator=self.comparator.value,
@@ -925,14 +900,15 @@ class ArithmeticExpression(Term):
         self.left = left
         self.right = right
 
+    def nodes_(self):
+        yield self
+        yield from self.left.nodes_()
+        yield from self.right.nodes_()
+
     @property
     def is_aggregate(self):
         # True if both left and right terms are True or None. None if both terms are None. Otherwise, False
         return resolve_is_aggregate([self.left.is_aggregate, self.right.is_aggregate])
-
-    @property
-    def tables_(self):
-        return self.left.tables_ | self.right.tables_
 
     @builder
     def replace_table(self, current_table, new_table):
@@ -949,9 +925,6 @@ class ArithmeticExpression(Term):
         self.left = self.left.replace_table(current_table, new_table)
         self.right = self.right.replace_table(current_table, new_table)
 
-    def fields(self):
-        return self.left.fields() + self.right.fields()
-
     def get_sql(self, with_alias=False, **kwargs):
         is_mul = self.operator in self.mul_order
         is_left_add, is_right_add = [
@@ -959,8 +932,7 @@ class ArithmeticExpression(Term):
             for side in [self.left, self.right]
         ]
 
-        quote_char = kwargs.get("quote_char", None)
-        arithmatic_sql = "{left}{operator}{right}".format(
+        arithmetic_sql = "{left}{operator}{right}".format(
             operator=self.operator.value,
             left=("({})" if is_mul and is_left_add else "{}").format(
                 self.left.get_sql(**kwargs)
@@ -971,9 +943,9 @@ class ArithmeticExpression(Term):
         )
 
         if with_alias:
-            return format_alias_sql(arithmatic_sql, self.alias, **kwargs)
+            return format_alias_sql(arithmetic_sql, self.alias, **kwargs)
 
-        return arithmatic_sql
+        return arithmetic_sql
 
 
 class Case(Term):
@@ -981,6 +953,16 @@ class Case(Term):
         super(Case, self).__init__(alias=alias)
         self._cases = []
         self._else = None
+
+    def nodes_(self):
+        yield self
+
+        for criterion, term in self._cases:
+            yield from criterion.nodes_()
+            yield from term.nodes_()
+
+        if self._else is not None:
+            yield from self._else.nodes_()
 
     @property
     def is_aggregate(self):
@@ -1043,42 +1025,15 @@ class Case(Term):
 
         return case_sql
 
-    def fields(self):
-        fields = []
-
-        for criterion, term in self._cases:
-            fields += criterion.fields() + term.fields()
-
-        if self._else is not None:
-            fields += self._else.fields()
-
-        return fields
-
-    @property
-    def tables_(self):
-        tables = set()
-        if self._cases:
-            tables |= {
-                table
-                for case in self._cases
-                for part in case
-                for table in part.tables_
-                if hasattr(part, "tables_")
-            }
-
-        if self._else and hasattr(self._else, "tables_"):
-            tables |= {table for table in self._else.tables_}
-
-        return tables
-
 
 class Not(Criterion):
     def __init__(self, term, alias=None):
         super(Not, self).__init__(alias=alias)
         self.term = term
 
-    def fields(self):
-        return self.term.fields() if self.term.fields else []
+    def nodes_(self):
+        yield self
+        yield from self.term.nodes_()
 
     def get_sql(self, **kwargs):
         kwargs["subcriterion"] = True
@@ -1118,10 +1073,6 @@ class Not(Criterion):
         """
         self.term = self.term.replace_table(current_table, new_table)
 
-    @property
-    def tables_(self):
-        return self.term.tables_
-
 
 class CustomFunction:
     def __init__(self, name, params=None):
@@ -1157,17 +1108,10 @@ class Function(Criterion):
         self.args = [self.wrap_constant(param) for param in args]
         self.schema = kwargs.get("schema")
 
-    @property
-    def tables_(self):
-        return {table for param in self.args for table in param.tables_}
-
-    def fields(self):
-        return [
-            field
-            for param in self.args
-            if hasattr(param, "fields")
-            for field in param.fields()
-        ]
+    def nodes_(self):
+        yield self
+        for arg in self.args:
+            yield from arg.nodes_()
 
     @property
     def is_aggregate(self):
@@ -1375,7 +1319,7 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
         return None
 
 
-class Interval:
+class Interval(Node):
     templates = {
         # MySQL requires no single quotes around the expr and unit
         Dialects.MYSQL: "INTERVAL {expr} {unit}",
@@ -1429,13 +1373,6 @@ class Interval:
 
     def __str__(self):
         return self.get_sql()
-
-    @property
-    def tables_(self):
-        return {}
-
-    def fields(self):
-        return []
 
     def get_sql(self, **kwargs):
         dialect = self.dialect or kwargs.get("dialect")
@@ -1504,6 +1441,3 @@ class PseudoColumn(Term):
 
     def get_sql(self, **kwargs):
         return self.name
-
-    def fields(self):
-        return []

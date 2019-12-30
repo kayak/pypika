@@ -26,7 +26,7 @@ class TablesTests(unittest.TestCase):
     def test__star_tables(self):
         star = Star()
 
-        self.assertEqual(star.tables_, {})
+        self.assertEqual(star.tables_, set())
 
     def test__table_star_tables(self):
         table = Table("a")
