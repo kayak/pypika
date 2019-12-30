@@ -932,8 +932,7 @@ class ArithmeticExpression(Term):
             for side in [self.left, self.right]
         ]
 
-        quote_char = kwargs.get("quote_char", None)
-        arithmatic_sql = "{left}{operator}{right}".format(
+        arithmetic_sql = "{left}{operator}{right}".format(
             operator=self.operator.value,
             left=("({})" if is_mul and is_left_add else "{}").format(
                 self.left.get_sql(**kwargs)
@@ -944,9 +943,9 @@ class ArithmeticExpression(Term):
         )
 
         if with_alias:
-            return format_alias_sql(arithmatic_sql, self.alias, **kwargs)
+            return format_alias_sql(arithmetic_sql, self.alias, **kwargs)
 
-        return arithmatic_sql
+        return arithmetic_sql
 
 
 class Case(Term):

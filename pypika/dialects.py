@@ -377,7 +377,7 @@ class PostgreQueryBuilder(QueryBuilder):
                 self._return_other(self.wrap_constant(term, self._wrapper_cls))
 
     def _validate_returning_term(self, term):
-        for field in term.fields():
+        for field in term.fields_():
             if not any([self._insert_table, self._update_table, self._delete_from]):
                 raise QueryException("Returning can't be used in this query")
             if (
