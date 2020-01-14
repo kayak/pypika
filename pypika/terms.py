@@ -79,7 +79,7 @@ class Term(Node):
         """
         from .queries import QueryBuilder
 
-        if isinstance(val, (Term, QueryBuilder, Interval)):
+        if isinstance(val, Node):
             return val
         if val is None:
             return NullValue()
