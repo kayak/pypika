@@ -903,7 +903,6 @@ class QueryBuilder(Selectable, Term):
         self._offset = slice.start
         self._limit = slice.stop
 
-    @builder
     def __getitem__(self, item):
         if not isinstance(item, slice):
             return super().__getitem__(item)
