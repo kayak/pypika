@@ -2,9 +2,9 @@ from copy import copy
 
 from pypika.enums import Dialects
 from pypika.queries import (
+    CreateQueryBuilder,
     Query,
     QueryBuilder,
-    CreateQueryBuilder,
     Table,
 )
 from pypika.terms import (
@@ -24,8 +24,10 @@ class SnowFlakeQueryBuilder(QueryBuilder):
     QUOTE_CHAR = None
     ALIAS_QUOTE_CHAR = '"'
 
-    def __init__(self):
-        super(SnowFlakeQueryBuilder, self).__init__(dialect=Dialects.SNOWFLAKE)
+    def __init__(self, **kwargs):
+        super(SnowFlakeQueryBuilder, self).__init__(
+            dialect=Dialects.SNOWFLAKE, **kwargs
+        )
 
 
 class SnowflakeQuery(Query):
@@ -34,16 +36,16 @@ class SnowflakeQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return SnowFlakeQueryBuilder()
+    def _builder(cls, **kwargs):
+        return SnowFlakeQueryBuilder(**kwargs)
 
 
 class MySQLQueryBuilder(QueryBuilder):
     QUOTE_CHAR = "`"
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(MySQLQueryBuilder, self).__init__(
-            dialect=Dialects.MYSQL, wrap_union_queries=False
+            dialect=Dialects.MYSQL, wrap_union_queries=False, **kwargs
         )
         self._duplicate_updates = []
         self._modifiers = []
@@ -141,8 +143,8 @@ class MySQLQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return MySQLQueryBuilder()
+    def _builder(cls, **kwargs):
+        return MySQLQueryBuilder(**kwargs)
 
     @classmethod
     def load(cls, fp):
@@ -150,8 +152,8 @@ class MySQLQuery(Query):
 
 
 class VerticaQueryBuilder(QueryBuilder):
-    def __init__(self):
-        super(VerticaQueryBuilder, self).__init__(dialect=Dialects.VERTICA)
+    def __init__(self, **kwargs):
+        super(VerticaQueryBuilder, self).__init__(dialect=Dialects.VERTICA, **kwargs)
         self._hint = None
 
     @builder
@@ -253,8 +255,8 @@ class VerticaQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return VerticaQueryBuilder()
+    def _builder(cls, **kwargs):
+        return VerticaQueryBuilder(**kwargs)
 
     @classmethod
     def from_file(cls, fp):
@@ -266,8 +268,8 @@ class VerticaQuery(Query):
 
 
 class OracleQueryBuilder(QueryBuilder):
-    def __init__(self):
-        super(OracleQueryBuilder, self).__init__(dialect=Dialects.ORACLE)
+    def __init__(self, **kwargs):
+        super(OracleQueryBuilder, self).__init__(dialect=Dialects.ORACLE, **kwargs)
 
     def get_sql(self, *args, **kwargs):
         return super(OracleQueryBuilder, self).get_sql(
@@ -281,13 +283,13 @@ class OracleQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return OracleQueryBuilder()
+    def _builder(cls, **kwargs):
+        return OracleQueryBuilder(**kwargs)
 
 
 class PostgreQueryBuilder(QueryBuilder):
-    def __init__(self):
-        super(PostgreQueryBuilder, self).__init__(dialect=Dialects.POSTGRESQL)
+    def __init__(self, **kwargs):
+        super(PostgreQueryBuilder, self).__init__(dialect=Dialects.POSTGRESQL, **kwargs)
         self._returns = []
         self._return_star = False
         self._on_conflict_field = None
@@ -446,8 +448,8 @@ class PostgreSQLQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return PostgreQueryBuilder()
+    def _builder(cls, **kwargs):
+        return PostgreQueryBuilder(**kwargs)
 
 
 class RedshiftQuery(Query):
@@ -456,13 +458,13 @@ class RedshiftQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return QueryBuilder(dialect=Dialects.REDSHIFT)
+    def _builder(cls, **kwargs):
+        return QueryBuilder(dialect=Dialects.REDSHIFT, **kwargs)
 
 
 class MSSQLQueryBuilder(QueryBuilder):
-    def __init__(self):
-        super(MSSQLQueryBuilder, self).__init__(dialect=Dialects.MSSQL)
+    def __init__(self, **kwargs):
+        super(MSSQLQueryBuilder, self).__init__(dialect=Dialects.MSSQL, **kwargs)
         self._top = None
 
     @builder
@@ -507,8 +509,8 @@ class MSSQLQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return MSSQLQueryBuilder()
+    def _builder(cls, **kwargs):
+        return MSSQLQueryBuilder(**kwargs)
 
 
 class ClickHouseQuery(Query):
@@ -517,8 +519,10 @@ class ClickHouseQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return QueryBuilder(dialect=Dialects.CLICKHOUSE, wrap_union_queries=False)
+    def _builder(cls, **kwargs):
+        return QueryBuilder(
+            dialect=Dialects.CLICKHOUSE, wrap_union_queries=False, **kwargs
+        )
 
 
 class SQLLiteValueWrapper(ValueWrapper):
@@ -534,5 +538,7 @@ class SQLLiteQuery(Query):
     """
 
     @classmethod
-    def _builder(cls):
-        return QueryBuilder(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper)
+    def _builder(cls, **kwargs):
+        return QueryBuilder(
+            dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs
+        )

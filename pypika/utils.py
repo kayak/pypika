@@ -44,7 +44,7 @@ def builder(func):
     import copy
 
     def _copy(self, *args, **kwargs):
-        self_copy = copy.copy(self)
+        self_copy = copy.copy(self) if getattr(self, "immutable", True) else self
         result = func(self_copy, *args, **kwargs)
 
         # Return self if the inner function returns None.  This way the inner function can return something

@@ -277,11 +277,11 @@ class Query:
     """
 
     @classmethod
-    def _builder(cls):
-        return QueryBuilder()
+    def _builder(cls, **kwargs):
+        return QueryBuilder(**kwargs)
 
     @classmethod
-    def from_(cls, table):
+    def from_(cls, table, **kwargs):
         """
         Query builder entry point.  Initializes query building and sets the table to select from.  When using this
         function, the query becomes a SELECT query.
@@ -293,7 +293,7 @@ class Query:
 
         :returns QueryBuilder
         """
-        return cls._builder().from_(table)
+        return cls._builder(**kwargs).from_(table)
 
     @classmethod
     def create_table(cls, table):
@@ -308,7 +308,7 @@ class Query:
         return CreateQueryBuilder().create_table(table)
 
     @classmethod
-    def into(cls, table):
+    def into(cls, table, **kwargs):
         """
         Query builder entry point.  Initializes query building and sets the table to insert into.  When using this
         function, the query becomes an INSERT query.
@@ -320,14 +320,14 @@ class Query:
 
         :returns QueryBuilder
         """
-        return cls._builder().into(table)
+        return cls._builder(**kwargs).into(table)
 
     @classmethod
-    def with_(cls, table, name):
-        return cls._builder().with_(table, name)
+    def with_(cls, table, name, **kwargs):
+        return cls._builder(**kwargs).with_(table, name)
 
     @classmethod
-    def select(cls, *terms):
+    def select(cls, *terms, **kwargs):
         """
         Query builder entry point.  Initializes query building without a table and selects fields.  Useful when testing
         SQL functions.
@@ -340,10 +340,10 @@ class Query:
 
         :returns QueryBuilder
         """
-        return cls._builder().select(*terms)
+        return cls._builder(**kwargs).select(*terms)
 
     @classmethod
-    def update(cls, table):
+    def update(cls, table, **kwargs):
         """
         Query builder entry point.  Initializes query building and sets the table to update.  When using this
         function, the query becomes an UPDATE query.
@@ -355,7 +355,7 @@ class Query:
 
         :returns QueryBuilder
         """
-        return cls._builder().update(table)
+        return cls._builder(**kwargs).update(table)
 
 
 class _UnionQuery(Selectable, Term):
@@ -506,7 +506,13 @@ class QueryBuilder(Selectable, Term):
     SECONDARY_QUOTE_CHAR = "'"
     ALIAS_QUOTE_CHAR = None
 
-    def __init__(self, dialect=None, wrap_union_queries=True, wrapper_cls=ValueWrapper):
+    def __init__(
+        self,
+        dialect=None,
+        wrap_union_queries=True,
+        wrapper_cls=ValueWrapper,
+        immutable=True,
+    ):
         super(QueryBuilder, self).__init__(None)
 
         self._from = []
@@ -549,6 +555,8 @@ class QueryBuilder(Selectable, Term):
         self.wrap_union_queries = wrap_union_queries
 
         self._wrapper_cls = wrapper_cls
+
+        self.immutable = immutable
 
     def __copy__(self):
         newone = type(self).__new__(type(self))

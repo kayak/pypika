@@ -13,6 +13,7 @@ class ImmutabilityTests(unittest.TestCase):
         query_a = Query.from_(self.table_a).select(self.table_a.foo)
         query_b = query_a.select(self.table_a.bar)
 
+        self.assertIsNot(query_a, query_b)
         self.assertNotEqual(str(query_a), str(query_b))
 
     def test_queries_after_join(self):
@@ -25,6 +26,11 @@ class ImmutabilityTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "a"', str(query1))
         self.assertEqual(
-            'SELECT "a"."foo","b"."buz" FROM "a" ' 'JOIN "b" ON "a"."foo"="b"."bar"',
+            'SELECT "a"."foo","b"."buz" FROM "a" JOIN "b" ON "a"."foo"="b"."bar"',
             str(query2),
         )
+
+    def test_immutable_kwarg_on_query_builder_disables_immutability(self):
+        query0 = Query.from_(self.table_a, immutable=False)
+        query1 = query0.select(self.table_a.foo)
+        self.assertIs(query0, query1)
