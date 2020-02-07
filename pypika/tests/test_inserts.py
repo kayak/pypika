@@ -111,6 +111,28 @@ class InsertIntoTests(unittest.TestCase):
             'INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query)
         )
 
+    def test_insert_selected_columns_type_list(self):
+        query = (
+            Query.into(self.table_abc)
+            .columns([self.table_abc.foo, self.table_abc.bar, self.table_abc.buz])
+            .insert(1, "a", True)
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query)
+        )
+
+    def test_insert_selected_columns_type_tuple(self):
+        query = (
+            Query.into(self.table_abc)
+            .columns((self.table_abc.foo, self.table_abc.bar, self.table_abc.buz))
+            .insert(1, "a", True)
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query)
+        )
+
     def test_insert_none_skipped(self):
         query = Query.into(self.table_abc).insert()
 
