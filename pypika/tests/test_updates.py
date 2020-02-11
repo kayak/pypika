@@ -105,7 +105,7 @@ class PostgresUpdateTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING id', str(q)
+            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING abc.id', str(q)
         )
 
     def test_update_returning(self):

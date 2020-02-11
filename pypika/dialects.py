@@ -436,9 +436,13 @@ class PostgreQueryBuilder(QueryBuilder):
         querystring = super(PostgreQueryBuilder, self).get_sql(
             with_alias, subquery, **kwargs
         )
+        with_namespace = False
+        if self._update_table and self.from_:
+            with_namespace = True
+
         querystring += self._on_conflict_sql()
         if self._returns:
-            querystring += self._returning_sql()
+            querystring += self._returning_sql(with_namespace=with_namespace)
         return querystring
 
 
