@@ -10,6 +10,7 @@ from pypika.queries import (
 from pypika.terms import (
     ArithmeticExpression,
     Field,
+    Term,
     Function,
     Star,
     ValueWrapper,
@@ -292,7 +293,7 @@ class PostgreQueryBuilder(QueryBuilder):
         super(PostgreQueryBuilder, self).__init__(dialect=Dialects.POSTGRESQL, **kwargs)
         self._returns = []
         self._return_star = False
-        self._on_conflict_field = None
+        self._on_conflict_fields = []
         self._on_conflict_do_nothing = False
         self._on_conflict_updates = []
 
@@ -303,13 +304,15 @@ class PostgreQueryBuilder(QueryBuilder):
         return newone
 
     @builder
-    def on_conflict(self, target_field):
+    def on_conflict(self, *target_fields):
         if not self._insert_table:
             raise QueryException("On conflict only applies to insert query")
-        if isinstance(target_field, str):
-            self._on_conflict_field = self._conflict_field_str(target_field)
-        elif isinstance(target_field, Field):
-            self._on_conflict_field = target_field
+
+        for target_field in target_fields:
+            if isinstance(target_field, str):
+                self._on_conflict_fields.append(self._conflict_field_str(target_field))
+            elif isinstance(target_field, Term):
+                self._on_conflict_fields.append(target_field)
 
     @builder
     def do_nothing(self):
@@ -334,22 +337,19 @@ class PostgreQueryBuilder(QueryBuilder):
 
     def _on_conflict_sql(self, **kwargs):
         if not self._on_conflict_do_nothing and len(self._on_conflict_updates) == 0:
-            if not self._on_conflict_field:
+            if not self._on_conflict_fields:
                 return ""
             else:
                 raise QueryException("No handler defined for on conflict")
         else:
             conflict_query = " ON CONFLICT"
-            if self._on_conflict_field:
-                conflict_query += (
-                    " ("
-                    + self._on_conflict_field.get_sql(with_alias=True, **kwargs)
-                    + ")"
-                )
+            if self._on_conflict_fields:
+                fields = [f.get_sql(with_alias=True, **kwargs) for f in self._on_conflict_fields]
+                conflict_query += " (" + ', '.join(fields) + ")"
             if self._on_conflict_do_nothing:
                 conflict_query += " DO NOTHING"
             elif len(self._on_conflict_updates) > 0:
-                if self._on_conflict_field:
+                if self._on_conflict_fields:
                     conflict_query += " DO UPDATE SET {updates}".format(
                         updates=",".join(
                             "{field}={value}".format(
