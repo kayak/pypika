@@ -1068,6 +1068,7 @@ class QueryBuilder(Selectable, Term):
             self._from[0], QueryBuilder
         )
         has_reference_to_foreign_table = self._foreign_table
+        has_update_from = self._update_table and self._from
 
         kwargs["with_namespace"] = any(
             [
@@ -1075,11 +1076,17 @@ class QueryBuilder(Selectable, Term):
                 has_multiple_from_clauses,
                 has_subquery_from_clause,
                 has_reference_to_foreign_table,
+                has_update_from
             ]
         )
 
         if self._update_table:
-            querystring = self._update_sql(**kwargs)
+            if self._with:
+                querystring = self._with_sql(**kwargs)
+            else:
+                querystring = ""
+
+            querystring += self._update_sql(**kwargs)
 
             if self._joins:
                 querystring += " " + " ".join(
@@ -1087,6 +1094,9 @@ class QueryBuilder(Selectable, Term):
                 )
 
             querystring += self._set_sql(**kwargs)
+
+            if self._from:
+                querystring += self._from_sql(**kwargs)
 
             if self._wheres:
                 querystring += self._where_sql(**kwargs)
@@ -1341,7 +1351,7 @@ class QueryBuilder(Selectable, Term):
         return " SET {set}".format(
             set=",".join(
                 "{field}={value}".format(
-                    field=field.get_sql(**kwargs), value=value.get_sql(**kwargs)
+                    field=field.get_sql(**dict(kwargs, with_namespace=False)), value=value.get_sql(**kwargs)
                 )
                 for field, value in self._updates
             )
