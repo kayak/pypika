@@ -1,6 +1,7 @@
 import unittest
 
 from pypika import (
+    Case,
     Field as F,
     MySQLQuery,
     PostgreSQLQuery,
@@ -149,7 +150,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'INSERT INTO "abc" VALUES (1) ON CONFLICT (id) DO NOTHING', str(query)
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id") DO NOTHING', str(query)
         )
 
     def test_insert_on_conflict_do_nothing_multiple_fields(self):
@@ -161,7 +162,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'INSERT INTO "abc" VALUES (1) ON CONFLICT (id, sub_id) DO NOTHING', str(query)
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id", "sub_id") DO NOTHING', str(query)
         )
 
     def test_insert_on_conflict_do_nothing_field_str(self):
@@ -173,7 +174,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'INSERT INTO "abc" VALUES (1) ON CONFLICT (id) DO NOTHING', str(query)
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id") DO NOTHING', str(query)
         )
 
     def test_insert_on_conflict_do_nothing_multiple_fields_str(self):
@@ -185,7 +186,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'INSERT INTO "abc" VALUES (1) ON CONFLICT (id, sub_id) DO NOTHING', str(query)
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id", "sub_id") DO NOTHING', str(query)
         )
 
     def test_insert_on_conflict_do_nothing_mixed_fields(self):
@@ -197,7 +198,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'INSERT INTO "abc" VALUES (1) ON CONFLICT (id, sub_id) DO NOTHING', str(query)
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id", "sub_id") DO NOTHING', str(query)
         )
 
     def test_insert_on_conflict_do_update_field(self):
@@ -209,7 +210,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (id) DO UPDATE SET name='m'",
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\") DO UPDATE SET \"name\"='m'",
             str(query),
         )
 
@@ -222,7 +223,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (id, sub_id) DO UPDATE SET name='m'",
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\", \"sub_id\") DO UPDATE SET \"name\"='m'",
             str(query),
         )
 
@@ -235,7 +236,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (id) DO UPDATE SET name='m'",
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\") DO UPDATE SET \"name\"='m'",
             str(query),
         )
 
@@ -248,7 +249,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (id, sub_id) DO UPDATE SET name='m'",
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\", \"sub_id\") DO UPDATE SET \"name\"='m'",
             str(query),
         )
 
@@ -261,7 +262,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (id, sub_id) DO UPDATE SET name='m'",
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\", \"sub_id\") DO UPDATE SET \"name\"='m'",
             str(query),
         )
 
@@ -332,6 +333,27 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
                 .do_update(self.table_abc.name, "m")
             )
 
+    def test_on_conflict_from_subquery(self):
+        table_bcd = Table('bcd')
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+                .insert(self.table_abc.fname, self.table_abc.lname)
+                .select(table_bcd.fname, table_bcd.lname)
+                .from_(table_bcd)
+                .on_conflict(self.table_abc.id, self.table_abc.sub_id)
+                .do_update(self.table_abc.fname, 1)
+                .do_update(self.table_abc.lname, table_bcd.lname)
+                .do_update(self.table_abc.cname,
+                           Case().when(self.table_abc.cname.eq('cname'), 'new_name').else_(self.table_abc.cname))
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES ("fname","lname") '
+            'ON CONFLICT ("id", "sub_id") '
+            'DO UPDATE SET "fname"=1,"lname"="bcd"."lname",'
+            '"cname"=CASE WHEN "abc"."cname"=\'cname\' THEN \'new_name\' ELSE "abc"."cname" END', str(query)
+        )
+
 
 class PostgresInsertIntoReturningTests(unittest.TestCase):
     table_abc = Table("abc")
@@ -341,12 +363,12 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
             PostgreSQLQuery.into(self.table_abc).insert(1).returning(self.table_abc.id)
         )
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING "id"', str(query))
 
     def test_insert_returning_one_field_str(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1).returning("id")
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING "id"', str(query))
 
     def test_insert_returning_all_fields(self):
         query = (
@@ -364,7 +386,7 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
             .returning(self.table_abc.star, self.table_abc.f1 + self.table_abc.f2)
         )
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *,f1+f2', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *,"f1"+"f2"', str(query))
 
     def test_insert_all_columns_multi_rows_chained_returning_star(self):
         query = (
@@ -433,7 +455,7 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
             .returning(self.table_abc.f1 + self.table_abc.f2)
         )
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING f1+f2', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING "f1"+"f2"', str(query))
 
     def test_insert_returning_aggregate(self):
         with self.assertRaises(QueryException):

@@ -105,7 +105,7 @@ class PostgresUpdateTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING abc.id', str(q)
+            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING "abc"."id"', str(q)
         )
 
     def test_update_returning(self):
@@ -117,7 +117,7 @@ class PostgresUpdateTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING abc.id', str(q)
+            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING "abc"."id"', str(q)
         )
 
     def test_update_returning_from_different_tables(self):
@@ -130,5 +130,5 @@ class PostgresUpdateTests(unittest.TestCase):
             .returning(self.table_abc.id, table_bcd.fname)
         )
         self.assertEqual(
-            'UPDATE "abc" SET "lname"="bcd"."long_name" FROM "bcd" RETURNING abc.id,bcd.fname', str(q)
+            'UPDATE "abc" SET "lname"="bcd"."long_name" FROM "bcd" RETURNING "abc"."id","bcd"."fname"', str(q)
         )

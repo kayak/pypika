@@ -344,7 +344,8 @@ class PostgreQueryBuilder(QueryBuilder):
         else:
             conflict_query = " ON CONFLICT"
             if self._on_conflict_fields:
-                fields = [f.get_sql(with_alias=True, **kwargs) for f in self._on_conflict_fields]
+                fields = [f.get_sql(with_alias=True, **kwargs)
+                          for f in self._on_conflict_fields]
                 conflict_query += " (" + ', '.join(fields) + ")"
             if self._on_conflict_do_nothing:
                 conflict_query += " DO NOTHING"
@@ -354,7 +355,7 @@ class PostgreQueryBuilder(QueryBuilder):
                         updates=",".join(
                             "{field}={value}".format(
                                 field=field.get_sql(**kwargs),
-                                value=value.get_sql(**kwargs),
+                                value=value.get_sql(with_namespace=True, **kwargs),
                             )
                             for field, value in self._on_conflict_updates
                         )
@@ -433,6 +434,8 @@ class PostgreQueryBuilder(QueryBuilder):
         )
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
+        self._set_kwargs_defaults(kwargs)
+
         querystring = super(PostgreQueryBuilder, self).get_sql(
             with_alias, subquery, **kwargs
         )
@@ -440,9 +443,9 @@ class PostgreQueryBuilder(QueryBuilder):
         if self._update_table and self.from_:
             with_namespace = True
 
-        querystring += self._on_conflict_sql()
+        querystring += self._on_conflict_sql(**kwargs)
         if self._returns:
-            querystring += self._returning_sql(with_namespace=with_namespace)
+            querystring += self._returning_sql(with_namespace=with_namespace, **kwargs)
         return querystring
 
 
