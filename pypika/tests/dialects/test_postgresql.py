@@ -207,3 +207,14 @@ class JSONBOperatorsTests(unittest.TestCase):
         self.assertEqual(
             "SELECT * FROM \"abc\" WHERE \"json\"?|ARRAY['dates','imported']", str(q)
         )
+
+
+class DistinctOnTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_distinct_on(self):
+        q = PostgreSQLQuery.from_(self.table_abc).distinct_on('lname', self.table_abc.fname).select('lname', 'id')
+
+        self.assertEqual(
+            '''SELECT DISTINCT ON("lname","fname") "lname","id" FROM "abc"''', str(q)
+        )

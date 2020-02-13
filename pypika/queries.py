@@ -1186,9 +1186,17 @@ class QueryBuilder(Selectable, Term):
             for clause in self._with
         )
 
+    def _distinct_sql(self, **kwargs):
+        if self._distinct:
+            distinct = 'DISTINCT '
+        else:
+            distinct = ''
+
+        return distinct
+
     def _select_sql(self, **kwargs):
         return "SELECT {distinct}{select}".format(
-            distinct="DISTINCT " if self._distinct else "",
+            distinct=self._distinct_sql(**kwargs),
             select=",".join(
                 term.get_sql(with_alias=True, subquery=True, **kwargs)
                 for term in self._selects

@@ -296,12 +296,21 @@ class PostgreQueryBuilder(QueryBuilder):
         self._on_conflict_fields = []
         self._on_conflict_do_nothing = False
         self._on_conflict_updates = []
+        self._distinct_on = []
 
     def __copy__(self):
         newone = super(PostgreQueryBuilder, self).__copy__()
         newone._returns = copy(self._returns)
         newone._on_conflict_updates = copy(self._on_conflict_updates)
         return newone
+
+    @builder
+    def distinct_on(self, *fields):
+        for field in fields:
+            if isinstance(field, str):
+                self._distinct_on.append(Field(field))
+            elif isinstance(field, Term):
+                self._distinct_on.append(field)
 
     @builder
     def on_conflict(self, *target_fields):
@@ -330,6 +339,15 @@ class PostgreQueryBuilder(QueryBuilder):
         elif isinstance(update_field, Field):
             field = update_field
         self._on_conflict_updates.append((field, ValueWrapper(update_value)))
+
+    def _distinct_sql(self, **kwargs):
+        if self._distinct_on:
+            return "DISTINCT ON({distinct_on}) ".format(
+                distinct_on=",".join(
+                    term.get_sql(with_alias=True, **kwargs) for term in self._distinct_on
+                )
+            )
+        return super()._distinct_sql(**kwargs)
 
     def _conflict_field_str(self, term):
         if self._insert_table:
