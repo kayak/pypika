@@ -14,6 +14,7 @@ from pypika.terms import (
     Function,
     Star,
     ValueWrapper,
+    EmptyCriterion
 )
 from pypika.utils import (
     QueryException,
@@ -293,9 +294,14 @@ class PostgreQueryBuilder(QueryBuilder):
         super(PostgreQueryBuilder, self).__init__(dialect=Dialects.POSTGRESQL, **kwargs)
         self._returns = []
         self._return_star = False
+
+        self._on_conflict = False
         self._on_conflict_fields = []
         self._on_conflict_do_nothing = False
         self._on_conflict_do_updates = []
+        self._on_conflict_wheres = None
+        self._on_conflict_do_update_wheres = None
+
         self._distinct_on = []
 
     def __copy__(self):
@@ -316,6 +322,8 @@ class PostgreQueryBuilder(QueryBuilder):
     def on_conflict(self, *target_fields):
         if not self._insert_table:
             raise QueryException("On conflict only applies to insert query")
+
+        self._on_conflict = True
 
         for target_field in target_fields:
             if isinstance(target_field, str):
@@ -343,6 +351,30 @@ class PostgreQueryBuilder(QueryBuilder):
 
         self._on_conflict_do_updates.append((field, ValueWrapper(update_value)))
 
+    @builder
+    def where(self, criterion):
+        if not self._on_conflict:
+            return super().where(criterion)
+
+        if isinstance(criterion, EmptyCriterion):
+            return
+
+        if self._on_conflict_do_nothing:
+            raise QueryException('DO NOTHING doest not support WHERE')
+
+        if self._on_conflict_fields and self._on_conflict_do_updates:
+            if self._on_conflict_do_update_wheres:
+                self._on_conflict_do_update_wheres &= criterion
+            else:
+                self._on_conflict_do_update_wheres = criterion
+        elif self._on_conflict_fields:
+            if self._on_conflict_wheres:
+                self._on_conflict_wheres &= criterion
+            else:
+                self._on_conflict_wheres = criterion
+        else:
+            raise QueryException('Can not have fieldless ON CONFLICT WHERE')
+
     def _distinct_sql(self, **kwargs):
         if self._distinct_on:
             return "DISTINCT ON({distinct_on}) ".format(
@@ -362,34 +394,43 @@ class PostgreQueryBuilder(QueryBuilder):
                 return ""
             raise QueryException("No handler defined for on conflict")
 
+        if self._on_conflict_do_updates and not self._on_conflict_fields:
+            raise QueryException("Can not have fieldless on conflict do update")
+
         conflict_query = " ON CONFLICT"
         if self._on_conflict_fields:
             fields = [f.get_sql(with_alias=True, **kwargs)
                       for f in self._on_conflict_fields]
             conflict_query += " (" + ', '.join(fields) + ")"
 
+        if self._on_conflict_wheres:
+            conflict_query += " WHERE {where}".format(
+                where=self._on_conflict_wheres.get_sql(subquery=True, **kwargs)
+            )
+
         return conflict_query
 
     def _on_conflict_action_sql(self, **kwargs):
-        do_action_query = ''
-
         if self._on_conflict_do_nothing:
-            do_action_query += " DO NOTHING"
+            return " DO NOTHING"
         elif len(self._on_conflict_do_updates) > 0:
-            if self._on_conflict_fields:
-                do_action_query += " DO UPDATE SET {updates}".format(
-                    updates=",".join(
-                        "{field}={value}".format(
-                            field=field.get_sql(**kwargs),
-                            value=value.get_sql(with_namespace=True, **kwargs),
-                        )
-                        for field, value in self._on_conflict_do_updates
+            action_sql = " DO UPDATE SET {updates}".format(
+                updates=",".join(
+                    "{field}={value}".format(
+                        field=field.get_sql(**kwargs),
+                        value=value.get_sql(with_namespace=True, **kwargs),
                     )
+                    for field, value in self._on_conflict_do_updates
                 )
-            else:
-                raise QueryException("Can not have fieldless on conflict do update")
+            )
 
-        return do_action_query
+            if self._on_conflict_do_update_wheres:
+                action_sql += " WHERE {where}".format(
+                    where=self._on_conflict_do_update_wheres.get_sql(subquery=True, with_namespace=True, **kwargs)
+                )
+            return action_sql
+
+        return ''
 
     @builder
     def returning(self, *terms):
