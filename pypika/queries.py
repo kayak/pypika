@@ -1110,10 +1110,15 @@ class QueryBuilder(Selectable, Term):
             querystring = self._delete_sql(**kwargs)
 
         elif not self._select_into and self._insert_table:
-            if self._replace:
-                querystring = self._replace_sql(**kwargs)
+            if self._with:
+                querystring = self._with_sql(**kwargs)
             else:
-                querystring = self._insert_sql(**kwargs)
+                querystring = ""
+
+            if self._replace:
+                querystring += self._replace_sql(**kwargs)
+            else:
+                querystring += self._insert_sql(**kwargs)
 
             if self._columns:
                 querystring += self._columns_sql(**kwargs)

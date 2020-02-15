@@ -1,6 +1,7 @@
 import unittest
 
 from pypika import (
+    AliasedQuery,
     Case,
     Field as F,
     MySQLQuery,
@@ -136,6 +137,19 @@ class InsertIntoTests(unittest.TestCase):
         self.assertEqual(
             "INSERT INTO \"abc\" VALUES (1,'a',true),(2,'b',false)", str(q)
         )
+
+    def test_insert_with_statement(self):
+        sub_query = Query().select(self.table_abc.id).from_(self.table_abc)
+        aliased = AliasedQuery('sub_qs')
+
+        q = (
+            Query().with_(sub_query, 'sub_qs')
+            .into(self.table_abc)
+            .select(aliased.id)
+            .from_(aliased)
+        )
+        self.assertEqual(
+            'WITH sub_qs AS (SELECT "id" FROM "abc") INSERT INTO "abc" SELECT "sub_qs"."id" FROM sub_qs', str(q))
 
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
