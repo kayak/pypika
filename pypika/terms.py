@@ -1197,12 +1197,12 @@ class AnalyticFunction(Function):
         self._filters = []
         self._partition = []
         self._orderbys = []
-        self._filter = False
+        self._include_filter = False
         self._include_over = False
 
     @builder
     def filter(self, *filters):
-        self._filter = True
+        self._include_filter = True
         self._filters += filters
 
     @builder
@@ -1224,7 +1224,7 @@ class AnalyticFunction(Function):
         )
 
     def get_filter_sql(self):
-        if self._filter:
+        if self._include_filter:
             return "WHERE {criterions}".format(
                 criterions=Criterion.all(self._filters).get_sql()
             )
@@ -1259,7 +1259,7 @@ class AnalyticFunction(Function):
         partition_sql = self.get_partition_sql(**kwargs)
 
         sql = function_sql
-        if self._filter:
+        if self._include_filter:
             sql += " FILTER({filter_sql})".format(filter_sql=filter_sql)
         if self._include_over:
             sql += " OVER({partition_sql})".format(partition_sql=partition_sql)
