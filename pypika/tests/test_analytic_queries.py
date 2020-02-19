@@ -1,6 +1,7 @@
 import unittest
 
 from pypika import (
+    Criterion,
     JoinType,
     Order,
     Query,
@@ -215,6 +216,25 @@ class RankTests(unittest.TestCase):
         self.assertEqual(
             "SELECT "
             'LAST_VALUE("fizz") '
+            'OVER(PARTITION BY "foo" ORDER BY "date") '
+            'FROM "abc"',
+            str(q),
+        )
+
+    def test_filter(self):
+        expr = (
+            an.LastValue(self.table_abc.fizz)
+            .filter(Criterion.all([self.table_abc.bar == True]))
+            .over(self.table_abc.foo)
+            .orderby(self.table_abc.date)
+        )
+
+        q = Query.from_(self.table_abc).select(expr)
+
+        self.assertEqual(
+            "SELECT "
+            'LAST_VALUE("fizz") '
+            'FILTER(WHERE "bar"=true) '
             'OVER(PARTITION BY "foo" ORDER BY "date") '
             'FROM "abc"',
             str(q),
