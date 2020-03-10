@@ -10,9 +10,11 @@ from pypika.queries import (
 from pypika.terms import (
     ArithmeticExpression,
     Field,
+    Term,
     Function,
     Star,
     ValueWrapper,
+    EmptyCriterion
 )
 from pypika.utils import (
     QueryException,
@@ -292,28 +294,46 @@ class PostgreQueryBuilder(QueryBuilder):
         super(PostgreQueryBuilder, self).__init__(dialect=Dialects.POSTGRESQL, **kwargs)
         self._returns = []
         self._return_star = False
-        self._on_conflict_field = None
+
+        self._on_conflict = False
+        self._on_conflict_fields = []
         self._on_conflict_do_nothing = False
-        self._on_conflict_updates = []
+        self._on_conflict_do_updates = []
+        self._on_conflict_wheres = None
+        self._on_conflict_do_update_wheres = None
+
+        self._distinct_on = []
 
     def __copy__(self):
         newone = super(PostgreQueryBuilder, self).__copy__()
         newone._returns = copy(self._returns)
-        newone._on_conflict_updates = copy(self._on_conflict_updates)
+        newone._on_conflict_do_updates = copy(self._on_conflict_do_updates)
         return newone
 
     @builder
-    def on_conflict(self, target_field):
+    def distinct_on(self, *fields):
+        for field in fields:
+            if isinstance(field, str):
+                self._distinct_on.append(Field(field))
+            elif isinstance(field, Term):
+                self._distinct_on.append(field)
+
+    @builder
+    def on_conflict(self, *target_fields):
         if not self._insert_table:
             raise QueryException("On conflict only applies to insert query")
-        if isinstance(target_field, str):
-            self._on_conflict_field = self._conflict_field_str(target_field)
-        elif isinstance(target_field, Field):
-            self._on_conflict_field = target_field
+
+        self._on_conflict = True
+
+        for target_field in target_fields:
+            if isinstance(target_field, str):
+                self._on_conflict_fields.append(self._conflict_field_str(target_field))
+            elif isinstance(target_field, Term):
+                self._on_conflict_fields.append(target_field)
 
     @builder
     def do_nothing(self):
-        if len(self._on_conflict_updates) > 0:
+        if len(self._on_conflict_do_updates) > 0:
             raise QueryException("Can not have two conflict handlers")
         self._on_conflict_do_nothing = True
 
@@ -326,43 +346,91 @@ class PostgreQueryBuilder(QueryBuilder):
             field = self._conflict_field_str(update_field)
         elif isinstance(update_field, Field):
             field = update_field
-        self._on_conflict_updates.append((field, ValueWrapper(update_value)))
+        else:
+            raise QueryException("Unsupported update_field")
+
+        self._on_conflict_do_updates.append((field, ValueWrapper(update_value)))
+
+    @builder
+    def where(self, criterion):
+        if not self._on_conflict:
+            return super().where(criterion)
+
+        if isinstance(criterion, EmptyCriterion):
+            return
+
+        if self._on_conflict_do_nothing:
+            raise QueryException('DO NOTHING doest not support WHERE')
+
+        if self._on_conflict_fields and self._on_conflict_do_updates:
+            if self._on_conflict_do_update_wheres:
+                self._on_conflict_do_update_wheres &= criterion
+            else:
+                self._on_conflict_do_update_wheres = criterion
+        elif self._on_conflict_fields:
+            if self._on_conflict_wheres:
+                self._on_conflict_wheres &= criterion
+            else:
+                self._on_conflict_wheres = criterion
+        else:
+            raise QueryException('Can not have fieldless ON CONFLICT WHERE')
+
+    def _distinct_sql(self, **kwargs):
+        if self._distinct_on:
+            return "DISTINCT ON({distinct_on}) ".format(
+                distinct_on=",".join(
+                    term.get_sql(with_alias=True, **kwargs) for term in self._distinct_on
+                )
+            )
+        return super()._distinct_sql(**kwargs)
 
     def _conflict_field_str(self, term):
         if self._insert_table:
             return Field(term, table=self._insert_table)
 
     def _on_conflict_sql(self, **kwargs):
-        if not self._on_conflict_do_nothing and len(self._on_conflict_updates) == 0:
-            if not self._on_conflict_field:
+        if not self._on_conflict_do_nothing and len(self._on_conflict_do_updates) == 0:
+            if not self._on_conflict_fields:
                 return ""
-            else:
-                raise QueryException("No handler defined for on conflict")
-        else:
-            conflict_query = " ON CONFLICT"
-            if self._on_conflict_field:
-                conflict_query += (
-                    " ("
-                    + self._on_conflict_field.get_sql(with_alias=True, **kwargs)
-                    + ")"
-                )
-            if self._on_conflict_do_nothing:
-                conflict_query += " DO NOTHING"
-            elif len(self._on_conflict_updates) > 0:
-                if self._on_conflict_field:
-                    conflict_query += " DO UPDATE SET {updates}".format(
-                        updates=",".join(
-                            "{field}={value}".format(
-                                field=field.get_sql(**kwargs),
-                                value=value.get_sql(**kwargs),
-                            )
-                            for field, value in self._on_conflict_updates
-                        )
-                    )
-                else:
-                    raise QueryException("Can not have fieldless on conflict do update")
+            raise QueryException("No handler defined for on conflict")
 
-            return conflict_query
+        if self._on_conflict_do_updates and not self._on_conflict_fields:
+            raise QueryException("Can not have fieldless on conflict do update")
+
+        conflict_query = " ON CONFLICT"
+        if self._on_conflict_fields:
+            fields = [f.get_sql(with_alias=True, **kwargs)
+                      for f in self._on_conflict_fields]
+            conflict_query += " (" + ', '.join(fields) + ")"
+
+        if self._on_conflict_wheres:
+            conflict_query += " WHERE {where}".format(
+                where=self._on_conflict_wheres.get_sql(subquery=True, **kwargs)
+            )
+
+        return conflict_query
+
+    def _on_conflict_action_sql(self, **kwargs):
+        if self._on_conflict_do_nothing:
+            return " DO NOTHING"
+        elif len(self._on_conflict_do_updates) > 0:
+            action_sql = " DO UPDATE SET {updates}".format(
+                updates=",".join(
+                    "{field}={value}".format(
+                        field=field.get_sql(**kwargs),
+                        value=value.get_sql(with_namespace=True, **kwargs),
+                    )
+                    for field, value in self._on_conflict_do_updates
+                )
+            )
+
+            if self._on_conflict_do_update_wheres:
+                action_sql += " WHERE {where}".format(
+                    where=self._on_conflict_do_update_wheres.get_sql(subquery=True, with_namespace=True, **kwargs)
+                )
+            return action_sql
+
+        return ''
 
     @builder
     def returning(self, *terms):
@@ -433,12 +501,20 @@ class PostgreQueryBuilder(QueryBuilder):
         )
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
+        self._set_kwargs_defaults(kwargs)
+
         querystring = super(PostgreQueryBuilder, self).get_sql(
             with_alias, subquery, **kwargs
         )
-        querystring += self._on_conflict_sql()
+        with_namespace = False
+        if self._update_table and self.from_:
+            with_namespace = True
+
+        querystring += self._on_conflict_sql(**kwargs)
+        querystring += self._on_conflict_action_sql(**kwargs)
+
         if self._returns:
-            querystring += self._returning_sql()
+            querystring += self._returning_sql(with_namespace=with_namespace, **kwargs)
         return querystring
 
 

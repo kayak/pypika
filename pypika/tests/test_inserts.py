@@ -1,6 +1,8 @@
 import unittest
 
 from pypika import (
+    AliasedQuery,
+    Case,
     Field as F,
     MySQLQuery,
     PostgreSQLQuery,
@@ -158,6 +160,19 @@ class InsertIntoTests(unittest.TestCase):
             "INSERT INTO \"abc\" VALUES (1,'a',true),(2,'b',false)", str(q)
         )
 
+    def test_insert_with_statement(self):
+        sub_query = Query().select(self.table_abc.id).from_(self.table_abc)
+        aliased = AliasedQuery('sub_qs')
+
+        q = (
+            Query().with_(sub_query, 'sub_qs')
+            .into(self.table_abc)
+            .select(aliased.id)
+            .from_(aliased)
+        )
+        self.assertEqual(
+            'WITH sub_qs AS (SELECT "id" FROM "abc") INSERT INTO "abc" SELECT "sub_qs"."id" FROM sub_qs', str(q))
+
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     table_abc = Table("abc")
@@ -171,7 +186,19 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'INSERT INTO "abc" VALUES (1) ON CONFLICT (id) DO NOTHING', str(query)
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id") DO NOTHING', str(query)
+        )
+
+    def test_insert_on_conflict_do_nothing_multiple_fields(self):
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+                .insert(1)
+                .on_conflict(self.table_abc.id, self.table_abc.sub_id)
+                .do_nothing()
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id", "sub_id") DO NOTHING', str(query)
         )
 
     def test_insert_on_conflict_do_nothing_field_str(self):
@@ -183,7 +210,31 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'INSERT INTO "abc" VALUES (1) ON CONFLICT (id) DO NOTHING', str(query)
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id") DO NOTHING', str(query)
+        )
+
+    def test_insert_on_conflict_do_nothing_multiple_fields_str(self):
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+            .insert(1)
+            .on_conflict("id", "sub_id")
+            .do_nothing()
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id", "sub_id") DO NOTHING', str(query)
+        )
+
+    def test_insert_on_conflict_do_nothing_mixed_fields(self):
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+            .insert(1)
+            .on_conflict("id", self.table_abc.sub_id)
+            .do_nothing()
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1) ON CONFLICT ("id", "sub_id") DO NOTHING', str(query)
         )
 
     def test_insert_on_conflict_do_update_field(self):
@@ -195,7 +246,20 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (id) DO UPDATE SET name='m'",
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\") DO UPDATE SET \"name\"='m'",
+            str(query),
+        )
+
+    def test_insert_on_conflict_do_update_multiple_fields(self):
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+            .insert(1, "m")
+            .on_conflict(self.table_abc.id, self.table_abc.sub_id)
+            .do_update(self.table_abc.name, "m")
+        )
+
+        self.assertEqual(
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\", \"sub_id\") DO UPDATE SET \"name\"='m'",
             str(query),
         )
 
@@ -208,7 +272,33 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (id) DO UPDATE SET name='m'",
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\") DO UPDATE SET \"name\"='m'",
+            str(query),
+        )
+
+    def test_insert_on_conflict_do_update_multiple_fields_str(self):
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+            .insert(1, "m")
+            .on_conflict("id", "sub_id")
+            .do_update("name", "m")
+        )
+
+        self.assertEqual(
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\", \"sub_id\") DO UPDATE SET \"name\"='m'",
+            str(query),
+        )
+
+    def test_insert_on_conflict_do_update_multiple_mixed_fields(self):
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+            .insert(1, "m")
+            .on_conflict("id", self.table_abc.sub_id)
+            .do_update("name", "m")
+        )
+
+        self.assertEqual(
+            "INSERT INTO \"abc\" VALUES (1,'m') ON CONFLICT (\"id\", \"sub_id\") DO UPDATE SET \"name\"='m'",
             str(query),
         )
 
@@ -279,6 +369,144 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
                 .do_update(self.table_abc.name, "m")
             )
 
+    def test_on_conflict_from_subquery(self):
+        table_bcd = Table('bcd')
+        query = (
+            PostgreSQLQuery.into(self.table_abc)
+                .insert(self.table_abc.fname, self.table_abc.lname)
+                .select(table_bcd.fname, table_bcd.lname)
+                .from_(table_bcd)
+                .on_conflict(self.table_abc.id, self.table_abc.sub_id)
+                .do_update(self.table_abc.fname, 1)
+                .do_update(self.table_abc.lname, table_bcd.lname)
+                .do_update(self.table_abc.cname,
+                           Case().when(self.table_abc.cname.eq('cname'), 'new_name').else_(self.table_abc.cname))
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES ("fname","lname") '
+            'ON CONFLICT ("id", "sub_id") '
+            'DO UPDATE SET "fname"=1,"lname"="bcd"."lname",'
+            '"cname"=CASE WHEN "abc"."cname"=\'cname\' THEN \'new_name\' ELSE "abc"."cname" END', str(query)
+        )
+
+    def test_on_conflict_where_empty_conflict_fields_do_nothing(self):
+        with self.assertRaises(QueryException):
+            (
+                PostgreSQLQuery.into(self.table_abc)
+                    .insert(1, "m")
+                    .on_conflict()
+                    .where(self.table_abc.abc.eq(0))
+                    .where(self.table_abc.cde.eq(0))
+                    .do_nothing()
+            )
+
+    def test_on_conflict_where_conflict_fields_do_nothing(self):
+        qs = (
+            PostgreSQLQuery.into(self.table_abc)
+                .insert(1, "m")
+                .on_conflict('id')
+                .where(self.table_abc.abc.eq(0))
+                .where(self.table_abc.cde.eq(0))
+                .do_nothing()
+        )
+        self.assertEqual(
+            '''INSERT INTO "abc" VALUES (1,'m') ON CONFLICT ("id") WHERE "abc"=0 AND "cde"=0 DO NOTHING''', str(qs))
+
+    def test_on_conflict_where_empty_conflict_fields_do_update(self):
+        with self.assertRaises(QueryException):
+            (
+                PostgreSQLQuery.into(self.table_abc)
+                    .insert(1, "m")
+                    .on_conflict()
+                    .where(self.table_abc.abc.eq(0))
+                    .where(self.table_abc.cde.eq(0))
+                    .do_update('field', 'val')
+            )
+
+    def test_on_conflict_where_conflict_fields_do_update(self):
+        qs = (
+            PostgreSQLQuery.into(self.table_abc)
+                .insert(1, "m")
+                .on_conflict('id')
+                .where(self.table_abc.abc.eq(0))
+                .where(self.table_abc.cde.eq(0))
+                .do_update('field', 'val')
+        )
+        self.assertEqual(
+            '''INSERT INTO "abc" VALUES (1,'m') ON CONFLICT ("id") WHERE "abc"=0 AND "cde"=0 '''
+            '''DO UPDATE SET "field"='val\'''', str(qs))
+
+    def test_where_and_on_conflict_where(self):
+        table_bcd = Table('bcd')
+
+        qs = (
+            PostgreSQLQuery.into(self.table_abc)
+                .select(table_bcd.abc)
+                .from_(table_bcd)
+                .where(table_bcd.abc.eq('1'))
+                .on_conflict('id')
+                .where(self.table_abc.abc.eq(0))
+                .where(self.table_abc.cde.eq(0))
+                .do_update('field', 'val')
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" SELECT "abc" FROM "bcd" WHERE "abc"=\'1\' '
+            'ON CONFLICT ("id") WHERE "abc"=0 AND "cde"=0 DO UPDATE SET "field"=\'val\'', str(qs))
+
+    def test_on_conflict_do_nothing_where(self):
+        with self.assertRaises(QueryException):
+            (
+                PostgreSQLQuery.into(self.table_abc)
+                    .insert(1, "m")
+                    .on_conflict()
+                    .do_nothing()
+                    .where(self.table_abc.abc.eq(1))
+            )
+
+    def test_empty_on_conflict_do_update_where(self):
+        with self.assertRaises(QueryException):
+            (
+                PostgreSQLQuery.into(self.table_abc)
+                    .insert(1, "m")
+                    .on_conflict()
+                    .do_update('abc', 1)
+                    .where(self.table_abc.abc.eq(1))
+            )
+
+    def test_on_conflict_do_update_where(self):
+        qs = (
+            PostgreSQLQuery.into(self.table_abc)
+                .insert(1, "m")
+                .on_conflict("id")
+                .do_update('abc', 1)
+                .where(self.table_abc.abc.eq(1))
+        )
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT ("id") DO UPDATE SET "abc"=1 WHERE "abc"."abc"=1', str(qs))
+
+    def test_on_conflict_where_complex(self):
+        table_bcd = Table('bcd')
+
+        qs = (
+            PostgreSQLQuery.into(self.table_abc)
+                .select(table_bcd.abc)
+                .from_(table_bcd)
+                .where(table_bcd.abc.eq('1'))
+                .on_conflict('id')
+                .where(self.table_abc.abc.eq(0))
+                .where(self.table_abc.cde.eq(0))
+                .do_update('field', 'val')
+                .where(self.table_abc.id.eq(2))
+                .where(self.table_abc.sub_id.eq(3))
+        )
+        self.assertEqual(
+            'INSERT INTO "abc" SELECT "abc" FROM "bcd" WHERE "abc"=\'1\' '
+            'ON CONFLICT ("id") WHERE "abc"=0 AND "cde"=0 '
+            'DO UPDATE SET "field"=\'val\' WHERE "abc"."id"=2 AND "abc"."sub_id"=3',
+            str(qs))
+
 
 class PostgresInsertIntoReturningTests(unittest.TestCase):
     table_abc = Table("abc")
@@ -288,12 +516,12 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
             PostgreSQLQuery.into(self.table_abc).insert(1).returning(self.table_abc.id)
         )
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING "id"', str(query))
 
     def test_insert_returning_one_field_str(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1).returning("id")
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING id', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING "id"', str(query))
 
     def test_insert_returning_all_fields(self):
         query = (
@@ -311,7 +539,7 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
             .returning(self.table_abc.star, self.table_abc.f1 + self.table_abc.f2)
         )
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *,f1+f2', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING *,"f1"+"f2"', str(query))
 
     def test_insert_all_columns_multi_rows_chained_returning_star(self):
         query = (
@@ -380,7 +608,7 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
             .returning(self.table_abc.f1 + self.table_abc.f2)
         )
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING f1+f2', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING "f1"+"f2"', str(query))
 
     def test_insert_returning_aggregate(self):
         with self.assertRaises(QueryException):

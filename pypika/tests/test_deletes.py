@@ -46,7 +46,7 @@ class PostgresDeleteTests(unittest.TestCase):
             .returning(self.table_abc.id)
         )
 
-        self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING id', str(q1))
+        self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING "id"', str(q1))
 
     def test_delete_returning_str(self):
         q1 = (
@@ -56,4 +56,4 @@ class PostgresDeleteTests(unittest.TestCase):
             .returning("id")
         )
 
-        self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING id', str(q1))
+        self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING "id"', str(q1))
