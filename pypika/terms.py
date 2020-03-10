@@ -1194,9 +1194,16 @@ class AnalyticFunction(Function):
 
     def __init__(self, name, *args, **kwargs):
         super(AnalyticFunction, self).__init__(name, *args, **kwargs)
+        self._filters = []
         self._partition = []
         self._orderbys = []
+        self._include_filter = False
         self._include_over = False
+
+    @builder
+    def filter(self, *filters):
+        self._include_filter = True
+        self._filters += filters
 
     @builder
     def over(self, *terms):
@@ -1215,6 +1222,12 @@ class AnalyticFunction(Function):
         return "{field} {orient}".format(
             field=field.get_sql(**kwargs), orient=orient.value,
         )
+
+    def get_filter_sql(self):
+        if self._include_filter:
+            return "WHERE {criterions}".format(
+                criterions=Criterion.all(self._filters).get_sql()
+            )
 
     def get_partition_sql(self, **kwargs):
         terms = []
@@ -1242,14 +1255,16 @@ class AnalyticFunction(Function):
 
     def get_function_sql(self, **kwargs):
         function_sql = super(AnalyticFunction, self).get_function_sql(**kwargs)
+        filter_sql = self.get_filter_sql()
         partition_sql = self.get_partition_sql(**kwargs)
 
-        if not self._include_over:
-            return function_sql
+        sql = function_sql
+        if self._include_filter:
+            sql += " FILTER({filter_sql})".format(filter_sql=filter_sql)
+        if self._include_over:
+            sql += " OVER({partition_sql})".format(partition_sql=partition_sql)
 
-        return "{function_sql} OVER({partition_sql})".format(
-            function_sql=function_sql, partition_sql=partition_sql
-        )
+        return sql
 
 
 class WindowFrameAnalyticFunction(AnalyticFunction):
