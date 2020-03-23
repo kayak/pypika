@@ -131,10 +131,13 @@ class Table(Selectable):
             return Schema(schema)
         return None
 
-    def __init__(self, name, schema=None, alias=None):
+    def __init__(self, name, schema=None, alias=None, query_cls=None):
         super(Table, self).__init__(alias)
         self._table_name = name
         self._schema = self._init_schema(schema)
+        self._query_cls = query_cls or Query
+        if not issubclass(self._query_cls, Query):
+            raise TypeError("Expected 'query_cls' to be subclass of Query")
 
     def get_table_name(self):
         return self.alias or self._table_name
@@ -191,7 +194,7 @@ class Table(Selectable):
 
         :return:  QueryBuilder
         """
-        return Query.from_(self).select(*terms)
+        return self._query_cls.from_(self).select(*terms)
 
     def update(self):
         """
@@ -199,7 +202,7 @@ class Table(Selectable):
 
         :return: QueryBuilder
         """
-        return Query.update(self)
+        return self._query_cls.update(self)
 
     def insert(self, *terms):
         """
@@ -212,7 +215,7 @@ class Table(Selectable):
 
         :return: QueryBuilder
         """
-        return Query.into(self).insert(*terms)
+        return self._query_cls.into(self).insert(*terms)
 
 
 def make_tables(*names, **kwargs):
@@ -224,9 +227,15 @@ def make_tables(*names, **kwargs):
     tables = []
     for name in names:
         if isinstance(name, tuple) and len(name) == 2:
-            t = Table(name=name[0], alias=name[1], schema=kwargs.get("schema"))
+            t = Table(
+                name=name[0], alias=name[1], schema=kwargs.get("schema"),
+                query_cls=kwargs.get("query_cls"),
+            )
         else:
-            t = Table(name=name, schema=kwargs.get("schema"))
+            t = Table(
+                name=name, schema=kwargs.get("schema"),
+                query_cls=kwargs.get("query_cls"),
+            )
         tables.append(t)
     return tables
 
@@ -356,6 +365,37 @@ class Query:
         :returns QueryBuilder
         """
         return cls._builder(**kwargs).update(table)
+
+    @classmethod
+    def Table(cls, table_name, **kwargs):
+        """
+        Convenience method for creating a Table that uses this Query class.
+
+        :param table_name:
+            Type: str
+
+            A string table name.
+
+        :returns Table
+        """
+        kwargs["query_cls"] = cls
+        return Table(table_name, **kwargs)
+
+    @classmethod
+    def Tables(cls, *names, **kwargs):
+        """
+        Convenience method for creating many tables that uses this Query class.
+        See ``Query.make_tables`` for details.
+
+        :param names:
+            Type: list[str or tuple]
+
+            A list of string table names, or name and alias tuples.
+
+        :returns Table
+        """
+        kwargs["query_cls"] = cls
+        return make_tables(*names, **kwargs)
 
 
 class _UnionQuery(Selectable, Term):
