@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Table, Query, PostgreSQLQuery, AliasedQuery
+from pypika import Table, Query, PostgreSQLQuery, AliasedQuery, SQLLiteQuery
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -132,3 +132,12 @@ class PostgresUpdateTests(unittest.TestCase):
         self.assertEqual(
             'UPDATE "abc" SET "lname"="bcd"."long_name" FROM "bcd" RETURNING "abc"."id","bcd"."fname"', str(q)
         )
+
+
+class SQLLiteUpdateTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_update_with_bool(self):
+        q = SQLLiteQuery.update(self.table_abc).set(self.table_abc.foo, True)
+
+        self.assertEqual('UPDATE "abc" SET "foo"=1', str(q))
