@@ -2,9 +2,12 @@ import unittest
 
 from pypika import (
     Database,
+    Dialects,
     Schema,
+    SQLLiteQuery,
     Table,
     Tables,
+    Query,
 )
 
 __author__ = "Timothy Heys"
@@ -115,3 +118,43 @@ class TableEqualityTests(unittest.TestCase):
                 self.assertIsNotNone(tables[i].alias)
             else:
                 self.assertIsNone(tables[i].alias)
+
+
+class TableDialectTests(unittest.TestCase):
+    def test_table_with_default_query_cls(self):
+        table = Table("abc")
+        q = table.select("1")
+        self.assertIs(q.dialect, None)
+
+    def test_table_with_dialect_query_cls(self):
+        table = Table("abc", query_cls=SQLLiteQuery)
+        q = table.select("1")
+        self.assertIs(q.dialect, Dialects.SQLLITE)
+
+    def test_table_factory_with_default_query_cls(self):
+        table = Query.Table("abc")
+        q = table.select("1")
+        self.assertIs(q.dialect, None)
+
+    def test_table_factory_with_dialect_query_cls(self):
+        table = SQLLiteQuery.Table("abc")
+        q = table.select("1")
+        self.assertIs(q.dialect, Dialects.SQLLITE)
+
+    def test_make_tables_factory_with_default_query_cls(self):
+        t1, t2 = Query.Tables("abc", "def")
+        q1 = t1.select("1")
+        q2 = t2.select("2")
+        self.assertIs(q1.dialect, None)
+        self.assertIs(q2.dialect, None)
+
+    def test_make_tables_factory_with_dialect_query_cls(self):
+        t1, t2 = SQLLiteQuery.Tables("abc", "def")
+        q1 = t1.select("1")
+        q2 = t2.select("2")
+        self.assertIs(q1.dialect, Dialects.SQLLITE)
+        self.assertIs(q2.dialect, Dialects.SQLLITE)
+
+    def test_table_with_bad_query_cls(self):
+        with self.assertRaises(TypeError):
+            Table("abc", query_cls=object)
