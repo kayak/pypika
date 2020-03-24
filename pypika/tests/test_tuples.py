@@ -3,9 +3,9 @@ import unittest
 from pypika import (
     Array,
     Bracket,
-    Dialects,
     PostgreSQLQuery,
     Query,
+    Table,
     Tables,
     Tuple,
 )
@@ -118,6 +118,12 @@ class TupleTests(unittest.TestCase):
             str(query),
         )
 
+    def test_render_alias_in_array_sql(self):
+        tb = Table("tb")
+
+        q = Query.from_(tb).select(Tuple(tb.col).as_("different_name"))
+        self.assertEqual(str(q), 'SELECT ("col") "different_name" FROM "tb"')
+
 
 class ArrayTests(unittest.TestCase):
     table_abc, table_efg = Tables("abc", "efg")
@@ -126,15 +132,12 @@ class ArrayTests(unittest.TestCase):
         query = Query.from_(self.table_abc).select(Array(1, "a", ["b", 2, 3]))
 
         self.assertEqual("SELECT [1,'a',['b',2,3]] FROM \"abc\"", str(query))
-        self.assertEqual("SELECT [1,'a',['b',2,3]] FROM \"abc\"", str(query.get_sql()))
 
-    def test_array_postgresql(self):
-        query = PostgreSQLQuery.from_(self.table_abc).select(Array(1, "a", ["b", 2, 3]))
+    def test_render_alias_in_array_sql(self):
+        tb = Table("tb")
 
-        self.assertEqual("SELECT ARRAY[1,'a',ARRAY['b',2,3]] FROM \"abc\"", str(query))
-        self.assertEqual(
-            "SELECT ARRAY[1,'a',ARRAY['b',2,3]] FROM \"abc\"", query.get_sql()
-        )
+        q = Query.from_(tb).select(Array(tb.col).as_("different_name"))
+        self.assertEqual(str(q), 'SELECT ["col"] "different_name" FROM "tb"')
 
 
 class BracketTests(unittest.TestCase):
