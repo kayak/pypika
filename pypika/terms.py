@@ -1425,6 +1425,10 @@ class Interval(Node):
                 else self.largest
             )
 
+            # Set default unit with DAY
+            if unit is None:
+                unit = "DAY"
+
         return self.templates.get(dialect, "INTERVAL '{expr} {unit}'").format(
             expr=expr, unit=unit
         )
