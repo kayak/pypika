@@ -77,7 +77,6 @@ class Term(Node):
             querybuilder will be returned as inputted.
 
         """
-        from .queries import QueryBuilder
 
         if isinstance(val, Node):
             return val
@@ -476,14 +475,11 @@ class Field(Criterion, JSON):
         """
         self.table = new_table if self.table == current_table else self.table
 
-    def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        secondary_quote_char="'",
-        **kwargs,
-    ):
+    def get_sql(self, **kwargs):
+        with_alias = kwargs.pop("with_alias", False)
+        with_namespace = kwargs.pop("with_namespace", False)
+        quote_char = kwargs.pop("quote_char", None)
+
         field_sql = format_quotes(self.name, quote_char)
 
         # Need to add namespace if the table has an alias
@@ -571,10 +567,10 @@ class Array(Tuple):
         dialect = kwargs.get("dialect", None)
         values = ",".join(term.get_sql(**kwargs) for term in self.values)
         sql = (
-            f"ARRAY[{values}]"
+            "ARRAY[{}]"
             if dialect in (Dialects.POSTGRESQL, Dialects.REDSHIFT)
-            else f"[{values}]"
-        )
+            else "[{}]"
+        ).format(values)
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
@@ -1153,14 +1149,12 @@ class Function(Criterion):
             special=(" " + special_params_sql) if special_params_sql else "",
         )
 
-    def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        dialect=None,
-        **kwargs,
-    ):
+    def get_sql(self, **kwargs):
+        with_alias = kwargs.pop("with_alias", False)
+        with_namespace = kwargs.pop("with_namespace", False)
+        quote_char = kwargs.pop("quote_char", None)
+        dialect = kwargs.pop("dialect", None)
+
         # FIXME escape
         function_sql = self.get_function_sql(
             with_namespace=with_namespace, quote_char=quote_char, dialect=dialect
