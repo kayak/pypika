@@ -50,6 +50,11 @@ class AddIntervalTests(unittest.TestCase):
 
         self.assertEqual("\"dt\"+INTERVAL '1 YEAR'", str(c))
 
+    def test_add_default(self):
+        c = dt + Interval(days=0)
+
+        self.assertEqual("\"dt\"+INTERVAL '0 DAY'", str(c))
+
 
 class AddIntervalMultipleUnitsTests(unittest.TestCase):
     def test_add_second_microsecond(self):
