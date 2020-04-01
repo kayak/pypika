@@ -1148,7 +1148,7 @@ class Function(Criterion):
         return "{name}({args}{special})".format(
             name=self.name,
             args=",".join(
-                p.get_sql(with_alias=False, **kwargs)
+                p.get_sql(with_alias=True, **kwargs)
                 if hasattr(p, "get_sql")
                 else str(p)
                 for p in self.args
