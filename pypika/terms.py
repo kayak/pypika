@@ -77,7 +77,6 @@ class Term(Node):
             querybuilder will be returned as inputted.
 
         """
-        from .queries import QueryBuilder
 
         if isinstance(val, Node):
             return val
@@ -476,14 +475,11 @@ class Field(Criterion, JSON):
         """
         self.table = new_table if self.table == current_table else self.table
 
-    def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        secondary_quote_char="'",
-        **kwargs
-    ):
+    def get_sql(self, **kwargs):
+        with_alias = kwargs.pop("with_alias", False)
+        with_namespace = kwargs.pop("with_namespace", False)
+        quote_char = kwargs.pop("quote_char", None)
+
         field_sql = format_quotes(self.name, quote_char)
 
         # Need to add namespace if the table has an alias
@@ -541,7 +537,8 @@ class Tuple(Criterion):
             yield from value.nodes_()
 
     def get_sql(self, **kwargs):
-        return "({})".format(",".join(term.get_sql(**kwargs) for term in self.values))
+        sql = "({})".format(",".join(term.get_sql(**kwargs) for term in self.values))
+        return format_alias_sql(sql, self.alias, **kwargs)
 
     @property
     def is_aggregate(self):
@@ -568,22 +565,18 @@ class Tuple(Criterion):
 class Array(Tuple):
     def get_sql(self, **kwargs):
         dialect = kwargs.get("dialect", None)
-        template = (
+        values = ",".join(term.get_sql(**kwargs) for term in self.values)
+        sql = (
             "ARRAY[{}]"
             if dialect in (Dialects.POSTGRESQL, Dialects.REDSHIFT)
             else "[{}]"
-        )
-
-        return template.format(",".join(term.get_sql(**kwargs) for term in self.values))
+        ).format(values)
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class Bracket(Tuple):
     def __init__(self, term):
         super(Bracket, self).__init__(term)
-
-    def get_sql(self, **kwargs):
-        sql = super(Bracket, self).get_sql(**kwargs)
-        return format_alias_sql(sql=sql, alias=self.alias, **kwargs)
 
 
 class NestedCriterion(Criterion):
@@ -1156,14 +1149,12 @@ class Function(Criterion):
             special=(" " + special_params_sql) if special_params_sql else "",
         )
 
-    def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        dialect=None,
-        **kwargs
-    ):
+    def get_sql(self, **kwargs):
+        with_alias = kwargs.pop("with_alias", False)
+        with_namespace = kwargs.pop("with_namespace", False)
+        quote_char = kwargs.pop("quote_char", None)
+        dialect = kwargs.pop("dialect", None)
+
         # FIXME escape
         function_sql = self.get_function_sql(
             with_namespace=with_namespace, quote_char=quote_char, dialect=dialect

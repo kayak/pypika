@@ -2,6 +2,7 @@ import unittest
 from collections import OrderedDict
 
 from pypika import (
+    Array,
     JSON,
     Table,
 )
@@ -213,8 +214,26 @@ class DistinctOnTests(unittest.TestCase):
     table_abc = Table("abc")
 
     def test_distinct_on(self):
-        q = PostgreSQLQuery.from_(self.table_abc).distinct_on('lname', self.table_abc.fname).select('lname', 'id')
+        q = (
+            PostgreSQLQuery.from_(self.table_abc)
+            .distinct_on("lname", self.table_abc.fname)
+            .select("lname", "id")
+        )
 
         self.assertEqual(
             '''SELECT DISTINCT ON("lname","fname") "lname","id" FROM "abc"''', str(q)
         )
+
+
+class ArrayTests(unittest.TestCase):
+    def test_array_syntax(self):
+        tb = Table("tb")
+        q = PostgreSQLQuery.from_(tb).select(Array(1, "a", ["b", 2, 3]))
+
+        self.assertEqual(str(q), "SELECT ARRAY[1,'a',ARRAY['b',2,3]] FROM \"tb\"")
+
+    def test_render_alias_in_array_sql(self):
+        tb = Table("tb")
+
+        q = PostgreSQLQuery.from_(tb).select(Array(tb.col).as_("different_name"))
+        self.assertEqual(str(q), 'SELECT ARRAY["col"] "different_name" FROM "tb"')
