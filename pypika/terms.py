@@ -730,11 +730,12 @@ class ContainsCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, subquery=None, **kwargs):
-        return "{term} {not_}IN {container}".format(
+        sql = "{term} {not_}IN {container}".format(
             term=self.term.get_sql(**kwargs),
             container=self.container.get_sql(subquery=True, **kwargs),
             not_="NOT " if self._is_negated else "",
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
     @builder
     def negate(self):
@@ -774,11 +775,12 @@ class BetweenCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         # FIXME escape
-        return "{term} BETWEEN {start} AND {end}".format(
+        sql = "{term} BETWEEN {start} AND {end}".format(
             term=self.term.get_sql(**kwargs),
             start=self.start.get_sql(**kwargs),
             end=self.end.get_sql(**kwargs),
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class BitwiseAndCriterion(Criterion):
@@ -807,9 +809,10 @@ class BitwiseAndCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs):
-        return "({term} & {value})".format(
+        sql = "({term} & {value})".format(
             term=self.term.get_sql(**kwargs), value=self.value,
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class NullCriterion(Criterion):
@@ -835,8 +838,9 @@ class NullCriterion(Criterion):
         """
         self.term = self.term.replace_table(current_table, new_table)
 
-    def get_sql(self, **kwargs):
-        return "{term} IS NULL".format(term=self.term.get_sql(**kwargs),)
+    def get_sql(self, with_alias=False, **kwargs):
+        sql = "{term} IS NULL".format(term=self.term.get_sql(**kwargs),)
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class ComplexCriterion(BasicCriterion):

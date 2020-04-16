@@ -90,6 +90,13 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"foo" IS NULL', str(c1))
         self.assertEqual('"crit"."foo" IS NULL', str(c2))
 
+    def test__criterion_is_null_with_alias(self):
+        c1 = Field("foo").isnull().as_('alias')
+        c2 = Field("foo", table=self.t).isnull().as_('alias')
+
+        self.assertEqual('"foo" IS NULL "alias"', str(c1))
+        self.assertEqual('"crit"."foo" IS NULL "alias"', str(c2))
+
     def test__criterion_ne_number(self):
         c1 = Field("foo") != 1
         c2 = Field("foo", table=self.t).ne(0)
@@ -254,6 +261,11 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('("foo" & 2)', str(c1))
         self.assertEqual('("crit"."foo" & 10)=2', str(c2))
 
+    def test__criterion_bitwise_and_with_alias(self):
+        c1 = Field("foo").bitwiseand(2).as_('alias')
+
+        self.assertEqual('("foo" & 2) "alias"', str(c1))
+
 
 class NotTests(unittest.TestCase):
     table_abc, table_efg = Table("abc", alias="cx0"), Table("efg", alias="cx1")
@@ -322,6 +334,15 @@ class BetweenTests(unittest.TestCase):
         self.assertEqual('"btw"."foo" BETWEEN 0 AND 1', str(c2))
         self.assertEqual('"foo" BETWEEN 0 AND 1', str(c3))
 
+    def test__between_with_alias(self):
+        c1 = Field("foo").between(0, 1).as_('alias')
+        c2 = Field("foo", table=self.t).between(0, 1).as_('alias')
+        c3 = Field("foo")[0:1].as_('alias')
+
+        self.assertEqual('"foo" BETWEEN 0 AND 1 "alias"', str(c1))
+        self.assertEqual('"btw"."foo" BETWEEN 0 AND 1 "alias"', str(c2))
+        self.assertEqual('"foo" BETWEEN 0 AND 1 "alias"', str(c3))
+
     def test__between_date(self):
         c1 = Field("foo").between(date(2000, 1, 1), date(2000, 12, 31))
         c2 = Field("foo", table=self.t).between(date(2000, 1, 1), date(2000, 12, 31))
@@ -383,6 +404,13 @@ class IsInTests(unittest.TestCase):
         self.assertEqual('"foo" IN (0,1)', str(c1))
         self.assertEqual('"isin"."foo" IN (0,1)', str(c2))
 
+    def test__in_number_with_alias(self):
+        c1 = Field("foo").isin([0, 1]).as_('alias')
+        c2 = Field("foo", table=self.t).isin([0, 1]).as_('alias')
+
+        self.assertEqual('"foo" IN (0,1) "alias"', str(c1))
+        self.assertEqual('"isin"."foo" IN (0,1) "alias"', str(c2))
+
     def test__in_character(self):
         c1 = Field("foo").isin(["a", "b"])
         c2 = Field("foo", table=self.t).isin(["a", "b"])
@@ -436,6 +464,13 @@ class NotInTests(unittest.TestCase):
 
         self.assertEqual('"foo" NOT IN (0,1)', str(c1))
         self.assertEqual('"notin"."foo" NOT IN (0,1)', str(c2))
+
+    def test__notin_number_with_alias(self):
+        c1 = Field("foo").notin([0, 1]).as_('alias')
+        c2 = Field("foo", table=self.t).notin([0, 1]).as_('alias')
+
+        self.assertEqual('"foo" NOT IN (0,1) "alias"', str(c1))
+        self.assertEqual('"notin"."foo" NOT IN (0,1) "alias"', str(c2))
 
     def test__notin_character(self):
         c1 = Field("foo").notin(["a", "b"])
