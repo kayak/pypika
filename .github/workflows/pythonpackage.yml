@@ -1,6 +1,10 @@
 name: Python package
 
-on: [push]
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
 
 jobs:
   build:
@@ -9,7 +13,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8, pypy3]
+        python-version: [3.5, 3.6, 3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v1
@@ -23,10 +27,10 @@ jobs:
         pip install -r requirements-dev.txt
     - name: Run test suite
       run: tox
-    - name: Run Coveralls
-      run: coveralls
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+#    - name: Run Coveralls
+#      run: coveralls
+#      env:
+#        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 #    Uncomment when Black is setup for PyPika
 #    - name: Run Black code formatter check
 #      run: black --check .
