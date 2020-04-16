@@ -1,6 +1,5 @@
 import unittest
 
-from pypika import Table
 from pypika.dialects import MSSQLQuery
 from pypika.utils import QueryException
 

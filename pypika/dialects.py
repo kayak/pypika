@@ -9,12 +9,12 @@ from pypika.queries import (
 )
 from pypika.terms import (
     ArithmeticExpression,
+    EmptyCriterion,
     Field,
-    Term,
     Function,
     Star,
+    Term,
     ValueWrapper,
-    EmptyCriterion
 )
 from pypika.utils import (
     QueryException,
@@ -28,7 +28,7 @@ class SnowFlakeQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs):
         super(SnowFlakeQueryBuilder, self).__init__(
-            dialect=Dialects.SNOWFLAKE, **kwargs
+              dialect=Dialects.SNOWFLAKE, **kwargs
         )
 
 
@@ -47,7 +47,7 @@ class MySQLQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs):
         super(MySQLQueryBuilder, self).__init__(
-            dialect=Dialects.MYSQL, wrap_union_queries=False, **kwargs
+              dialect=Dialects.MYSQL, wrap_union_queries=False, **kwargs
         )
         self._duplicate_updates = []
         self._modifiers = []
@@ -71,12 +71,12 @@ class MySQLQueryBuilder(QueryBuilder):
 
     def _on_duplicate_key_update_sql(self, **kwargs):
         return " ON DUPLICATE KEY UPDATE {updates}".format(
-            updates=",".join(
-                "{field}={value}".format(
-                    field=field.get_sql(**kwargs), value=value.get_sql(**kwargs)
-                )
-                for field, value in self._duplicate_updates
-            )
+              updates=",".join(
+                    "{field}={value}".format(
+                          field=field.get_sql(**kwargs), value=value.get_sql(**kwargs)
+                    )
+                    for field, value in self._duplicate_updates
+              )
         )
 
     @builder
@@ -95,12 +95,12 @@ class MySQLQueryBuilder(QueryBuilder):
         with the addition of the a modifier if present.
         """
         return "SELECT {distinct}{modifier}{select}".format(
-            distinct="DISTINCT " if self._distinct else "",
-            modifier="{} ".format(" ".join(self._modifiers)) if self._modifiers else "",
-            select=",".join(
-                term.get_sql(with_alias=True, subquery=True, **kwargs)
-                for term in self._selects
-            ),
+              distinct="DISTINCT " if self._distinct else "",
+              modifier="{} ".format(" ".join(self._modifiers)) if self._modifiers else "",
+              select=",".join(
+                    term.get_sql(with_alias=True, subquery=True, **kwargs)
+                    for term in self._selects
+              ),
         )
 
 
@@ -167,7 +167,7 @@ class VerticaQueryBuilder(QueryBuilder):
 
         if self._hint is not None:
             sql = "".join(
-                [sql[:7], "/*+label({hint})*/".format(hint=self._hint), sql[6:]]
+                  [sql[:7], "/*+label({hint})*/".format(hint=self._hint), sql[6:]]
             )
 
         return sql
@@ -195,21 +195,21 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
 
     def _create_table_sql(self, **kwargs):
         return "CREATE {local}{temporary}TABLE {table}".format(
-            local="LOCAL " if self._local else "",
-            temporary="TEMPORARY " if self._temporary else "",
-            table=self._create_table.get_sql(**kwargs),
+              local="LOCAL " if self._local else "",
+              temporary="TEMPORARY " if self._temporary else "",
+              table=self._create_table.get_sql(**kwargs),
         )
 
     def _columns_sql(self, **kwargs):
         return " ({columns}){preserve_rows}".format(
-            columns=",".join(column.get_sql(**kwargs) for column in self._columns),
-            preserve_rows=self._preserve_rows_sql(),
+              columns=",".join(column.get_sql(**kwargs) for column in self._columns),
+              preserve_rows=self._preserve_rows_sql(),
         )
 
     def _as_select_sql(self, **kwargs):
         return "{preserve_rows} AS ({query})".format(
-            preserve_rows=self._preserve_rows_sql(),
-            query=self._as_select.get_sql(**kwargs),
+              preserve_rows=self._preserve_rows_sql(),
+              query=self._as_select.get_sql(**kwargs),
         )
 
     def _preserve_rows_sql(self):
@@ -275,7 +275,7 @@ class OracleQueryBuilder(QueryBuilder):
 
     def get_sql(self, *args, **kwargs):
         return super(OracleQueryBuilder, self).get_sql(
-            *args, groupby_alias=False, **kwargs
+              *args, groupby_alias=False, **kwargs
         )
 
 
@@ -378,9 +378,9 @@ class PostgreQueryBuilder(QueryBuilder):
     def _distinct_sql(self, **kwargs):
         if self._distinct_on:
             return "DISTINCT ON({distinct_on}) ".format(
-                distinct_on=",".join(
-                    term.get_sql(with_alias=True, **kwargs) for term in self._distinct_on
-                )
+                  distinct_on=",".join(
+                        term.get_sql(with_alias=True, **kwargs) for term in self._distinct_on
+                  )
             )
         return super()._distinct_sql(**kwargs)
 
@@ -405,7 +405,7 @@ class PostgreQueryBuilder(QueryBuilder):
 
         if self._on_conflict_wheres:
             conflict_query += " WHERE {where}".format(
-                where=self._on_conflict_wheres.get_sql(subquery=True, **kwargs)
+                  where=self._on_conflict_wheres.get_sql(subquery=True, **kwargs)
             )
 
         return conflict_query
@@ -415,18 +415,18 @@ class PostgreQueryBuilder(QueryBuilder):
             return " DO NOTHING"
         elif len(self._on_conflict_do_updates) > 0:
             action_sql = " DO UPDATE SET {updates}".format(
-                updates=",".join(
-                    "{field}={value}".format(
-                        field=field.get_sql(**kwargs),
-                        value=value.get_sql(with_namespace=True, **kwargs),
-                    )
-                    for field, value in self._on_conflict_do_updates
-                )
+                  updates=",".join(
+                        "{field}={value}".format(
+                              field=field.get_sql(**kwargs),
+                              value=value.get_sql(with_namespace=True, **kwargs),
+                        )
+                        for field, value in self._on_conflict_do_updates
+                  )
             )
 
             if self._on_conflict_do_update_wheres:
                 action_sql += " WHERE {where}".format(
-                    where=self._on_conflict_do_update_wheres.get_sql(subquery=True, with_namespace=True, **kwargs)
+                      where=self._on_conflict_do_update_wheres.get_sql(subquery=True, with_namespace=True, **kwargs)
                 )
             return action_sql
 
@@ -451,8 +451,8 @@ class PostgreQueryBuilder(QueryBuilder):
             if not any([self._insert_table, self._update_table, self._delete_from]):
                 raise QueryException("Returning can't be used in this query")
             if (
-                field.table not in {self._insert_table, self._update_table}
-                and term not in self._from
+                  field.table not in {self._insert_table, self._update_table}
+                  and term not in self._from
             ):
                 raise QueryException("You can't return from other tables")
 
@@ -495,16 +495,16 @@ class PostgreQueryBuilder(QueryBuilder):
 
     def _returning_sql(self, **kwargs):
         return " RETURNING {returning}".format(
-            returning=",".join(
-                term.get_sql(with_alias=True, **kwargs) for term in self._returns
-            ),
+              returning=",".join(
+                    term.get_sql(with_alias=True, **kwargs) for term in self._returns
+              ),
         )
 
     def get_sql(self, with_alias=False, subquery=False, **kwargs):
         self._set_kwargs_defaults(kwargs)
 
         querystring = super(PostgreQueryBuilder, self).get_sql(
-            with_alias, subquery, **kwargs
+              with_alias, subquery, **kwargs
         )
         with_namespace = False
         if self._update_table and self.from_:
@@ -559,7 +559,7 @@ class MSSQLQueryBuilder(QueryBuilder):
 
     def get_sql(self, *args, **kwargs):
         return super(MSSQLQueryBuilder, self).get_sql(
-            *args, groupby_alias=False, **kwargs
+              *args, groupby_alias=False, **kwargs
         )
 
     def _top_sql(self):
@@ -570,12 +570,12 @@ class MSSQLQueryBuilder(QueryBuilder):
 
     def _select_sql(self, **kwargs):
         return "SELECT {distinct}{top}{select}".format(
-            top=self._top_sql(),
-            distinct="DISTINCT " if self._distinct else "",
-            select=",".join(
-                term.get_sql(with_alias=True, subquery=True, **kwargs)
-                for term in self._selects
-            ),
+              top=self._top_sql(),
+              distinct="DISTINCT " if self._distinct else "",
+              select=",".join(
+                    term.get_sql(with_alias=True, subquery=True, **kwargs)
+                    for term in self._selects
+              ),
         )
 
 
@@ -593,12 +593,9 @@ class ClickHouseQuery(Query):
     """
     Defines a query class for use with Yandex ClickHouse.
     """
-
     @classmethod
     def _builder(cls, **kwargs):
-        return QueryBuilder(
-            dialect=Dialects.CLICKHOUSE, wrap_union_queries=False, **kwargs
-        )
+        return QueryBuilder(dialect=Dialects.CLICKHOUSE, wrap_union_queries=False, as_keyword=True, **kwargs)
 
 
 class SQLLiteValueWrapper(ValueWrapper):
@@ -616,5 +613,5 @@ class SQLLiteQuery(Query):
     @classmethod
     def _builder(cls, **kwargs):
         return QueryBuilder(
-            dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs
+              dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs
         )
