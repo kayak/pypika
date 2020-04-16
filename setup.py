@@ -10,7 +10,7 @@ def readme():
 
 def version():
     path = 'pypika/__init__.py'
-    with open(path, 'rU') as file:
+    with open(path, 'r') as file:
         t = compile(file.read(), path, 'exec', ast.PyCF_ONLY_AST)
         for node in (n for n in t.body if isinstance(n, ast.Assign)):
             if len(node.targets) == 1:
