@@ -11,6 +11,7 @@ python:
 matrix:
   allow_failures:
       - python: "nightly"
+      - python: "3.9-dev"
   include:
   - python: "pypy3.5"
     dist: xenial
