@@ -38,16 +38,3 @@ jobs:
         # Official Coveralls GH action does not work with Python coverage files!
         # https://github.com/coverallsapp/github-action/issues/30
         uses: AndreMiras/coveralls-python-action@develop
-        with:
-          parallel: true
-#          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
-
-  coveralls_finish:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: AndreMiras/coveralls-python-action@develop
-        with:
-          parallel-finished: true
-#          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
