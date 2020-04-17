@@ -1,0 +1,4 @@
+[run]
+source = pypika
+relative_files = True
+command_line = -m unittest discover

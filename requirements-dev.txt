@@ -6,4 +6,3 @@ parameterized==0.7.0
 tox==3.14.3
 tox-venv==0.4.0
 tox-gh-actions==0.3.0
-coveralls==1.10.0
