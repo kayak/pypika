@@ -832,7 +832,7 @@ PostgreSQL
 
 .. code-block:: sql
 
-    INSERT INTO "abc" VALUES (1,'Jane','Doe','jane@example.com') ON CONFLICT ("email") DO UPDATE SET "email"='bob@example.com'
+    INSERT INTO "customers" VALUES (1,'Jane','Doe','jane@example.com') ON CONFLICT ("email") DO UPDATE SET "email"='bob@example.com'
 
 
 Insert from a SELECT Sub-query
@@ -840,7 +840,7 @@ Insert from a SELECT Sub-query
 
 .. code-block:: sql
 
-    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com'),(2,'John','Doe','john@example.com')
+    INSERT INTO "customers" VALUES (1,'Jane','Doe','jane@example.com'),(2,'John','Doe','john@example.com')
 
 
 To specify the columns and the order, use the ``columns`` function.
