@@ -1,4 +1,4 @@
-name: Python package
+name: Unit Tests
 
 on:
   push:
@@ -16,28 +16,31 @@ jobs:
         python-version: [3.5, 3.6, 3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v1
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
 
-    - name: Run test suite
-      run: tox
+      - name: Run test suite
+        run: tox
 
-#    Uncomment when Black is setup for PyPika
-#    - name: Run Black code formatter check
-#      run: black --check .
+      #    Uncomment when Black is setup for PyPika
+      #    - name: Run Black code formatter check
+      #      run: black --check .
 
-    - name: Coveralls
-      # Official Coveralls GH action does not work with Python coverage files!
-      # https://github.com/coverallsapp/github-action/issues/30
-      uses: AndreMiras/coveralls-python-action@develop
+      - name: Coveralls
+        # Official Coveralls GH action does not work with Python coverage files!
+        # https://github.com/coverallsapp/github-action/issues/30
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel: true
+          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
   coveralls_finish:
     needs: test
@@ -45,3 +48,6 @@ jobs:
     steps:
       - name: Coveralls Finished
         uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel-finished: true
+          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
