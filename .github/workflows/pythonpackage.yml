@@ -40,7 +40,7 @@ jobs:
         uses: AndreMiras/coveralls-python-action@develop
         with:
           parallel: true
-          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+#          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
   coveralls_finish:
     needs: test
@@ -50,4 +50,4 @@ jobs:
         uses: AndreMiras/coveralls-python-action@develop
         with:
           parallel-finished: true
-          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+#          github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
