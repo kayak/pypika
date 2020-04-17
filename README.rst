@@ -991,9 +991,9 @@ Crafted with ♥ in Berlin.
 
 .. _available_badges_start:
 
-.. |BuildStatus| image:: https://github.com/kayak/pypika/workflows/Python%20package/badge.svg
+.. |BuildStatus| image:: https://github.com/kayak/pypika/workflows/Unit%Tests/badge.svg
    :target: https://github.com/kayak/pypika/actions
-.. |CoverageStatus| image:: https://coveralls.io/repos/kayak/pypika/badge.svg?branch=master&service=github
+.. |CoverageStatus| image:: https://coveralls.io/repos/kayak/pypika/badge.svg?branch=master
    :target: https://coveralls.io/github/kayak/pypika?branch=master
 .. |Codacy| image:: https://api.codacy.com/project/badge/Grade/6d7e44e5628b4839a23da0bd82eaafcf
    :target: https://www.codacy.com/app/twheys/pypika
