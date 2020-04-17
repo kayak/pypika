@@ -76,7 +76,7 @@ def ignore_copy(func):
             "__getnewargs__",
         ]:
             raise AttributeError(
-                "'%s' object has no attribute '%s'" % (self.__class__.__name__, name)
+                  "'%s' object has no attribute '%s'" % (self.__class__.__name__, name)
             )
 
         return func(self, name)
@@ -103,11 +103,13 @@ def format_quotes(value, quote_char):
     return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
 
 
-def format_alias_sql(sql, alias, quote_char=None, alias_quote_char=None, **kwargs):
+def format_alias_sql(sql, alias, quote_char=None, alias_quote_char=None, as_keyword=False, **kwargs):
     if alias is None:
         return sql
-    return "{sql} {alias}".format(
-        sql=sql, alias=format_quotes(alias, alias_quote_char or quote_char)
+    return "{sql}{_as}{alias}".format(
+          sql=sql,
+          _as=' AS ' if as_keyword else ' ',
+          alias=format_quotes(alias, alias_quote_char or quote_char)
     )
 
 

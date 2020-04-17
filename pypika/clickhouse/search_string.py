@@ -1,12 +1,13 @@
 import abc
 
 from pypika.terms import Function
+from pypika.utils import format_alias_sql
 
 
 class _AbstractSearchString(Function, metaclass=abc.ABCMeta):
     def __init__(self, name, pattern: str, alias: str = None):
         super(_AbstractSearchString, self).__init__(
-            self.clickhouse_function(), name, alias=alias
+              self.clickhouse_function(), name, alias=alias
         )
 
         self._pattern = pattern
@@ -17,30 +18,30 @@ class _AbstractSearchString(Function, metaclass=abc.ABCMeta):
         pass
 
     def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        dialect=None,
-        **kwargs
+          self,
+          with_alias=False,
+          with_namespace=False,
+          quote_char=None,
+          dialect=None,
+          **kwargs
     ):
         args = []
         for p in self.args:
             if hasattr(p, "get_sql"):
                 args.append(
-                    'toString("{arg}")'.format(
-                        arg=p.get_sql(with_alias=False, **kwargs)
-                    )
+                      'toString("{arg}")'.format(
+                            arg=p.get_sql(with_alias=False, **kwargs)
+                      )
                 )
             else:
                 args.append(str(p))
 
-        return "{name}({args},'{pattern}'){alias}".format(
-            name=self.name,
-            args=",".join(args),
-            pattern=self._pattern,
-            alias=" " + self.alias if self.alias else "",
+        sql = "{name}({args},'{pattern}')".format(
+              name=self.name,
+              args=",".join(args),
+              pattern=self._pattern,
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class Match(_AbstractSearchString):
@@ -64,7 +65,7 @@ class NotLike(_AbstractSearchString):
 class _AbstractMultiSearchString(Function, metaclass=abc.ABCMeta):
     def __init__(self, name, patterns: list, alias: str = None):
         super(_AbstractMultiSearchString, self).__init__(
-            self.clickhouse_function(), name, alias=alias
+              self.clickhouse_function(), name, alias=alias
         )
 
         self._patterns = patterns
@@ -75,30 +76,30 @@ class _AbstractMultiSearchString(Function, metaclass=abc.ABCMeta):
         pass
 
     def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        dialect=None,
-        **kwargs
+          self,
+          with_alias=False,
+          with_namespace=False,
+          quote_char=None,
+          dialect=None,
+          **kwargs
     ):
         args = []
         for p in self.args:
             if hasattr(p, "get_sql"):
                 args.append(
-                    'toString("{arg}")'.format(
-                        arg=p.get_sql(with_alias=False, **kwargs)
-                    )
+                      'toString("{arg}")'.format(
+                            arg=p.get_sql(with_alias=False, **kwargs)
+                      )
                 )
             else:
                 args.append(str(p))
 
-        return "{name}({args},[{patterns}]){alias}".format(
-            name=self.name,
-            args=",".join(args),
-            patterns=",".join(["'%s'" % i for i in self._patterns]),
-            alias=" " + self.alias if self.alias else "",
+        sql = "{name}({args},[{patterns}])".format(
+              name=self.name,
+              args=",".join(args),
+              patterns=",".join(["'%s'" % i for i in self._patterns]),
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class MultiSearchAny(_AbstractMultiSearchString):

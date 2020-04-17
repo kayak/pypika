@@ -1,12 +1,18 @@
 import abc
 
-from pypika.terms import Function, Field
+from pypika.terms import (
+    Field,
+    Function,
+    Term,
+)
+from pypika.utils import format_alias_sql
 
 
-class Array:
+class Array(Term):
     def __init__(
-        self, values: list, converter_cls=None, converter_options: dict = None
+          self, values: list, converter_cls=None, converter_options: dict = None, alias: str = None
     ):
+        super().__init__(alias)
         self._values = values
         self._converter_cls = converter_cls
         self._converter_options = converter_options or dict()
@@ -17,17 +23,21 @@ class Array:
             for value in self._values:
                 converter = self._converter_cls(value, **self._converter_options)
                 converted.append(converter.get_sql())
-            return "".join(["[", ",".join(converted), "]"])
-        return str(self._values)
+            sql = "".join(["[", ",".join(converted), "]"])
+
+        else:
+            sql = str(self._values)
+
+        return format_alias_sql(sql, self.alias)
 
 
 class HasAny(Function):
     def __init__(
-        self,
-        left_array: Array or Field,
-        right_array: Array or Field,
-        alias: str = None,
-        schema: str = None,
+          self,
+          left_array: Array or Field,
+          right_array: Array or Field,
+          alias: str = None,
+          schema: str = None,
     ):
         self._left_array = left_array
         self._right_array = right_array
@@ -37,22 +47,21 @@ class HasAny(Function):
         self.name = "hasAny"
 
     def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        dialect=None,
-        **kwargs
+          self,
+          with_alias=False,
+          with_namespace=False,
+          quote_char=None,
+          dialect=None,
+          **kwargs
     ):
-
         left = self._left_array.get_sql()
         right = self._right_array.get_sql()
-        return "{name}({left},{right}){alias}".format(
-            name=self.name,
-            left='"%s"' % left if isinstance(self._left_array, Field) else left,
-            right='"%s"' % right if isinstance(self._right_array, Field) else right,
-            alias=" " + self.alias if self.alias else "",
+        sql = "{name}({left},{right})".format(
+              name=self.name,
+              left='"%s"' % left if isinstance(self._left_array, Field) else left,
+              right='"%s"' % right if isinstance(self._right_array, Field) else right,
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
@@ -63,19 +72,18 @@ class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
         self._array = array
 
     def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        dialect=None,
-        **kwargs
+          self,
+          with_namespace=False,
+          quote_char=None,
+          dialect=None,
+          **kwargs
     ):
         array = self._array.get_sql()
-        return "{name}({array}){alias}".format(
-            name=self.name,
-            array='"%s"' % array if isinstance(self._array, Field) else array,
-            alias=" " + self.alias if self.alias else "",
+        sql = "{name}({array})".format(
+              name=self.name,
+              array='"%s"' % array if isinstance(self._array, Field) else array,
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
     @classmethod
     @abc.abstractmethod

@@ -1,4 +1,8 @@
-from pypika.terms import Function, Field
+from pypika.terms import (
+    Field,
+    Function,
+)
+from pypika.utils import format_alias_sql
 
 
 class ToString(Function):
@@ -16,21 +20,21 @@ class ToFixedString(Function):
         self.args = ()
 
     def get_sql(
-        self,
-        with_alias=False,
-        with_namespace=False,
-        quote_char=None,
-        dialect=None,
-        **kwargs
+          self,
+          with_alias=False,
+          with_namespace=False,
+          quote_char=None,
+          dialect=None,
+          **kwargs
     ):
-        return "{name}({field},{length}){alias}".format(
-            name=self.name,
-            field=self._field
-            if isinstance(self._field, Field)
-            else "'%s'" % str(self._field),
-            length=self._length,
-            alias=" " + self.alias if self.alias else "",
+        sql = "{name}({field},{length})".format(
+              name=self.name,
+              field=self._field
+              if isinstance(self._field, Field)
+              else "'%s'" % str(self._field),
+              length=self._length,
         )
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class ToInt8(Function):

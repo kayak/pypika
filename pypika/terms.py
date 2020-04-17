@@ -163,13 +163,13 @@ class Term(Node):
 
     def between(self, lower, upper):
         return BetweenCriterion(
-            self, self.wrap_constant(lower), self.wrap_constant(upper)
+              self, self.wrap_constant(lower), self.wrap_constant(upper)
         )
 
     def isin(self, arg):
         if isinstance(arg, (list, tuple, set)):
             return ContainsCriterion(
-                self, Tuple(*[self.wrap_constant(value) for value in arg])
+                  self, Tuple(*[self.wrap_constant(value) for value in arg])
             )
         return ContainsCriterion(self, arg)
 
@@ -307,7 +307,7 @@ class ValueWrapper(Term):
 
     def get_sql(self, quote_char=None, secondary_quote_char="'", **kwargs):
         sql = self.get_value_sql(
-            quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs
+              quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs
         )
         return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
 
@@ -331,8 +331,8 @@ class JSON(Term):
     def _get_dict_sql(self, value, **kwargs):
         pairs = [
             "{key}:{value}".format(
-                key=self._recursive_get_sql(k, **kwargs),
-                value=self._recursive_get_sql(v, **kwargs),
+                  key=self._recursive_get_sql(k, **kwargs),
+                  value=self._recursive_get_sql(v, **kwargs),
             )
             for k, v in value.items()
         ]
@@ -351,22 +351,22 @@ class JSON(Term):
 
     def get_json_value(self, key_or_index: Union[str, int]):
         return BasicCriterion(
-            JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index)
+              JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index)
         )
 
     def get_text_value(self, key_or_index: Union[str, int]):
         return BasicCriterion(
-            JSONOperators.GET_TEXT_VALUE, self, self.wrap_constant(key_or_index)
+              JSONOperators.GET_TEXT_VALUE, self, self.wrap_constant(key_or_index)
         )
 
     def get_path_json_value(self, path_json: str):
         return BasicCriterion(
-            JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json)
+              JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json)
         )
 
     def get_path_text_value(self, path_json: str):
         return BasicCriterion(
-            JSONOperators.GET_PATH_TEXT_VALUE, self, self.wrap_json(path_json)
+              JSONOperators.GET_PATH_TEXT_VALUE, self, self.wrap_json(path_json)
         )
 
     def has_key(self, other):
@@ -387,14 +387,14 @@ class JSON(Term):
 
 class Values(Term):
     def __init__(
-        self, field,
+          self, field,
     ):
         super().__init__(None)
         self.field = Field(field) if not isinstance(field, Field) else field
 
     def get_sql(self, quote_char=None, **kwargs):
         return "VALUES({value})".format(
-            value=self.field.get_sql(quote_char=quote_char, **kwargs)
+              value=self.field.get_sql(quote_char=quote_char, **kwargs)
         )
 
 
@@ -486,13 +486,13 @@ class Field(Criterion, JSON):
         if self.table and (with_namespace or self.table.alias):
             table_name = self.table.get_table_name()
             field_sql = "{namespace}.{name}".format(
-                namespace=format_quotes(table_name, quote_char), name=field_sql,
+                  namespace=format_quotes(table_name, quote_char), name=field_sql,
             )
 
         field_alias = getattr(self, "alias", None)
         if with_alias:
             return format_alias_sql(
-                field_sql, field_alias, quote_char=quote_char, **kwargs
+                  field_sql, field_alias, quote_char=quote_char, **kwargs
             )
 
         return field_sql
@@ -517,7 +517,7 @@ class Star(Field):
             yield from self.table.nodes_()
 
     def get_sql(
-        self, with_alias=False, with_namespace=False, quote_char=None, **kwargs
+          self, with_alias=False, with_namespace=False, quote_char=None, **kwargs
     ):
         if self.table and (with_namespace or self.table.alias):
             namespace = self.table.alias or getattr(self.table, "_table_name")
@@ -597,7 +597,7 @@ class NestedCriterion(Criterion):
     @property
     def is_aggregate(self):
         return resolve_is_aggregate(
-            [term.is_aggregate for term in [self.left, self.right, self.nested]]
+              [term.is_aggregate for term in [self.left, self.right, self.nested]]
         )
 
     @builder
@@ -618,11 +618,11 @@ class NestedCriterion(Criterion):
 
     def get_sql(self, with_alias=False, **kwargs):
         sql = "{left}{comparator}{right}{nested_comparator}{nested}".format(
-            left=self.left.get_sql(**kwargs),
-            comparator=self.comparator.value,
-            right=self.right.get_sql(**kwargs),
-            nested_comparator=self.nested_comparator.value,
-            nested=self.nested.get_sql(**kwargs),
+              left=self.left.get_sql(**kwargs),
+              comparator=self.comparator.value,
+              right=self.right.get_sql(**kwargs),
+              nested_comparator=self.nested_comparator.value,
+              nested=self.nested.get_sql(**kwargs),
         )
 
         if with_alias:
@@ -659,7 +659,7 @@ class BasicCriterion(Criterion):
     @property
     def is_aggregate(self):
         return resolve_is_aggregate(
-            [term.is_aggregate for term in [self.left, self.right]]
+              [term.is_aggregate for term in [self.left, self.right]]
         )
 
     @builder
@@ -679,13 +679,12 @@ class BasicCriterion(Criterion):
 
     def get_sql(self, quote_char='"', with_alias=False, **kwargs):
         sql = "{left}{comparator}{right}".format(
-            comparator=self.comparator.value,
-            left=self.left.get_sql(quote_char=quote_char, **kwargs),
-            right=self.right.get_sql(quote_char=quote_char, **kwargs),
+              comparator=self.comparator.value,
+              left=self.left.get_sql(quote_char=quote_char, **kwargs),
+              right=self.right.get_sql(quote_char=quote_char, **kwargs),
         )
-        if with_alias and self.alias:
-            return '{sql} "{alias}"'.format(sql=sql, alias=self.alias)
-
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
         return sql
 
 
@@ -731,9 +730,9 @@ class ContainsCriterion(Criterion):
 
     def get_sql(self, subquery=None, **kwargs):
         sql = "{term} {not_}IN {container}".format(
-            term=self.term.get_sql(**kwargs),
-            container=self.container.get_sql(subquery=True, **kwargs),
-            not_="NOT " if self._is_negated else "",
+              term=self.term.get_sql(**kwargs),
+              container=self.container.get_sql(subquery=True, **kwargs),
+              not_="NOT " if self._is_negated else "",
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -776,9 +775,9 @@ class BetweenCriterion(Criterion):
     def get_sql(self, **kwargs):
         # FIXME escape
         sql = "{term} BETWEEN {start} AND {end}".format(
-            term=self.term.get_sql(**kwargs),
-            start=self.start.get_sql(**kwargs),
-            end=self.end.get_sql(**kwargs),
+              term=self.term.get_sql(**kwargs),
+              start=self.start.get_sql(**kwargs),
+              end=self.end.get_sql(**kwargs),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -810,7 +809,7 @@ class BitwiseAndCriterion(Criterion):
 
     def get_sql(self, **kwargs):
         sql = "({term} & {value})".format(
-            term=self.term.get_sql(**kwargs), value=self.value,
+              term=self.term.get_sql(**kwargs), value=self.value,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -839,20 +838,20 @@ class NullCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, with_alias=False, **kwargs):
-        sql = "{term} IS NULL".format(term=self.term.get_sql(**kwargs),)
+        sql = "{term} IS NULL".format(term=self.term.get_sql(**kwargs), )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class ComplexCriterion(BasicCriterion):
     def get_sql(self, subcriterion=False, **kwargs):
         sql = "{left} {comparator} {right}".format(
-            comparator=self.comparator.value,
-            left=self.left.get_sql(
-                subcriterion=self.needs_brackets(self.left), **kwargs
-            ),
-            right=self.right.get_sql(
-                subcriterion=self.needs_brackets(self.right), **kwargs
-            ),
+              comparator=self.comparator.value,
+              left=self.left.get_sql(
+                    subcriterion=self.needs_brackets(self.left), **kwargs
+              ),
+              right=self.right.get_sql(
+                    subcriterion=self.needs_brackets(self.right), **kwargs
+              ),
         )
 
         if subcriterion:
@@ -862,8 +861,8 @@ class ComplexCriterion(BasicCriterion):
 
     def needs_brackets(self, term):
         return (
-            isinstance(term, ComplexCriterion)
-            and not term.comparator == self.comparator
+              isinstance(term, ComplexCriterion)
+              and not term.comparator == self.comparator
         )
 
 
@@ -930,13 +929,13 @@ class ArithmeticExpression(Term):
         ]
 
         arithmetic_sql = "{left}{operator}{right}".format(
-            operator=self.operator.value,
-            left=("({})" if is_mul and is_left_add else "{}").format(
-                self.left.get_sql(**kwargs)
-            ),
-            right=("({})" if is_mul and is_right_add else "{}").format(
-                self.right.get_sql(**kwargs)
-            ),
+              operator=self.operator.value,
+              left=("({})" if is_mul and is_left_add else "{}").format(
+                    self.left.get_sql(**kwargs)
+              ),
+              right=("({})" if is_mul and is_right_add else "{}").format(
+                    self.right.get_sql(**kwargs)
+              ),
         )
 
         if with_alias:
@@ -965,8 +964,8 @@ class Case(Term):
     def is_aggregate(self):
         # True if all cases are True or None. None all cases are None. Otherwise, False
         return resolve_is_aggregate(
-            [term.is_aggregate for _, term in self._cases]
-            + [self._else.is_aggregate if self._else else None]
+              [term.is_aggregate for _, term in self._cases]
+              + [self._else.is_aggregate if self._else else None]
         )
 
     @builder
@@ -1004,14 +1003,14 @@ class Case(Term):
     def get_sql(self, with_alias=False, **kwargs):
         if not self._cases:
             raise CaseException(
-                "At least one 'when' case is required for a CASE statement."
+                  "At least one 'when' case is required for a CASE statement."
             )
 
         cases = " ".join(
-            "WHEN {when} THEN {then}".format(
-                when=criterion.get_sql(**kwargs), then=term.get_sql(**kwargs)
-            )
-            for criterion, term in self._cases
+              "WHEN {when} THEN {then}".format(
+                    when=criterion.get_sql(**kwargs), then=term.get_sql(**kwargs)
+              )
+              for criterion, term in self._cases
         )
         else_ = " ELSE {}".format(self._else.get_sql(**kwargs)) if self._else else ""
 
@@ -1082,11 +1081,11 @@ class CustomFunction:
 
         if not self._is_valid_function_call(*args):
             raise FunctionException(
-                "Function {name} require these arguments ({params}), ({args}) passed".format(
-                    name=self.name,
-                    params=", ".join(str(p) for p in self.params),
-                    args=", ".join(str(p) for p in args),
-                )
+                  "Function {name} require these arguments ({params}), ({args}) passed".format(
+                        name=self.name,
+                        params=", ".join(str(p) for p in self.params),
+                        args=", ".join(str(p) for p in args),
+                  )
             )
 
         return Function(self.name, *args, alias=kwargs.get("alias"))
@@ -1143,14 +1142,14 @@ class Function(Criterion):
         special_params_sql = self.get_special_params_sql(**kwargs)
 
         return "{name}({args}{special})".format(
-            name=self.name,
-            args=",".join(
-                p.get_sql(with_alias=True, **kwargs)
-                if hasattr(p, "get_sql")
-                else str(p)
-                for p in self.args
-            ),
-            special=(" " + special_params_sql) if special_params_sql else "",
+              name=self.name,
+              args=",".join(
+                    p.get_sql(with_alias=True, **kwargs)
+                    if hasattr(p, "get_sql")
+                    else str(p)
+                    for p in self.args
+              ),
+              special=(" " + special_params_sql) if special_params_sql else "",
         )
 
     def get_sql(self, **kwargs):
@@ -1161,20 +1160,20 @@ class Function(Criterion):
 
         # FIXME escape
         function_sql = self.get_function_sql(
-            with_namespace=with_namespace, quote_char=quote_char, dialect=dialect
+              with_namespace=with_namespace, quote_char=quote_char, dialect=dialect
         )
 
         if self.schema is not None:
             function_sql = "{schema}.{function}".format(
-                schema=self.schema.get_sql(
-                    quote_char=quote_char, dialect=dialect, **kwargs
-                ),
-                function=function_sql,
+                  schema=self.schema.get_sql(
+                        quote_char=quote_char, dialect=dialect, **kwargs
+                  ),
+                  function=function_sql,
             )
 
         if with_alias:
             return format_alias_sql(
-                function_sql, self.alias, quote_char=quote_char, **kwargs
+                  function_sql, self.alias, quote_char=quote_char, **kwargs
             )
 
         return function_sql
@@ -1215,35 +1214,35 @@ class AnalyticFunction(Function):
             return field.get_sql(**kwargs)
 
         return "{field} {orient}".format(
-            field=field.get_sql(**kwargs), orient=orient.value,
+              field=field.get_sql(**kwargs), orient=orient.value,
         )
 
     def get_filter_sql(self):
         if self._include_filter:
             return "WHERE {criterions}".format(
-                criterions=Criterion.all(self._filters).get_sql()
+                  criterions=Criterion.all(self._filters).get_sql()
             )
 
     def get_partition_sql(self, **kwargs):
         terms = []
         if self._partition:
             terms.append(
-                "PARTITION BY {args}".format(
-                    args=",".join(
-                        p.get_sql(**kwargs) if hasattr(p, "get_sql") else str(p)
-                        for p in self._partition
-                    )
-                )
+                  "PARTITION BY {args}".format(
+                        args=",".join(
+                              p.get_sql(**kwargs) if hasattr(p, "get_sql") else str(p)
+                              for p in self._partition
+                        )
+                  )
             )
 
         if self._orderbys:
             terms.append(
-                "ORDER BY {orderby}".format(
-                    orderby=",".join(
-                        self._orderby_field(field, orient, **kwargs)
-                        for field, orient in self._orderbys
-                    )
-                )
+                  "ORDER BY {orderby}".format(
+                        orderby=",".join(
+                              self._orderby_field(field, orient, **kwargs)
+                              for field, orient in self._orderbys
+                        )
+                  )
             )
 
         return " ".join(terms)
@@ -1269,7 +1268,7 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
 
         def __str__(self):
             return "{value} {modifier}".format(
-                value=self.value or "UNBOUNDED", modifier=self.modifier,
+                  value=self.value or "UNBOUNDED", modifier=self.modifier,
             )
 
     def __init__(self, name, *args, **kwargs):
@@ -1298,12 +1297,12 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
 
         lower, upper = self.bound
         return "{frame} BETWEEN {lower} AND {upper}".format(
-            frame=self.frame, lower=lower, upper=upper,
+              frame=self.frame, lower=lower, upper=upper,
         )
 
     def get_partition_sql(self, **kwargs):
         partition_sql = super(WindowFrameAnalyticFunction, self).get_partition_sql(
-            **kwargs
+              **kwargs
         )
 
         if not self.frame and not self.bound:
@@ -1347,17 +1346,17 @@ class Interval(Node):
     trim_pattern = re.compile(r"(^0+\.)|(\.0+$)|(^[0\-.: ]+[\-: ])|([\-:. ][0\-.: ]+$)")
 
     def __init__(
-        self,
-        years=0,
-        months=0,
-        days=0,
-        hours=0,
-        minutes=0,
-        seconds=0,
-        microseconds=0,
-        quarters=0,
-        weeks=0,
-        dialect=None,
+          self,
+          years=0,
+          months=0,
+          days=0,
+          hours=0,
+          minutes=0,
+          seconds=0,
+          microseconds=0,
+          quarters=0,
+          weeks=0,
+          dialect=None,
     ):
         self.dialect = dialect
         self.largest = None
@@ -1372,9 +1371,9 @@ class Interval(Node):
             return
 
         for unit, label, value in zip(
-            self.units,
-            self.labels,
-            [years, months, days, hours, minutes, seconds, microseconds],
+              self.units,
+              self.labels,
+              [years, months, days, hours, minutes, seconds, microseconds],
         ):
             if value:
                 setattr(self, unit, int(value))
@@ -1402,19 +1401,19 @@ class Interval(Node):
         else:
             # Create the whole expression but trim out the unnecessary fields
             expr = "{years}-{months}-{days} {hours}:{minutes}:{seconds}.{microseconds}".format(
-                years=getattr(self, "years", 0),
-                months=getattr(self, "months", 0),
-                days=getattr(self, "days", 0),
-                hours=getattr(self, "hours", 0),
-                minutes=getattr(self, "minutes", 0),
-                seconds=getattr(self, "seconds", 0),
-                microseconds=getattr(self, "microseconds", 0),
+                  years=getattr(self, "years", 0),
+                  months=getattr(self, "months", 0),
+                  days=getattr(self, "days", 0),
+                  hours=getattr(self, "hours", 0),
+                  minutes=getattr(self, "minutes", 0),
+                  seconds=getattr(self, "seconds", 0),
+                  microseconds=getattr(self, "microseconds", 0),
             )
             expr = self.trim_pattern.sub("", expr)
 
             unit = (
                 "{largest}_{smallest}".format(
-                    largest=self.largest, smallest=self.smallest,
+                      largest=self.largest, smallest=self.smallest,
                 )
                 if self.largest != self.smallest
                 else self.largest
@@ -1425,7 +1424,7 @@ class Interval(Node):
                 unit = "DAY"
 
         return self.templates.get(dialect, "INTERVAL '{expr} {unit}'").format(
-            expr=expr, unit=unit
+              expr=expr, unit=unit
         )
 
 
