@@ -30,7 +30,7 @@ jobs:
       - name: Run test suite
         run: tox
 
-      #    Uncomment when Black is setup for PyPika
+      # Uncomment when Black is setup for PyPika
       #    - name: Run Black code formatter check
       #      run: black --check .
 
