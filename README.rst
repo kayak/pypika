@@ -772,8 +772,23 @@ Multiple rows of data can be inserted either by chaining the ``insert`` function
     q = Query.into(customers).insert((1, 'Jane', 'Doe', 'jane@example.com'),
                                      (2, 'John', 'Doe', 'john@example.com'))
 
-Insert with on Duplicate Key Update
-"""""""""""""""""""""""""""""""""""
+Insert with constraint violation handling
+"""""""""""""""""""""""""""""""""""""""""
+
+MySQL
+~~~~~
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers)\
+        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
+        .on_duplicate_key_ignore())
+
+.. code-block:: sql
+
+    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com') ON DUPLICATE KEY IGNORE
 
 .. code-block:: python
 
@@ -790,13 +805,42 @@ Insert with on Duplicate Key Update
 ``.on_duplicate_key_update`` works similar to ``.set`` for updating rows, additionally it provides the ``Values``
 wrapper to update to the value specified in the ``INSERT`` clause.
 
+PostgreSQL
+~~~~~~~~~~
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers)\
+        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
+        .on_conflict(customers.email)
+        .do_nothing()
+
+.. code-block:: sql
+
+    INSERT INTO "abc" VALUES (1,'Jane','Doe','jane@example.com') ON CONFLICT ("email") DO NOTHING
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers)\
+        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
+        .on_conflict(customers.email)
+        .do_update(customers.email, 'bob@example.com')
+
+.. code-block:: sql
+
+    INSERT INTO "customers" VALUES (1,'Jane','Doe','jane@example.com') ON CONFLICT ("email") DO UPDATE SET "email"='bob@example.com'
+
 
 Insert from a SELECT Sub-query
 """"""""""""""""""""""""""""""
 
 .. code-block:: sql
 
-    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com'),(2,'John','Doe','john@example.com')
+    INSERT INTO "customers" VALUES (1,'Jane','Doe','jane@example.com'),(2,'John','Doe','john@example.com')
 
 
 To specify the columns and the order, use the ``columns`` function.

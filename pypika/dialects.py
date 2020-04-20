@@ -50,23 +50,38 @@ class MySQLQueryBuilder(QueryBuilder):
               dialect=Dialects.MYSQL, wrap_union_queries=False, **kwargs
         )
         self._duplicate_updates = []
+        self._ignore_duplicates = False
         self._modifiers = []
 
     def __copy__(self):
         newone = super(MySQLQueryBuilder, self).__copy__()
         newone._duplicate_updates = copy(self._duplicate_updates)
+        newone._ignore_duplicates = copy(self._ignore_duplicates)
         return newone
 
     @builder
     def on_duplicate_key_update(self, field, value):
+        if self._ignore_duplicates:
+            raise QueryException("Can not have two conflict handlers")
+
         field = Field(field) if not isinstance(field, Field) else field
         self._duplicate_updates.append((field, ValueWrapper(value)))
+
+    @builder
+    def on_duplicate_key_ignore(self):
+        if self._duplicate_updates:
+            raise QueryException("Can not have two conflict handlers")
+
+        self._ignore_duplicates = True
 
     def get_sql(self, **kwargs):
         self._set_kwargs_defaults(kwargs)
         querystring = super(MySQLQueryBuilder, self).get_sql(**kwargs)
-        if querystring and self._duplicate_updates:
-            querystring += self._on_duplicate_key_update_sql(**kwargs)
+        if querystring:
+            if self._duplicate_updates:
+                querystring += self._on_duplicate_key_update_sql(**kwargs)
+            elif self._ignore_duplicates:
+                querystring += self._on_duplicate_key_ignore_sql()
         return querystring
 
     def _on_duplicate_key_update_sql(self, **kwargs):
@@ -78,6 +93,9 @@ class MySQLQueryBuilder(QueryBuilder):
                     for field, value in self._duplicate_updates
               )
         )
+
+    def _on_duplicate_key_ignore_sql(self):
+        return " ON DUPLICATE KEY IGNORE"
 
     @builder
     def modifier(self, value):

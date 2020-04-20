@@ -192,9 +192,9 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     def test_insert_on_conflict_do_nothing_multiple_fields(self):
         query = (
             PostgreSQLQuery.into(self.table_abc)
-                .insert(1)
-                .on_conflict(self.table_abc.id, self.table_abc.sub_id)
-                .do_nothing()
+            .insert(1)
+            .on_conflict(self.table_abc.id, self.table_abc.sub_id)
+            .do_nothing()
         )
 
         self.assertEqual(
