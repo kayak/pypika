@@ -308,6 +308,8 @@ class OracleQuery(Query):
 
 
 class PostgreQueryBuilder(QueryBuilder):
+    ALIAS_QUOTE_CHAR = '"'
+
     def __init__(self, **kwargs):
         super(PostgreQueryBuilder, self).__init__(dialect=Dialects.POSTGRESQL, **kwargs)
         self._returns = []

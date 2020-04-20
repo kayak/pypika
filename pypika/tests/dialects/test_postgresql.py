@@ -19,6 +19,12 @@ class InsertTests(unittest.TestCase):
 
 
 class JSONObjectTests(unittest.TestCase):
+    def test_alias_set_correctly(self):
+        table = Table('jsonb_table')
+        q = PostgreSQLQuery.from_('abc').select(table.value.get_text_value('a').as_('name'))
+
+        self.assertEqual('''SELECT "value"->>'a' "name" FROM "abc"''', str(q))
+
     def test_json_value_from_dict(self):
         q = PostgreSQLQuery.select(JSON({"a": "foo"}))
 
