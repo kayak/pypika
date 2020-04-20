@@ -347,7 +347,8 @@ class JSON(Term):
         return format_quotes(value, quote_char)
 
     def get_sql(self, secondary_quote_char="'", **kwargs):
-        return format_quotes(self._recursive_get_sql(self.value), secondary_quote_char)
+        sql = format_quotes(self._recursive_get_sql(self.value), secondary_quote_char)
+        return format_alias_sql(sql, self.alias, **kwargs)
 
     def get_json_value(self, key_or_index: Union[str, int]):
         return BasicCriterion(
