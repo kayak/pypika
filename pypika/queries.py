@@ -487,7 +487,7 @@ class _UnionQuery(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
-        if self._limit:
+        if self._limit is not None:
             querystring += self._limit_sql()
 
         if self._offset:
@@ -1110,9 +1110,7 @@ class QueryBuilder(Selectable, Term):
 
         has_joins = bool(self._joins)
         has_multiple_from_clauses = 1 < len(self._from)
-        has_subquery_from_clause = 0 < len(self._from) and isinstance(
-              self._from[0], QueryBuilder
-        )
+        has_subquery_from_clause = 0 < len(self._from) and isinstance(self._from[0], QueryBuilder)
         has_reference_to_foreign_table = self._foreign_table
         has_update_from = self._update_table and self._from
 
@@ -1147,7 +1145,7 @@ class QueryBuilder(Selectable, Term):
             if self._wheres:
                 querystring += self._where_sql(**kwargs)
 
-            if self._limit:
+            if self._limit is not None:
                 querystring += self._limit_sql()
 
             return querystring
@@ -1214,7 +1212,7 @@ class QueryBuilder(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
-        if self._limit:
+        if self._limit is not None:
             querystring += self._limit_sql()
 
         if self._offset:

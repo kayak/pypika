@@ -186,6 +186,15 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10', str(q1))
 
+    def test_select_with_limit_zero(self):
+        with self.subTest('using python slice'):
+            q1 = Query.from_("abc").select("foo")[:0]
+            self.assertEqual('SELECT "foo" FROM "abc" LIMIT 0', str(q1))
+
+        with self.subTest('using limit method'):
+            q2 = Query.from_("abc").select("foo").limit(0)
+            self.assertEqual('SELECT "foo" FROM "abc" LIMIT 0', str(q2))
+
     def test_select_with_limit__func(self):
         q1 = Query.from_("abc").select("foo").limit(10)
 
