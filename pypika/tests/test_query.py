@@ -64,7 +64,7 @@ class QueryTablesTests(unittest.TestCase):
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual(
-            'SELECT "name" ' 'FROM "b" ' "WHERE \"name\"='Mustermann'", str(query)
+            'SELECT "name" FROM "b" WHERE "name"=\'Mustermann\'', str(query)
         )
 
     def test_replace_having_table(self):
@@ -112,20 +112,21 @@ class QueryTablesTests(unittest.TestCase):
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual(
-            'SELECT "customer" ' 'FROM "b" ' 'ORDER BY "customer"', str(query)
+            'SELECT "customer" FROM "b" ORDER BY "customer"', str(query)
         )
 
     def test_replace_tuple_table(self):
         query = (
             Query.from_(self.table_a)
             .select(self.table_a.cost, self.table_a.revenue)
-            .where(Tuple(self.table_a.cost, self.table_a.revenue) == Tuple(1, 2))
+            .where((self.table_a.cost, self.table_a.revenue) == Tuple(1, 2))
         )
 
         query = query.replace_table(self.table_a, self.table_b)
 
+        # Order is reversed due to lack of right equals method
         self.assertEqual(
-            "SELECT " '"cost","revenue" ' 'FROM "b" ' 'WHERE ("cost","revenue")=(1,2)',
+            'SELECT "cost","revenue" FROM "b" WHERE (1,2)=("cost","revenue")',
             str(query),
         )
 
