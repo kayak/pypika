@@ -539,7 +539,6 @@ class Star(Field):
         return "*"
 
 
-
 class Tuple(Criterion):
     def __init__(self, *values: Any) -> None:
         super().__init__()
@@ -571,8 +570,7 @@ class Tuple(Criterion):
             A copy of the field with the tables replaced.
         """
         self.values = [
-            [value.replace_table(current_table, new_table) for value in value_list]
-            for value_list in self.values
+            value.replace_table(current_table, new_table) for value in self.values
         ]
 
 
