@@ -1,11 +1,6 @@
 import unittest
 
-from pypika import (
-    Case,
-    Query,
-    Tables,
-    functions,
-)
+from pypika import Case, Query, Tables, functions, Tuple
 
 
 class QueryTablesTests(unittest.TestCase):
@@ -118,6 +113,20 @@ class QueryTablesTests(unittest.TestCase):
 
         self.assertEqual(
             'SELECT "customer" ' 'FROM "b" ' 'ORDER BY "customer"', str(query)
+        )
+
+    def test_replace_tuple_table(self):
+        query = (
+            Query.from_(self.table_a)
+            .select(self.table_a.cost, self.table_a.revenue)
+            .where(Tuple(self.table_a.cost, self.table_a.revenue) == Tuple(1, 2))
+        )
+
+        query = query.replace_table(self.table_a, self.table_b)
+
+        self.assertEqual(
+            "SELECT " '"cost","revenue" ' 'FROM "b" ' 'WHERE ("cost","revenue")=(1,2)',
+            str(query),
         )
 
     def test_is_joined(self):
