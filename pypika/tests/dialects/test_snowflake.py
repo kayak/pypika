@@ -13,7 +13,7 @@ class QuoteTests(unittest.TestCase):
     def test_use_double_quotes_on_alias_but_not_on_terms(self):
         q = SnowflakeQuery.from_(self.table_abc).select(self.table_abc.a.as_("bar"))
 
-        self.assertEqual('SELECT a "bar" ' "FROM abc", q.get_sql(with_namespace=True))
+        self.assertEqual('SELECT a bar ' "FROM abc", q.get_sql(with_namespace=True))
 
     def test_use_double_quotes_on_alias_but_not_on_terms_with_joins(self):
         foo = self.table_abc.as_("foo")
@@ -28,8 +28,8 @@ class QuoteTests(unittest.TestCase):
 
         self.assertEqual(
             "SELECT foo.a,bar.b "
-            'FROM abc "foo" '
-            'JOIN efg "bar" '
+            'FROM abc foo '
+            'JOIN efg bar '
             "ON foo.fk=bar.id",
             q.get_sql(with_namespace=True),
         )
@@ -45,9 +45,9 @@ class QuoteTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'SELECT index "idx",SUM(value) "val" '
+            'SELECT index idx,SUM(value) val '
             "FROM abc "
-            'GROUP BY "idx" '
-            'ORDER BY "idx"',
+            'GROUP BY idx '
+            'ORDER BY idx',
             q.get_sql(with_namespace=True),
         )
