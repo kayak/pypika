@@ -13,7 +13,7 @@ class QuoteTests(unittest.TestCase):
     def test_use_double_quotes_on_alias_but_not_on_terms(self):
         q = SnowflakeQuery.from_(self.table_abc).select(self.table_abc.a.as_("bar"))
 
-        self.assertEqual('SELECT a bar ' "FROM abc", q.get_sql(with_namespace=True))
+        self.assertEqual('SELECT a bar FROM abc', q.get_sql(with_namespace=True))
 
     def test_use_double_quotes_on_alias_but_not_on_terms_with_joins(self):
         foo = self.table_abc.as_("foo")
