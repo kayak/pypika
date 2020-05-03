@@ -561,6 +561,7 @@ class CastTests(unittest.TestCase):
 class DateFunctionsTests(unittest.TestCase):
     dt = F("dt")
     t = T("abc")
+    t2 = T("efg")
 
     def _test_extract_datepart(self, date_part):
         q = Q.from_(self.t).select(fn.Extract(date_part, self.t.foo))
@@ -595,6 +596,20 @@ class DateFunctionsTests(unittest.TestCase):
 
     def test_extract_year(self):
         self._test_extract_datepart(DatePart.year)
+
+    def test_extract_join(self):
+        q = (
+            Q.from_(self.t)
+            .join(self.t2)
+            .on(self.t.id == self.t2.t_id)
+            .select(fn.Extract(DatePart.year, self.t.foo))
+        )
+
+        self.assertEqual(
+            'SELECT EXTRACT(YEAR FROM "abc"."foo") FROM "abc" '
+            'JOIN "efg" ON "abc"."id"="efg"."t_id"',
+            str(q)
+        )
 
     def test_timestampadd(self):
         a = fn.TimestampAdd("year", 1, "2017-10-01")
