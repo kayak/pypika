@@ -527,15 +527,13 @@ class PostgreQueryBuilder(QueryBuilder):
         querystring = super(PostgreQueryBuilder, self).get_sql(
               with_alias, subquery, **kwargs
         )
-        with_namespace = False
-        if self._update_table and self.from_:
-            with_namespace = True
 
         querystring += self._on_conflict_sql(**kwargs)
         querystring += self._on_conflict_action_sql(**kwargs)
 
         if self._returns:
-            querystring += self._returning_sql(with_namespace=with_namespace, **kwargs)
+            kwargs['with_namespace'] = self._update_table and self.from_
+            querystring += self._returning_sql(**kwargs)
         return querystring
 
 
