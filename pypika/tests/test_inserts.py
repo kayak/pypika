@@ -113,6 +113,17 @@ class InsertIntoTests(unittest.TestCase):
             'INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query)
         )
 
+    def test_insert_empty_columns(self):
+        query = (
+            Query.into(self.table_abc)
+            .columns()
+            .insert(1, "a", True)
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1,\'a\',true)', str(query)
+        )
+
     def test_insert_selected_columns_type_list(self):
         query = (
             Query.into(self.table_abc)
@@ -124,6 +135,17 @@ class InsertIntoTests(unittest.TestCase):
             'INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query)
         )
 
+    def test_insert_empty_columns_type_list(self):
+        query = (
+            Query.into(self.table_abc)
+            .columns([])
+            .insert(1, "a", True)
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1,\'a\',true)', str(query)
+        )
+
     def test_insert_selected_columns_type_tuple(self):
         query = (
             Query.into(self.table_abc)
@@ -133,6 +155,17 @@ class InsertIntoTests(unittest.TestCase):
 
         self.assertEqual(
             'INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query)
+        )
+
+    def test_insert_empty_columns_type_tuple(self):
+        query = (
+            Query.into(self.table_abc)
+            .columns(())
+            .insert(1, "a", True)
+        )
+
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1,\'a\',true)', str(query)
         )
 
     def test_insert_none_skipped(self):

@@ -772,7 +772,7 @@ class QueryBuilder(Selectable, Term):
         if self._insert_table is None:
             raise AttributeError("'Query' object has no attribute '%s'" % "insert")
 
-        if isinstance(terms[0], (list, tuple)):
+        if terms and isinstance(terms[0], (list, tuple)):
             terms = terms[0]
 
         for term in terms:
