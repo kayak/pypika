@@ -862,14 +862,20 @@ class AliasTests(unittest.TestCase):
         self.assertEqual('SELECT COUNT(*) "foo" FROM "abc"', str(q))
 
     def test_function_using_as_nested(self):
+        """
+        We don't show aliases of fields that are arguments of a function.
+        """
         q = Query.from_(self.t).select(fn.Sqrt(fn.Count("*").as_("foo")).as_("bar"))
 
-        self.assertEqual('SELECT SQRT(COUNT(*) "foo") "bar" FROM "abc"', str(q))
+        self.assertEqual('SELECT SQRT(COUNT(*)) "bar" FROM "abc"', str(q))
 
     def test_functions_using_constructor_param_nested(self):
+        """
+        We don't show aliases of fields that are arguments of a function.
+        """
         q = Query.from_(self.t).select(fn.Sqrt(fn.Count("*", alias="foo"), alias="bar"))
 
-        self.assertEqual('SELECT SQRT(COUNT(*) "foo") "bar" FROM "abc"', str(q))
+        self.assertEqual('SELECT SQRT(COUNT(*)) "bar" FROM "abc"', str(q))
 
     def test_ignored_in_where(self):
         q = Query.from_(self.t).select(self.t.foo).where(self.t.foo.as_("bar") == 1)
