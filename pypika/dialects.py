@@ -360,7 +360,7 @@ class PostgreQueryBuilder(QueryBuilder):
         self._on_conflict_do_nothing = True
 
     @builder
-    def do_update(self, update_field: Union[str, Field], update_value: Any) -> "PostgreQueryBuilder":
+    def do_update(self, update_field: Union[str, Field], update_value: Optional[Any] = None) -> "PostgreQueryBuilder":
         if self._on_conflict_do_nothing:
             raise QueryException("Can not have two conflict handlers")
 
@@ -371,7 +371,10 @@ class PostgreQueryBuilder(QueryBuilder):
         else:
             raise QueryException("Unsupported update_field")
 
-        self._on_conflict_do_updates.append((field, ValueWrapper(update_value)))
+        if update_value:
+            self._on_conflict_do_updates.append((field, ValueWrapper(update_value)))
+        else:
+            self._on_conflict_do_updates.append((field, None))
 
     @builder
     def where(self, criterion: Criterion) -> "PostgreQueryBuilder":
@@ -436,15 +439,19 @@ class PostgreQueryBuilder(QueryBuilder):
         if self._on_conflict_do_nothing:
             return " DO NOTHING"
         elif len(self._on_conflict_do_updates) > 0:
-            action_sql = " DO UPDATE SET {updates}".format(
-                  updates=",".join(
-                        "{field}={value}".format(
-                              field=field.get_sql(**kwargs),
-                              value=value.get_sql(with_namespace=True, **kwargs),
-                        )
-                        for field, value in self._on_conflict_do_updates
-                  )
-            )
+            updates = []
+            for field, value in self._on_conflict_do_updates:
+                if value:
+                    updates.append("{field}={value}".format(
+                        field=field.get_sql(**kwargs),
+                        value=value.get_sql(with_namespace=True, **kwargs),
+                    ))
+                else:
+                    updates.append("{field}=EXCLUDED.{value}".format(
+                        field=field.get_sql(**kwargs),
+                        value=field.get_sql(**kwargs),
+                    ))
+            action_sql = " DO UPDATE SET {updates}".format(updates=",".join(updates))
 
             if self._on_conflict_do_update_wheres:
                 action_sql += " WHERE {where}".format(
