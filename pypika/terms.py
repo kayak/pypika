@@ -974,9 +974,9 @@ class Case(Term):
 
     @property
     def is_aggregate(self) -> Optional[bool]:
-        # True if all cases are True or None. None all cases are None. Otherwise, False
+        # True if all criterions/cases are True or None. None all cases are None. Otherwise, False
         return resolve_is_aggregate(
-              [term.is_aggregate for _, term in self._cases]
+              [criterion.is_aggregate or term.is_aggregate for criterion, term in self._cases]
               + [self._else.is_aggregate if self._else else None]
         )
 

@@ -53,6 +53,15 @@ class IsAggregateTests(unittest.TestCase):
         v = 1 / fn.Sum(Field("foo"))
         self.assertTrue(v.is_aggregate)
 
+    def test__agg_case_criterion_is_aggregate(self):
+        v = (
+            Case()
+            .when(fn.Sum(Field("foo")) > 666, 'More than 666')
+            .else_('Less than 666')
+        )
+
+        self.assertTrue(v.is_aggregate)
+
     def test__agg_case_is_aggregate(self):
         v = (
             Case()
@@ -97,7 +106,7 @@ class IsAggregateTests(unittest.TestCase):
 
         self.assertFalse(v.is_aggregate)
 
-    def test__case_with_single_aggregate_field_is_not_aggregate(self):
+    def test__case_with_single_aggregate_field_in_one_criterion_is_aggregate(self):
         v = (
             Case()
             .when(Field("foo") == 1, 1)
@@ -105,12 +114,7 @@ class IsAggregateTests(unittest.TestCase):
             .else_(3)
         )
 
-        self.assertFalse(v.is_aggregate)
-
-    def test__case_all_constants_is_aggregate_none(self):
-        v = Case().when(True, 1).when(False, 2).else_(3)
-
-        self.assertIsNone(v.is_aggregate)
+        self.assertTrue(v.is_aggregate)
 
     def test__non_aggregate_function_with_aggregated_arg(self):
         t = Table("abc")
