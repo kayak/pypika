@@ -508,7 +508,7 @@ Unions
 
 Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and |Brand| does not
 provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
-trying to cast a unioned query to string with through a ``UnionException`` if the column sizes are mismatched.
+trying to cast a unioned query to string with through a ``SetOperationException`` if the column sizes are mismatched.
 
 To create a union query, use either the ``Query.union()`` method or `+` operator with two query instances. For a
 union all, use ``Query.union_all()`` or the `*` operator.
@@ -526,6 +526,82 @@ union all, use ``Query.union_all()`` or the `*` operator.
 
     SELECT "created_time","foo","bar" FROM "provider_a" UNION SELECT "created_time","fiz","buz" FROM "provider_b"
 
+Intersect
+"""""""""
+
+``INTERSECT`` is supported. Intersects require that queries have the same number of ``SELECT`` clauses so
+trying to cast a intersected query to string with through a ``SetOperationException`` if the column sizes are mismatched.
+
+To create a intersect query, use the ``Query.intersect()`` method.
+
+.. code-block:: python
+
+    provider_a, provider_b = Tables('provider_a', 'provider_b')
+    q = Query.from_(provider_a).select(
+        provider_a.created_time, provider_a.foo, provider_a.bar
+    )
+    r = Query.from_(provider_b).select(
+        provider_b.created_time, provider_b.fiz, provider_b.buz
+    )
+    intersected_query = q.intersect(r)
+
+.. code-block:: sql
+
+    SELECT "created_time","foo","bar" FROM "provider_a" INTERSECT SELECT "created_time","fiz","buz" FROM "provider_b"
+
+Minus
+"""""
+
+``MINUS`` is supported. Minus require that queries have the same number of ``SELECT`` clauses so
+trying to cast a minus query to string with through a ``SetOperationException`` if the column sizes are mismatched.
+
+To create a minus query, use either the ``Query.minus()`` method or `-` operator with two query instances.
+
+.. code-block:: python
+
+    provider_a, provider_b = Tables('provider_a', 'provider_b')
+    q = Query.from_(provider_a).select(
+        provider_a.created_time, provider_a.foo, provider_a.bar
+    )
+    r = Query.from_(provider_b).select(
+        provider_b.created_time, provider_b.fiz, provider_b.buz
+    )
+    minus_query = q.minus(r)
+
+    (or)
+
+    minus_query = Query.from_(provider_a).select(
+        provider_a.created_time, provider_a.foo, provider_a.bar
+    ) - Query.from_(provider_b).select(
+        provider_b.created_time, provider_b.fiz, provider_b.buz
+    )
+
+.. code-block:: sql
+
+    SELECT "created_time","foo","bar" FROM "provider_a" MINUS SELECT "created_time","fiz","buz" FROM "provider_b"
+
+EXCEPT
+""""""
+
+``EXCEPT`` is supported. Minus require that queries have the same number of ``SELECT`` clauses so
+trying to cast a except query to string with through a ``SetOperationException`` if the column sizes are mismatched.
+
+To create a except query, use the ``Query.except_of()`` method.
+
+.. code-block:: python
+
+    provider_a, provider_b = Tables('provider_a', 'provider_b')
+    q = Query.from_(provider_a).select(
+        provider_a.created_time, provider_a.foo, provider_a.bar
+    )
+    r = Query.from_(provider_b).select(
+        provider_b.created_time, provider_b.fiz, provider_b.buz
+    )
+    minus_query = q.except_of(r)
+
+.. code-block:: sql
+
+    SELECT "created_time","foo","bar" FROM "provider_a" EXCEPT SELECT "created_time","fiz","buz" FROM "provider_b"
 
 Date, Time, and Intervals
 """""""""""""""""""""""""

@@ -10,7 +10,7 @@ from typing import (
     Tuple as TypedTuple,
 )
 
-from pypika.enums import JoinType, UnionType, Dialects
+from pypika.enums import JoinType, SetOperation, Dialects
 from pypika.terms import (
     ArithmeticExpression,
     EmptyCriterion,
@@ -29,7 +29,7 @@ from pypika.utils import (
     JoinException,
     QueryException,
     RollupException,
-    UnionException,
+    SetOperationException,
     builder,
     format_alias_sql,
     format_quotes,
@@ -409,19 +409,21 @@ class Query:
         return make_tables(*names, **kwargs)
 
 
-class _UnionQuery(Selectable, Term):
+class _SetOperation(Selectable, Term):
     """
-    A Query class wrapper for a Union query, whether DISTINCT or ALL.
+    A Query class wrapper for a all set operations, Union DISTINCT or ALL, Intersect, Except or Minus
 
-    Created via the functions `Query.union` or `Query.union_all`, this class should not be instantiated directly.
+    Created via the functions `Query.union`,`Query.union_all`,`Query.intersect`, `Query.except_of`,`Query.minus`.
+
+    This class should not be instantiated directly.
     """
 
     def __init__(
-          self, base_query: "QueryBuilder", union_query: "QueryBuilder", union_type: UnionType, alias: Optional[str] = None, wrapper_cls: Type[ValueWrapper] = ValueWrapper,
+          self, base_query: "QueryBuilder", set_operation_query: "QueryBuilder", set_operation: SetOperation, alias: Optional[str] = None, wrapper_cls: Type[ValueWrapper] = ValueWrapper,
     ):
         super().__init__(alias)
         self.base_query = base_query
-        self._unions = [(union_type, union_query)]
+        self._set_operation = [(set_operation, set_operation_query)]
         self._orderbys = []
 
         self._limit = None
@@ -430,7 +432,7 @@ class _UnionQuery(Selectable, Term):
         self._wrapper_cls = wrapper_cls
 
     @builder
-    def orderby(self, *fields: Field, **kwargs: Any) -> "_UnionQuery":
+    def orderby(self, *fields: Field, **kwargs: Any) -> "_SetOperation":
         for field in fields:
             field = (
                 Field(field, table=self.base_query._from[0])
@@ -441,32 +443,47 @@ class _UnionQuery(Selectable, Term):
             self._orderbys.append((field, kwargs.get("order")))
 
     @builder
-    def limit(self, limit: int) -> "_UnionQuery":
+    def limit(self, limit: int) -> "_SetOperation":
         self._limit = limit
 
     @builder
-    def offset(self, offset: int) -> "_UnionQuery":
+    def offset(self, offset: int) -> "_SetOperation":
         self._offset = offset
 
     @builder
-    def union(self, other: Selectable) -> "_UnionQuery":
-        self._unions.append((UnionType.distinct, other))
+    def union(self, other: Selectable) -> "_SetOperation":
+        self._set_operation.append((SetOperation.union, other))
 
     @builder
-    def union_all(self, other: Selectable) -> "_UnionQuery":
-        self._unions.append((UnionType.all, other))
+    def union_all(self, other: Selectable) -> "_SetOperation":
+        self._set_operation.append((SetOperation.union_all, other))
 
-    def __add__(self, other: Selectable) -> "_UnionQuery":
+    @builder
+    def intersect(self, other: Selectable) -> "_SetOperation":
+        self._set_operation.append((SetOperation.intersect, other))
+
+    @builder
+    def except_of(self, other: Selectable) -> "_SetOperation":
+        self._set_operation.append((SetOperation.except_of, other))
+
+    @builder
+    def minus(self, other: Selectable) -> "_SetOperation":
+        self._set_operation.append((SetOperation.minus, other))
+
+    def __add__(self, other: Selectable) -> "_SetOperation":
         return self.union(other)
 
-    def __mul__(self, other: Selectable) -> "_UnionQuery":
+    def __mul__(self, other: Selectable) -> "_SetOperation":
         return self.union_all(other)
+
+    def __sub__(self, other: "QueryBuilder") -> "_SetOperation":
+        return self.minus(other)
 
     def __str__(self) -> str:
         return self.get_sql()
 
     def get_sql(self, with_alias: bool = False, subquery: bool = False, **kwargs: Any) -> str:
-        union_template = " UNION{type} {union}"
+        set_operation_template = " {type} {query_string}"
 
         kwargs.setdefault("dialect", self.base_query.dialect)
         # This initializes the quote char based on the base query, which could be a dialect specific query class
@@ -474,25 +491,25 @@ class _UnionQuery(Selectable, Term):
         kwargs.setdefault("quote_char", self.base_query.QUOTE_CHAR)
 
         base_querystring = self.base_query.get_sql(
-              subquery=self.base_query.wrap_union_queries, **kwargs
+              subquery=self.base_query.wrap_set_operation_queries, **kwargs
         )
 
         querystring = base_querystring
-        for union_type, union_query in self._unions:
-            union_querystring = union_query.get_sql(
-                  subquery=self.base_query.wrap_union_queries, **kwargs
+        for set_operation, set_operation_query in self._set_operation:
+            set_operation_querystring = set_operation_query.get_sql(
+                  subquery=self.base_query.wrap_set_operation_queries, **kwargs
             )
 
-            if len(self.base_query._selects) != len(union_query._selects):
-                raise UnionException(
-                      "Queries must have an equal number of select statements in a union."
-                      "\n\nMain Query:\n{query1}\n\nUnion Query:\n{query2}".format(
-                            query1=base_querystring, query2=union_querystring
+            if len(self.base_query._selects) != len(set_operation_query._selects):
+                raise SetOperationException(
+                      "Queries must have an equal number of select statements in a set operation."
+                      "\n\nMain Query:\n{query1}\n\nSet Operations Query:\n{query2}".format(
+                            query1=base_querystring, query2=set_operation_querystring
                       )
                 )
 
-            querystring += union_template.format(
-                  type=union_type.value, union=union_querystring
+            querystring += set_operation_template.format(
+                  type=set_operation.value, query_string=set_operation_querystring
             )
 
         if self._orderbys:
@@ -560,7 +577,7 @@ class QueryBuilder(Selectable, Term):
     def __init__(
           self,
           dialect: Optional[Dialects] = None,
-          wrap_union_queries: bool = True,
+          wrap_set_operation_queries: bool = True,
           wrapper_cls: Type[ValueWrapper] = ValueWrapper,
           immutable: bool = True,
           as_keyword: bool = False,
@@ -605,7 +622,7 @@ class QueryBuilder(Selectable, Term):
 
         self.dialect = dialect
         self.as_keyword = as_keyword
-        self.wrap_union_queries = wrap_union_queries
+        self.wrap_set_operation_queries = wrap_set_operation_queries
 
         self._wrapper_cls = wrapper_cls
 
@@ -647,7 +664,7 @@ class QueryBuilder(Selectable, Term):
         )
 
         if (
-              isinstance(selectable, (QueryBuilder, _UnionQuery))
+              isinstance(selectable, (QueryBuilder, _SetOperation))
               and selectable.alias is None
         ):
             if isinstance(selectable, QueryBuilder):
@@ -942,25 +959,39 @@ class QueryBuilder(Selectable, Term):
         self._offset = offset
 
     @builder
-    def union(self, other: "QueryBuilder") -> _UnionQuery:
-        return _UnionQuery(
-              self, other, UnionType.distinct, wrapper_cls=self._wrapper_cls
-        )
+    def union(self, other: "QueryBuilder") -> _SetOperation:
+        return _SetOperation(
+              self, other, SetOperation.union, wrapper_cls=self._wrapper_cls)
 
     @builder
-    def union_all(self, other: "QueryBuilder") -> _UnionQuery:
-        return _UnionQuery(self, other, UnionType.all, wrapper_cls=self._wrapper_cls)
+    def union_all(self, other: "QueryBuilder") -> _SetOperation:
+        return _SetOperation(self, other, SetOperation.union_all, wrapper_cls=self._wrapper_cls)
+
+    @builder
+    def intersect(self, other: "QueryBuilder") -> _SetOperation:
+        return _SetOperation(self, other, SetOperation.intersect, wrapper_cls=self._wrapper_cls)
+
+    @builder
+    def except_of(self, other: "QueryBuilder") -> _SetOperation:
+        return _SetOperation(self, other, SetOperation.except_of, wrapper_cls=self._wrapper_cls)
+
+    @builder
+    def minus(self, other: "QueryBuilder") -> _SetOperation:
+        return _SetOperation(self, other, SetOperation.minus, wrapper_cls=self._wrapper_cls)
 
     @builder
     def set(self, field: Union[Field, str], value: Any) -> "QueryBuilder":
         field = Field(field) if not isinstance(field, Field) else field
         self._updates.append((field, self._wrapper_cls(value)))
 
-    def __add__(self, other: "QueryBuilder") -> _UnionQuery:
+    def __add__(self, other: "QueryBuilder") -> _SetOperation:
         return self.union(other)
 
-    def __mul__(self, other: "QueryBuilder") -> _UnionQuery:
+    def __mul__(self, other: "QueryBuilder") -> _SetOperation:
         return self.union_all(other)
+
+    def __sub__(self, other: "QueryBuilder") -> _SetOperation:
+        return self.minus(other)
 
     @builder
     def slice(self, slice: slice) -> "QueryBuilder":

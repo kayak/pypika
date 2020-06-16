@@ -49,7 +49,7 @@ class MySQLQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(
-              dialect=Dialects.MYSQL, wrap_union_queries=False, **kwargs
+              dialect=Dialects.MYSQL, wrap_set_operation_queries=False, **kwargs
         )
         self._duplicate_updates = []
         self._ignore_duplicates = False
@@ -617,7 +617,7 @@ class ClickHouseQuery(Query):
     """
     @classmethod
     def _builder(cls, **kwargs: Any) -> QueryBuilder:
-        return QueryBuilder(dialect=Dialects.CLICKHOUSE, wrap_union_queries=False, as_keyword=True, **kwargs)
+        return QueryBuilder(dialect=Dialects.CLICKHOUSE, wrap_set_operation_queries=False, as_keyword=True, **kwargs)
 
 
 class SQLLiteValueWrapper(ValueWrapper):

@@ -9,7 +9,7 @@ from pypika import (
     Query,
     Table,
     Tables,
-    UnionException,
+    SetOperationException,
     functions as fn,
 )
 
@@ -780,18 +780,49 @@ class UnionTests(unittest.TestCase):
             str(query1.union_all(query2)),
         )
 
+    def test_union_all_multiple(self):
+        table3, table4 = Tables("hij", "lmn")
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+        query3 = Query.from_(table3).select(table3.baz)
+        query4 = Query.from_(table4).select(table4.faz)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION ALL '
+            '(SELECT "bar" FROM "efg") UNION ALL '
+            '(SELECT "baz" FROM "hij") UNION ALL '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1 * query2 * query3 * query4),
+        )
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION ALL '
+            '(SELECT "bar" FROM "efg") UNION ALL '
+            '(SELECT "baz" FROM "hij") UNION ALL '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1.union_all(query2).union_all(query3).union_all(query4)),
+        )
+
     def test_union_with_order_by(self):
         query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
         query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
 
-        union_query = (query1 + query2).orderby(query1.field("a"))
+        union_query = str((query1 + query2).orderby(query1.field("a")))
+        union_all_query = str((query1 * query2).orderby(query1.field("a")))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "UNION "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "a"',
+            union_query,
+        )
 
         self.assertEqual(
             '(SELECT "foo" "a" FROM "abc") '
             "UNION ALL "
             '(SELECT "bar" "a" FROM "efg") '
             'ORDER BY "a"',
-            union_query,
+            union_all_query,
         )
 
     def test_union_with_order_by_use_union_query_field(self):
@@ -799,27 +830,43 @@ class UnionTests(unittest.TestCase):
         query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
 
         union_query = query1 + query2
-        union_query = union_query.orderby(union_query.field("a"))
+        union_query = str(union_query.orderby(union_query.field("a")))
+        union_all_query = query1 * query2
+        union_all_query = str(union_all_query.orderby(union_all_query.field("a")))
 
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "UNION "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "a"',
+            union_query,
+        )
         self.assertEqual(
             '(SELECT "foo" "a" FROM "abc") '
             "UNION ALL "
             '(SELECT "bar" "a" FROM "efg") '
             'ORDER BY "a"',
-            union_query,
+            union_all_query,
         )
 
     def test_union_with_order_by_with_aliases(self):
-        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a")).as_("a")
-        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a")).as_("b")
+        query1 = Query.from_(self.table1.as_("a")).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2.as_("b")).select(self.table2.bar.as_("a"))
 
-        union_query = (query1 + query2).orderby(query1.field("a"))
-
+        union_all_query = str((query1 * query2).orderby(query1.field("a")))
+        union_query = str((query1 + query2).orderby(query1.field("a")))
         self.assertEqual(
-            '(SELECT "foo" "a" FROM "abc") "a" '
-            "UNION ALL "
-            '(SELECT "bar" "a" FROM "efg") "b" '
-            'ORDER BY "a"."a"',
+            '(SELECT "foo" "a" FROM "abc" "a")'
+            " UNION ALL "
+            '(SELECT "bar" "a" FROM "efg" "b")'
+            ' ORDER BY "a"',
+            union_all_query,
+        )
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc" "a")'
+            " UNION "
+            '(SELECT "bar" "a" FROM "efg" "b")'
+            ' ORDER BY "a"',
             union_query,
         )
 
@@ -829,20 +876,29 @@ class UnionTests(unittest.TestCase):
 
         union_query = (query1 + query2).as_("x")
         union_query = union_query.orderby(union_query.field("a"))
+        union_all_query = (query1 * query2).as_("x")
+        union_all_query = union_all_query.orderby(union_all_query.field("a"))
 
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "UNION "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "x"."a"',
+            str(union_query),
+        )
         self.assertEqual(
             '(SELECT "foo" "a" FROM "abc") '
             "UNION ALL "
             '(SELECT "bar" "a" FROM "efg") '
-            'ORDER BY "a"',
-            union_query,
+            'ORDER BY "x"."a"',
+            str(union_all_query),
         )
 
     def test_require_equal_number_of_fields(self):
         query1 = Query.from_(self.table1).select(self.table1.foo)
         query2 = Query.from_(self.table2).select(self.table2.fiz, self.table2.buz)
 
-        with self.assertRaises(UnionException):
+        with self.assertRaises(SetOperationException):
             str(query1 + query2)
 
     def test_mysql_query_does_not_wrap_unioned_queries_with_params(self):
@@ -915,4 +971,300 @@ class UpdateQueryJoinTests(unittest.TestCase):
             'SET "adwords_batch_job_id"=1 '
             'WHERE "b"."foo"=1',
             str(q),
+        )
+
+
+class IntersectTests(unittest.TestCase):
+    table1, table2 = Tables("abc", "efg")
+
+    def test_intersect(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") INTERSECT (SELECT "bar" FROM "efg")',
+            str(query1.intersect(query2)),
+        )
+
+    def test_intersect_multiple(self):
+        table3, table4 = Tables("hij", "lmn")
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+        query3 = Query.from_(table3).select(table3.baz)
+        query4 = Query.from_(table4).select(table4.faz)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") INTERSECT '
+            '(SELECT "bar" FROM "efg") INTERSECT '
+            '(SELECT "baz" FROM "hij") INTERSECT '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1.intersect(query2).intersect(query3).intersect(query4)),
+        )
+
+    def test_intersect_with_order_by(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
+
+        intersect_query = str((query1.intersect(query2)).orderby(query1.field("a")))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "INTERSECT "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "a"',
+            intersect_query,
+        )
+
+    def test_intersect_with_limit(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
+
+        intersect_query = str((query1.intersect(query2)).limit(10))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "INTERSECT "
+            '(SELECT "bar" "a" FROM "efg") '
+            'LIMIT 10',
+            intersect_query,
+        )
+
+    def test_intersect_with_offset(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
+
+        intersect_query = str((query1.intersect(query2)).offset(10))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "INTERSECT "
+            '(SELECT "bar" "a" FROM "efg") '
+            'OFFSET 10',
+            intersect_query,
+        )
+
+    def test_require_equal_number_of_fields_intersect(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.fiz, self.table2.buz)
+
+        with self.assertRaises(SetOperationException):
+            str(query1.intersect(query2))
+
+    def test_mysql_query_does_not_wrap_intersected_queries_with_params(self):
+        query1 = MySQLQuery.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+
+        self.assertEqual(
+            "SELECT `foo` FROM `abc` INTERSECT SELECT `bar` FROM `efg`",
+            str(query1.intersect(query2)),
+        )
+
+    def test_intersect_as_subquery(self):
+        abc, efg = Tables("abc", "efg")
+        hij = Query.from_(abc).select(abc.t).intersect(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual(
+            'SELECT AVG("sq0"."t") FROM ((SELECT "t" FROM "abc") INTERSECT (SELECT "t" FROM "efg")) "sq0"',
+            str(q),
+        )
+
+    def test_intersect_with_no_quote_char(self):
+        abc, efg = Tables("abc", "efg")
+        hij = Query.from_(abc).select(abc.t).intersect(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual(
+            "SELECT AVG(sq0.t) FROM ((SELECT t FROM abc) INTERSECT (SELECT t FROM efg)) sq0",
+            q.get_sql(quote_char=None),
+        )
+
+
+class MinusTests(unittest.TestCase):
+    table1, table2 = Tables("abc", "efg")
+
+    def test_minus(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") MINUS (SELECT "bar" FROM "efg")',
+            str(query1.minus(query2))
+        )
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") MINUS (SELECT "bar" FROM "efg")',
+            str(query1 - query2),
+        )
+
+    def test_minus_multiple(self):
+        table3, table4 = Tables("hij", "lmn")
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+        query3 = Query.from_(table3).select(table3.baz)
+        query4 = Query.from_(table4).select(table4.faz)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") MINUS '
+            '(SELECT "bar" FROM "efg") MINUS '
+            '(SELECT "baz" FROM "hij") MINUS '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1 - query2 - query3 - query4),
+        )
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") MINUS '
+            '(SELECT "bar" FROM "efg") MINUS '
+            '(SELECT "baz" FROM "hij") MINUS '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1.minus(query2).minus(query3).minus(query4)),
+        )
+
+    def test_minus_with_order_by(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
+
+        minus_query = str(query1.minus(query2).orderby(query1.field("a")))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "MINUS "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "a"',
+            minus_query
+        )
+
+    def test_minus_query_with_order_by_use_minus_query_field(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
+
+        minus_query = query1.minus(query2)
+        minus_query = str(minus_query.orderby(minus_query.field("b")))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "MINUS "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "b"',
+            minus_query,
+        )
+
+    def test_require_equal_number_of_fields(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.fiz, self.table2.buz)
+
+        with self.assertRaises(SetOperationException):
+            str(query1.minus(query2))
+
+    def test_mysql_query_does_not_wrap_minus_queries_with_params(self):
+        query1 = MySQLQuery.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+
+        self.assertEqual(
+            "SELECT `foo` FROM `abc` MINUS SELECT `bar` FROM `efg`",
+            str(query1 - query2),
+        )
+
+    def test_minus_as_subquery(self):
+        abc, efg = Tables("abc", "efg")
+        hij = Query.from_(abc).select(abc.t).minus(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual(
+            'SELECT AVG("sq0"."t") FROM ((SELECT "t" FROM "abc") MINUS (SELECT "t" FROM "efg")) "sq0"',
+            str(q),
+        )
+
+    def test_minus_with_no_quote_char(self):
+        abc, efg = Tables("abc", "efg")
+        hij = Query.from_(abc).select(abc.t).minus(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual(
+            "SELECT AVG(sq0.t) FROM ((SELECT t FROM abc) MINUS (SELECT t FROM efg)) sq0",
+            q.get_sql(quote_char=None),
+        )
+
+
+class ExceptOfTests(unittest.TestCase):
+    table1, table2 = Tables("abc", "efg")
+
+    def test_except(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") EXCEPT (SELECT "bar" FROM "efg")',
+            str(query1.except_of(query2))
+        )
+
+    def test_except_multiple(self):
+        table3, table4 = Tables("hij", "lmn")
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.bar)
+        query3 = Query.from_(table3).select(table3.baz)
+        query4 = Query.from_(table4).select(table4.faz)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") EXCEPT '
+            '(SELECT "bar" FROM "efg") EXCEPT '
+            '(SELECT "baz" FROM "hij") EXCEPT '
+            '(SELECT "faz" FROM "lmn")',
+            str(query1.except_of(query2).except_of(query3).except_of(query4)),
+        )
+
+    def test_except_with_order_by(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
+
+        except_query = str(query1.except_of(query2).orderby(query1.field("a")))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "EXCEPT "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "a"',
+            except_query
+        )
+
+    def test_except_query_with_order_by_use_minus_query_field(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo.as_("a"))
+        query2 = Query.from_(self.table2).select(self.table2.bar.as_("a"))
+
+        except_query = query1.except_of(query2)
+        except_query = str(except_query.orderby(except_query.field("b")))
+
+        self.assertEqual(
+            '(SELECT "foo" "a" FROM "abc") '
+            "EXCEPT "
+            '(SELECT "bar" "a" FROM "efg") '
+            'ORDER BY "b"',
+            except_query,
+        )
+
+    def test_require_equal_number_of_fields_except_of(self):
+        query1 = Query.from_(self.table1).select(self.table1.foo)
+        query2 = Query.from_(self.table2).select(self.table2.fiz, self.table2.buz)
+
+        with self.assertRaises(SetOperationException):
+            str(query1.except_of(query2))
+
+    def test_except_as_subquery(self):
+        abc, efg = Tables("abc", "efg")
+        hij = Query.from_(abc).select(abc.t).except_of(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual(
+            'SELECT AVG("sq0"."t") FROM ((SELECT "t" FROM "abc") EXCEPT (SELECT "t" FROM "efg")) "sq0"',
+            str(q),
+        )
+
+    def test_except_with_no_quote_char(self):
+        abc, efg = Tables("abc", "efg")
+        hij = Query.from_(abc).select(abc.t).except_of(Query.from_(efg).select(efg.t))
+        q = Query.from_(hij).select(fn.Avg(hij.t))
+
+        self.assertEqual(
+            "SELECT AVG(sq0.t) FROM ((SELECT t FROM abc) EXCEPT (SELECT t FROM efg)) sq0",
+            q.get_sql(quote_char=None),
         )

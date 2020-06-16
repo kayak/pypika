@@ -58,9 +58,12 @@ class JoinType(Enum):
     cross = "CROSS"
 
 
-class UnionType(Enum):
-    distinct = ""
-    all = " ALL"
+class SetOperation(Enum):
+    union = "UNION"
+    union_all = "UNION ALL"
+    intersect = "INTERSECT"
+    except_of = "EXCEPT"
+    minus = "MINUS"
 
 
 class DatePart(Enum):

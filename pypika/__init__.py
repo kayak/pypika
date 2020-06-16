@@ -88,7 +88,7 @@ from pypika.utils import (
     JoinException,
     QueryException,
     RollupException,
-    UnionException,
+    SetOperationException,
     FunctionException,
 )
 

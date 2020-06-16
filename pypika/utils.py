@@ -20,7 +20,7 @@ class JoinException(Exception):
     pass
 
 
-class UnionException(Exception):
+class SetOperationException(Exception):
     pass
 
 
