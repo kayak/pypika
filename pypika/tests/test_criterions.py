@@ -763,6 +763,13 @@ class AnyTests(unittest.TestCase):
         self.assertEqual(str(crit), '"a" OR "b" OR "c" OR "d"')
 
 
+class EmptyCriterionTests(unittest.TestCase):
+    def test_fields_(self):
+        empty_criterion = EmptyCriterion()
+
+        self.assertEqual(len(empty_criterion.fields_()), 0)
+
+
 class AllTests(unittest.TestCase):
     def test_zero_args_returns_empty_criterion(self):
         crit = Criterion.all()
