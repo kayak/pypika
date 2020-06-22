@@ -454,6 +454,9 @@ class EmptyCriterion:
     is_aggregate = None
     tables_ = set()
 
+    def fields_(self) -> Set["Field"]:
+        return set()
+
     def __and__(self, other: Any) -> Any:
         return other
 
