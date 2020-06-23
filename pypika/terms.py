@@ -1183,8 +1183,33 @@ class Function(Criterion):
 class AggregateFunction(Function):
     is_aggregate = True
 
+    def __init__(self, name, *args, **kwargs):
+        super(AggregateFunction, self).__init__(name, *args, **kwargs)
 
-class AnalyticFunction(Function):
+        self._filters = []
+        self._include_filter = False
+
+    @builder
+    def filter(self, *filters: Any) -> "AnalyticFunction":
+        self._include_filter = True
+        self._filters += filters
+
+    def get_filter_sql(self, **kwargs: Any) -> str:
+        if self._include_filter:
+            return "WHERE {criterions}".format(criterions=Criterion.all(self._filters).get_sql(**kwargs))
+
+    def get_function_sql(self, **kwargs: Any):
+        sql = super(AggregateFunction, self).get_function_sql(**kwargs)
+        filter_sql = self.get_filter_sql(**kwargs)
+
+        if self._include_filter:
+            sql += " FILTER({filter_sql})".format(filter_sql=filter_sql)
+
+        return sql
+
+
+class AnalyticFunction(AggregateFunction):
+    is_aggregate = False
     is_analytic = True
 
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
@@ -1194,11 +1219,6 @@ class AnalyticFunction(Function):
         self._orderbys = []
         self._include_filter = False
         self._include_over = False
-
-    @builder
-    def filter(self, *filters: Any) -> "AnalyticFunction":
-        self._include_filter = True
-        self._filters += filters
 
     @builder
     def over(self, *terms: Any) -> "AnalyticFunction":
@@ -1219,10 +1239,6 @@ class AnalyticFunction(Function):
             orient=orient.value,
         )
 
-    def get_filter_sql(self) -> str:
-        if self._include_filter:
-            return "WHERE {criterions}".format(criterions=Criterion.all(self._filters).get_sql())
-
     def get_partition_sql(self, **kwargs: Any) -> str:
         terms = []
         if self._partition:
@@ -1242,13 +1258,10 @@ class AnalyticFunction(Function):
         return " ".join(terms)
 
     def get_function_sql(self, **kwargs: Any) -> str:
-        function_sql = super().get_function_sql(**kwargs)
-        filter_sql = self.get_filter_sql()
+        function_sql = super(AnalyticFunction, self).get_function_sql(**kwargs)
         partition_sql = self.get_partition_sql(**kwargs)
 
         sql = function_sql
-        if self._include_filter:
-            sql += " FILTER({filter_sql})".format(filter_sql=filter_sql)
         if self._include_over:
             sql += " OVER({partition_sql})".format(partition_sql=partition_sql)
 

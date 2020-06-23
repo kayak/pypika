@@ -164,6 +164,31 @@ class RankTests(unittest.TestCase):
             str(q),
         )
 
+    def test_filter_quote_table_in_filter(self):
+        expr = (
+            an.LastValue(self.table_efg.fizz)
+            .filter(self.table_efg.filed.eq('yes'))
+            .over(self.table_efg.foo)
+            .orderby(self.table_efg.date)
+        )
+
+        q = (
+            Query.from_(self.table_abc)
+            .inner_join(self.table_efg)
+            .on(self.table_abc.id.eq(self.table_efg.id))
+            .select(expr)
+        )
+
+        self.assertEqual(
+            'SELECT '
+            'LAST_VALUE("efg"."fizz") '
+            'FILTER(WHERE "efg"."filed"=\'yes\') '
+            'OVER(PARTITION BY "efg"."foo" ORDER BY "efg"."date") '
+            'FROM "abc" '
+            'JOIN "efg" ON "abc"."id"="efg"."id"',
+            str(q),
+        )
+
     def test_orderby_asc(self):
         expr = an.LastValue(self.table_abc.fizz).over(self.table_abc.foo).orderby(self.table_abc.date, order=Order.asc)
 
