@@ -23,7 +23,7 @@ class UpdateTests(unittest.TestCase):
     def test_single_quote_escape_in_set(self):
         q = Query.update(self.table_abc).set("foo", "bar'foo")
 
-        self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar''foo'", str(q))
+        self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar\\''foo'", str(q))
 
     def test_update__table_schema(self):
         table = Table("abc", "schema1")
