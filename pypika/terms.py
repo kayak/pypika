@@ -296,7 +296,10 @@ class ValueWrapper(Term):
 
     def __init__(self, value: Any, alias: Optional[str] = None) -> None:
         super().__init__(alias)
-        self.value = sqlescape(value)
+        if isinstance(value,str):
+            self.value = sqlescape(value)
+        else:
+            self.value = value
 
     def get_value_sql(self, **kwargs: Any) -> str:
         quote_char = kwargs.get("secondary_quote_char") or ""
