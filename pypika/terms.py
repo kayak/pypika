@@ -34,6 +34,7 @@ from pypika.utils import (
     format_quotes,
     ignore_copy,
     resolve_is_aggregate,
+    sqlescape,
 )
 
 if TYPE_CHECKING:
@@ -295,7 +296,7 @@ class ValueWrapper(Term):
 
     def __init__(self, value: Any, alias: Optional[str] = None) -> None:
         super().__init__(alias)
-        self.value = value
+        self.value = sqlescape(value)
 
     def get_value_sql(self, **kwargs: Any) -> str:
         quote_char = kwargs.get("secondary_quote_char") or ""

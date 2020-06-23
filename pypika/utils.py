@@ -3,6 +3,20 @@ from typing import Optional, List, Any, Type, Callable
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
+_escape_table = [chr(x) for x in range(128)]
+_escape_table[0] = u'\\0'
+_escape_table[ord('\\')] = u'\\\\'
+_escape_table[ord('\n')] = u'\\n'
+_escape_table[ord('\r')] = u'\\r'
+_escape_table[ord('\032')] = u'\\Z'
+_escape_table[ord('"')] = u'\\"'
+_escape_table[ord("'")] = u"\\'"
+
+def sqlescape(value, mapping=None):
+    if value is None:
+        return None
+    else:
+        return value.translate(_escape_table)
 
 class QueryException(Exception):
     pass
