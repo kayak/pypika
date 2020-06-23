@@ -6,6 +6,7 @@ from pypika import (
     Query,
 )
 
+from pypika.utils import sqlescape
 
 class InjectTableTests(unittest.TestCase):
     table = Table('the_table')
@@ -15,3 +16,8 @@ class InjectTableTests(unittest.TestCase):
             q = Query.from_(self.table).select('*').where(self.table.name == unsafe)
             print(str(q))
             self.assertEqual("""SELECT * FROM "the_table" WHERE "name"='John\\''; DROP TABLE the_table --'""", str(q))
+
+        with self.subTest("sqlescape test"):
+            self.assertEqual(sqlescape(12),12)
+            self.assertEqual(sqlescape("test'dds"),"test\\'dds")
+

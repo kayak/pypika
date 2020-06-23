@@ -16,7 +16,10 @@ def sqlescape(value, mapping=None):
     if value is None:
         return None
     else:
-        return value.translate(_escape_table)
+        if isinstance(value, str):
+            return value.translate(_escape_table)
+        else:
+            return value
 
 class QueryException(Exception):
     pass
