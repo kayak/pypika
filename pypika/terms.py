@@ -1132,7 +1132,7 @@ class Function(Criterion):
         :returns:
             True if the function accepts one argument and that argument is aggregate.
         """
-        return len(self.args) == 1 and self.args[0].is_aggregate
+        return resolve_is_aggregate([arg.is_aggregate for arg in self.args])
 
     @builder
     def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "Function":
