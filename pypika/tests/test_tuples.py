@@ -3,12 +3,12 @@ import unittest
 from pypika import (
     Array,
     Bracket,
-    PostgreSQLQuery,
     Query,
     Table,
     Tables,
     Tuple,
 )
+from pypika.terms import AggregateFunction, Function
 
 
 class TupleTests(unittest.TestCase):
@@ -123,6 +123,27 @@ class TupleTests(unittest.TestCase):
 
         q = Query.from_(tb).select(Tuple(tb.col).as_("different_name"))
         self.assertEqual(str(q), 'SELECT ("col") "different_name" FROM "tb"')
+
+    def test_tuple_is_aggregate_None_if_args_implement_is_aggregate_None(self):
+        with self.subTest('single non-aggregatable argument'):
+            self.assertEqual(None, Tuple(0).is_aggregate)
+
+        with self.subTest('multiple non-aggregatable arguments'):
+            self.assertEqual(None, Tuple(0, 'a').is_aggregate)
+
+    def test_tuple_is_aggregate_True_if_args_all_implement_is_aggregate_True(self):
+        with self.subTest('single aggregatable function'):
+            self.assertEqual(True, Tuple(AggregateFunction('col')).is_aggregate)
+
+        with self.subTest('multiple aggregatable functions'):
+            self.assertEqual(True, Tuple(AggregateFunction('col'), AggregateFunction('col2')).is_aggregate)
+
+    def test_tuple_is_aggregate_False_if_some_of_the_args_implement_is_aggregate_False(self):
+        with self.subTest('single non-aggregatable function'):
+            self.assertEqual(False, Tuple(Function('col')).is_aggregate)
+
+        with self.subTest('when a mix of non-aggregatable and aggregatable functions'):
+            self.assertEqual(False, Tuple(Function('col'), Function('col2', 0), AggregateFunction('col3')).is_aggregate)
 
 
 class ArrayTests(unittest.TestCase):
