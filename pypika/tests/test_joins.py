@@ -728,6 +728,30 @@ class JoinBehaviorTests(unittest.TestCase):
             str(test_query),
         )
 
+    def test_join_query_with_setoperation(self):
+        subquery = (
+            Query.from_(self.table_abc).select("*")
+            .union(
+                Query.from_(self.table_abc).select("*")
+            ).as_("subq")
+        )
+
+        test_query = (
+            Query.from_(self.table_abc)
+            .join(subquery)
+            .on(subquery.x == self.table_abc.id)
+            .select(self.table_abc.foo)
+        )
+
+        self.assertEqual(
+            'SELECT "abc"."foo" FROM "abc" '
+            'JOIN '
+            '((SELECT * FROM "abc") '
+            'UNION '
+            '(SELECT * FROM "abc")) "subq" '
+            'ON "subq"."x"="abc"."id"',
+            str(test_query)
+        )
 
 class UnionTests(unittest.TestCase):
     table1, table2 = Tables("abc", "efg")
