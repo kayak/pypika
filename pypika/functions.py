@@ -303,7 +303,7 @@ class Extract(Function):
         self.field = field
 
     def get_special_params_sql(self, **kwargs):
-        return "FROM {field}".format(field=self.field,)
+        return "FROM {field}".format(field=self.field.get_sql(**kwargs))
 
 
 # Null Functions
