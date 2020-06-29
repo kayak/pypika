@@ -1472,3 +1472,27 @@ class PseudoColumn(Term):
 
     def get_sql(self, **kwargs: Any) -> str:
         return self.name
+
+
+class AtTimezone(Term):
+    """
+    Generates AT TIME ZONE SQL.
+    Examples:
+        AT TIME ZONE 'US/Eastern'
+        AT TIME ZONE INTERVAL '-06:00'
+    """
+    is_aggregate = None
+
+    def __init__(self, name, zone, interval=False, alias=None):
+        super().__init__(alias)
+        self.name = name
+        self.zone = zone
+        self.interval = interval
+
+    def get_sql(self, **kwargs):
+        sql = '{name} AT TIME ZONE {interval}\'{zone}\''.format(
+            name=self.name,
+            interval='INTERVAL ' if self.interval else '',
+            zone=self.zone,
+        )
+        return format_alias_sql(sql, self.alias, **kwargs)
