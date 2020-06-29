@@ -1490,5 +1490,9 @@ class AtTimezone(Term):
         self.interval = interval
 
     def get_sql(self, **kwargs):
-        sql = f'{self.name} AT TIME ZONE {"INTERVAL " if self.interval else ""}\'{self.zone}\''
+        sql = '{name} AT TIME ZONE {interval}\'{zone}\''.format(
+            name=self.name,
+            interval='INTERVAL ' if self.interval else '',
+            zone=self.zone,
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
