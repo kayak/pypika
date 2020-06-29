@@ -467,7 +467,6 @@ class EmptyCriterion:
         return other
 
 
-
 class Field(Criterion, JSON):
     def __init__(self, name: str, alias: Optional[str] = None, table: Optional[Union[str, "Selectable"]] = None) -> None:
         super().__init__(alias)
@@ -1483,15 +1482,15 @@ class AtTimezone(Term):
     """
     is_aggregate = None
 
-    def __init__(self, name, zone, interval=False, alias=None):
+    def __init__(self, field, zone, interval=False, alias=None):
         super().__init__(alias)
-        self.name = name
+        self.field = Field(field) if not isinstance(field, Field) else field
         self.zone = zone
         self.interval = interval
 
     def get_sql(self, **kwargs):
         sql = '{name} AT TIME ZONE {interval}\'{zone}\''.format(
-            name=self.name,
+            name=self.field.get_sql(**kwargs),
             interval='INTERVAL ' if self.interval else '',
             zone=self.zone,
         )
