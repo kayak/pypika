@@ -921,7 +921,9 @@ class QueryBuilder(Selectable, Term):
             self._orderbys.append((field, kwargs.get("order")))
 
     @builder
-    def join(self, item: Union[Table, "QueryBuilder", AliasedQuery], how: JoinType = JoinType.inner) -> "Joiner":
+    def join(
+        self, item: Union[Table, "QueryBuilder", AliasedQuery, Selectable], how: JoinType = JoinType.inner
+    ) -> "Joiner":
         if isinstance(item, Table):
             return Joiner(self, item, how, type_label="table")
 
@@ -932,6 +934,9 @@ class QueryBuilder(Selectable, Term):
 
         elif isinstance(item, AliasedQuery):
             return Joiner(self, item, how, type_label="table")
+
+        elif isinstance(item, Selectable):
+            return Joiner(self, item, how, type_label="subquery")
 
         raise ValueError("Cannot join on type '%s'" % type(item))
 
