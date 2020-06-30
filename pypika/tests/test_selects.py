@@ -1187,18 +1187,15 @@ class SubqueryTests(unittest.TestCase):
               str(test_query),
         )
 
-    def test_join_with_with_insert_returning(self):
+    def test_select_from_with_returning(self):
         sub_query = PostgreSQLQuery.into(self.table_abc).insert(1).returning('*')
         test_query = (
             Query.with_(sub_query, "an_alias")
                 .from_(AliasedQuery("an_alias"))
-                .join(self.table_efg)
-                .on(AliasedQuery("an_alias").fizz == self.table_efg.buzz)
                 .select("*")
         )
         self.assertEqual(
-            'WITH an_alias AS (INSERT INTO "abc" VALUES (1) RETURNING *) '
-            'SELECT * FROM an_alias JOIN "efg" ON "an_alias"."fizz"="efg"."buzz"',
+            'WITH an_alias AS (INSERT INTO "abc" VALUES (1) RETURNING *) SELECT * FROM an_alias',
             str(test_query)
         )
 
