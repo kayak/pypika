@@ -1193,6 +1193,18 @@ class SubqueryTests(unittest.TestCase):
               str(test_query),
         )
 
+    def test_select_from_with_returning(self):
+        sub_query = PostgreSQLQuery.into(self.table_abc).insert(1).returning('*')
+        test_query = (
+            Query.with_(sub_query, "an_alias")
+                .from_(AliasedQuery("an_alias"))
+                .select("*")
+        )
+        self.assertEqual(
+            'WITH an_alias AS (INSERT INTO "abc" VALUES (1) RETURNING *) SELECT * FROM an_alias',
+            str(test_query)
+        )
+
 
 class QuoteTests(unittest.TestCase):
     def test_extraneous_quotes(self):
