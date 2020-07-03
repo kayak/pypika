@@ -110,3 +110,13 @@ class Max(WindowFrameAnalyticFunction):
 class Min(WindowFrameAnalyticFunction):
     def __init__(self, term, **kwargs):
         super(Min, self).__init__("MIN", term, **kwargs)
+
+
+class Lag(AnalyticFunction):
+    def __init__(self, *args, **kwargs):
+        super(Lag, self).__init__("LAG", *args, **kwargs)
+
+
+class Lead(AnalyticFunction):
+    def __init__(self, *args, **kwargs):
+        super(Lead, self).__init__("LEAD", *args, **kwargs)
