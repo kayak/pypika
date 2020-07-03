@@ -511,7 +511,6 @@ class Field(Criterion, JSON):
             return format_alias_sql(
                   field_sql, field_alias, quote_char=quote_char, **kwargs
             )
-
         return field_sql
 
 
