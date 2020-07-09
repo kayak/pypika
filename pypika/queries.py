@@ -573,6 +573,7 @@ class QueryBuilder(Selectable, Term):
     QUOTE_CHAR = '"'
     SECONDARY_QUOTE_CHAR = "'"
     ALIAS_QUOTE_CHAR = None
+    QUERY_ALIAS_QUOTE_CHAR = None
 
     def __init__(
           self,
@@ -1142,7 +1143,6 @@ class QueryBuilder(Selectable, Term):
 
     def get_sql(self, with_alias: bool = False, subquery: bool = False, **kwargs: Any) -> str:
         self._set_kwargs_defaults(kwargs)
-
         if not (
               self._selects
               or self._insert_table
@@ -1269,6 +1269,9 @@ class QueryBuilder(Selectable, Term):
             querystring = "({query})".format(query=querystring)
 
         if with_alias:
+            kwargs['alias_quote_char'] = (self.ALIAS_QUOTE_CHAR
+                                          if self.QUERY_ALIAS_QUOTE_CHAR is None
+                                          else self.QUERY_ALIAS_QUOTE_CHAR)
             return format_alias_sql(querystring, self.alias, **kwargs)
 
         return querystring

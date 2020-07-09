@@ -51,3 +51,18 @@ class QuoteTests(unittest.TestCase):
             'ORDER BY "idx"',
             q.get_sql(with_namespace=True),
         )
+
+    def test_dont_use_double_quotes_on_joining_queries(self):
+        foo = self.table_abc
+        bar = self.table_efg
+        q1 = SnowflakeQuery.from_(foo).select(foo.b)
+        q2 = SnowflakeQuery.from_(bar).select(bar.b)
+        q = SnowflakeQuery.from_(q1).join(q2).on(q1.b == q2.b).select("*")
+
+        self.assertEqual(
+            "SELECT * "
+            'FROM (SELECT b FROM abc) sq0 '
+            'JOIN (SELECT b FROM efg) sq1 '
+            "ON sq0.b=sq1.b",
+            q.get_sql(),
+        )
