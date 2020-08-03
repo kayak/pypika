@@ -594,6 +594,7 @@ class QueryBuilder(Selectable, Term):
         self._with = []
         self._selects = []
         self._force_indexes = []
+        self._use_indexes = []
         self._columns = []
         self._values = []
         self._distinct = False
@@ -827,6 +828,14 @@ class QueryBuilder(Selectable, Term):
                 self._force_indexes.append(t)
             elif isinstance(t, str):
                 self._force_indexes.append(Index(t))
+
+    @builder
+    def use_index(self, term: Union[str, Index], *terms: Union[str, Index]) -> "QueryBuilder":
+        for t in (term, *terms):
+            if isinstance(t, Index):
+                self._use_indexes.append(t)
+            elif isinstance(t, str):
+                self._use_indexes.append(Index(t))
 
     @builder
     def distinct(self) -> "QueryBuilder":
@@ -1237,6 +1246,9 @@ class QueryBuilder(Selectable, Term):
         if self._force_indexes:
             querystring += self._force_index_sql(**kwargs)
 
+        if self._use_indexes:
+            querystring += self._use_index_sql(**kwargs)
+
         if self._joins:
             querystring += " " + " ".join(
                   join.get_sql(**kwargs) for join in self._joins
@@ -1359,6 +1371,11 @@ class QueryBuilder(Selectable, Term):
     def _force_index_sql(self, **kwargs: Any) -> str:
         return " FORCE INDEX ({indexes})".format(
               indexes=",".join(index.get_sql(**kwargs) for index in self._force_indexes),
+        )
+
+    def _use_index_sql(self, **kwargs: Any) -> str:
+        return " USE INDEX ({indexes})".format(
+              indexes=",".join(index.get_sql(**kwargs) for index in self._use_indexes),
         )
 
     def _prewhere_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
