@@ -1,22 +1,7 @@
 import unittest
 
-from pypika import (
-    Criterion,
-    JoinType,
-    Order,
-    Query,
-    Tables,
-    analytics as an,
-)
-import unittest
-
-from pypika import (
-    JoinType,
-    Order,
-    Query,
-    Tables,
-    analytics as an,
-)
+from pypika import Criterion, JoinType, Order, Query, Tables, analytics as an
+from pypika.analytics import Lag, Lead
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -742,3 +727,46 @@ class RankTests(unittest.TestCase):
             an.Sum(self.table_abc.fizz).over(self.table_abc.foo).orderby(
                 self.table_abc.date
             ).range(an.Preceding()).rows(an.Preceding())
+
+    def test_lag_generates_correct_sql(self):
+        with self.subTest('without partition by'):
+            q = Query.from_(self.table_abc) \
+                .select(Lag(self.table_abc.date, 1, '2000-01-01')
+                        .orderby(self.table_abc.date))
+
+            self.assertEqual('SELECT LAG("date",1,\'2000-01-01\') OVER(ORDER BY "date") FROM "abc"', str(q))
+
+        with self.subTest('with partition by'):
+            q = Query.from_(self.table_abc) \
+                .select(
+                Lag(self.table_abc.date, 1, '2000-01-01')
+                    .over(self.table_abc.foo)
+                    .orderby(self.table_abc.date)
+            )
+
+            self.assertEqual(
+                'SELECT LAG("date",1,\'2000-01-01\') OVER(PARTITION BY "foo" ORDER BY "date") FROM "abc"',
+                str(q)
+            )
+
+    def test_lead_generates_correct_sql(self):
+        with self.subTest('without partition by'):
+            q = Query.from_(self.table_abc) \
+                .select(
+                Lead(self.table_abc.date, 1, '2000-01-01').orderby(self.table_abc.date)
+            )
+
+            self.assertEqual('SELECT LEAD("date",1,\'2000-01-01\') OVER(ORDER BY "date") FROM "abc"', str(q))
+
+        with self.subTest('with partition by'):
+            q = Query.from_(self.table_abc) \
+                .select(
+                Lead(self.table_abc.date, 1, '2000-01-01')
+                    .over(self.table_abc.foo)
+                    .orderby(self.table_abc.date)
+            )
+
+            self.assertEqual(
+                'SELECT LEAD("date",1,\'2000-01-01\') OVER(PARTITION BY "foo" ORDER BY "date") FROM "abc"',
+                str(q)
+            )
