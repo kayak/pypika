@@ -295,8 +295,9 @@ class OracleQueryBuilder(QueryBuilder):
         super().__init__(dialect=Dialects.ORACLE, **kwargs)
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
+        kwargs.setdefault("groupby_alias", False)
         return super().get_sql(
-              *args, groupby_alias=False, **kwargs
+              *args, **kwargs
         )
 
 
@@ -579,8 +580,9 @@ class MSSQLQueryBuilder(QueryBuilder):
             raise QueryException("TOP value must be an integer")
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
+        kwargs.setdefault("groupby_alias", False)
         return super().get_sql(
-              *args, groupby_alias=False, **kwargs
+              *args, **kwargs
         )
 
     def _top_sql(self) -> str:
