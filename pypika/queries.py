@@ -385,6 +385,18 @@ class Query:
         return CreateQueryBuilder().create_table(table)
 
     @classmethod
+    def drop_table(cls, table: Union[str, Table]) -> "DropQueryBuilder":
+        """
+        Query builder entry point. Initializes query building and sets the table name to be dropped. When using this
+        function, the query becomes a DROP statement.
+
+        :param table: An instance of a Table object or a string table name.
+
+        :return: DropQueryBuilder
+        """
+        return DropQueryBuilder().drop_table(table)
+
+    @classmethod
     def into(cls, table: Union[Table, str], **kwargs: Any) -> "QueryBuilder":
         """
         Query builder entry point.  Initializes query building and sets the table to insert into.  When using this
@@ -1637,12 +1649,14 @@ class CreateQueryBuilder:
     def __init__(self, dialect: Optional[Dialects] = None) -> None:
         self._create_table = None
         self._temporary = False
+        self._unlogged = False
         self._as_select = None
         self._columns = []
         self._period_fors = []
         self._with_system_versioning = False
         self._primary_key = None
         self._uniques = []
+        self._if_not_exists = False
         self.dialect = dialect
 
     def _set_kwargs_defaults(self, kwargs: dict) -> None:
@@ -1678,6 +1692,16 @@ class CreateQueryBuilder:
             CreateQueryBuilder.
         """
         self._temporary = True
+
+    @builder
+    def unlogged(self) -> "CreateQueryBuilder":
+        """
+        Makes the table unlogged.
+
+        :return:
+            CreateQueryBuilder.
+        """
+        self._unlogged = True
 
     @builder
     def with_system_versioning(self) -> "CreateQueryBuilder":
@@ -1793,6 +1817,10 @@ class CreateQueryBuilder:
 
         self._as_select = query_builder
 
+    @builder
+    def if_not_exists(self) -> "CreateQueryBuilder":
+        self._if_not_exists = True
+
     def get_sql(self, **kwargs: Any) -> str:
         """
         Gets the sql statement string.
@@ -1821,8 +1849,19 @@ class CreateQueryBuilder:
         )
 
     def _create_table_sql(self, **kwargs: Any) -> str:
-        return "CREATE {temporary}TABLE {table}".format(
-            temporary="TEMPORARY " if self._temporary else "",
+        table_type = ''
+        if self._temporary:
+            table_type = 'TEMPORARY '
+        elif self._unlogged:
+            table_type = 'UNLOGGED '
+
+        if_not_exists = ''
+        if self._if_not_exists:
+            if_not_exists = 'IF NOT EXISTS '
+
+        return "CREATE {table_type}TABLE {if_not_exists}{table}".format(
+            table_type=table_type,
+            if_not_exists=if_not_exists,
             table=self._create_table.get_sql(**kwargs),
         )
 
@@ -1865,6 +1904,63 @@ class CreateQueryBuilder:
     def _as_select_sql(self, **kwargs: Any) -> str:
         return " AS ({query})".format(
             query=self._as_select.get_sql(**kwargs),
+        )
+
+    def __str__(self) -> str:
+        return self.get_sql()
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class DropQueryBuilder:
+    """
+    Query builder used to build DROP queries.
+    """
+
+    QUOTE_CHAR = '"'
+    SECONDARY_QUOTE_CHAR = "'"
+    ALIAS_QUOTE_CHAR = None
+
+    def __init__(self, dialect: Optional[Dialects] = None) -> None:
+        self._drop_table = None
+        self._if_exists = None
+        self.dialect = dialect
+
+    def _set_kwargs_defaults(self, kwargs: dict) -> None:
+        kwargs.setdefault("quote_char", self.QUOTE_CHAR)
+        kwargs.setdefault("secondary_quote_char", self.SECONDARY_QUOTE_CHAR)
+        kwargs.setdefault("dialect", self.dialect)
+
+    def get_sql(self, **kwargs: Any) -> str:
+        self._set_kwargs_defaults(kwargs)
+
+        if not self._drop_table:
+            return ""
+
+        querystring = self._drop_table_sql(**kwargs)
+
+        return querystring
+
+    @builder
+    def drop_table(self, table: Union[Table, str]) -> "DropQueryBuilder":
+        if self._drop_table:
+            raise AttributeError("'Query' object already has attribute drop_table")
+
+        self._drop_table = table if isinstance(table, Table) else Table(table)
+
+    @builder
+    def if_exists(self) -> "DropQueryBuilder":
+        self._if_exists = True
+
+    def _drop_table_sql(self, **kwargs: Any) -> str:
+        if_exists = ''
+        if self._if_exists:
+            if_exists = 'IF EXISTS '
+
+        return "DROP TABLE {if_exists}{table}".format(
+            if_exists=if_exists,
+            table=self._drop_table.get_sql(**kwargs),
         )
 
     def __str__(self) -> str:
