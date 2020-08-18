@@ -236,6 +236,27 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg","spam")', str(q))
 
+    def test_select_with_use_index(self):
+        q = Query.from_("abc").select("foo").use_index("egg")
+
+        self.assertEqual('SELECT "foo" FROM "abc" USE INDEX ("egg")', str(q))
+
+    def test_select_with_use_index_with_index_object(self):
+        index = Index("egg")
+        q = Query.from_("abc").select("foo").use_index(index)
+
+        self.assertEqual('SELECT "foo" FROM "abc" USE INDEX ("egg")', str(q))
+
+    def test_select_with_use_index_multiple_indexes(self):
+        q = Query.from_("abc").select("foo").use_index("egg", "bacon")
+
+        self.assertEqual('SELECT "foo" FROM "abc" USE INDEX ("egg","bacon")', str(q))
+
+    def test_select_with_use_index_multiple_calls(self):
+        q = Query.from_("abc").select("foo").use_index("egg", ).use_index("spam")
+
+        self.assertEqual('SELECT "foo" FROM "abc" USE INDEX ("egg","spam")', str(q))
+
     def test_mysql_query_uses_backtick_quote_chars(self):
         q = MySQLQuery.from_("abc").select("foo", "bar")
 
