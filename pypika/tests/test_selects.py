@@ -294,6 +294,10 @@ class WhereTests(unittest.TestCase):
         q = self.t.select("*").where(self.t.foo == self.t.bar)
         self.assertEqual(q, q1)
 
+    def test_where_field_equals_for_update(self):
+        q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update()
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE', str(q))
+
     def test_where_field_equals_where(self):
         q = (
             Query.from_(self.t)
