@@ -598,6 +598,7 @@ class QueryBuilder(Selectable, Term):
         self._values = []
         self._distinct = False
         self._ignore = False
+        self._for_update = False
 
         self._wheres = None
         self._prewheres = None
@@ -831,6 +832,10 @@ class QueryBuilder(Selectable, Term):
     @builder
     def distinct(self) -> "QueryBuilder":
         self._distinct = True
+
+    @builder
+    def for_update(self) -> "QueryBuilder":
+        self._for_update = True
 
     @builder
     def ignore(self) -> "QueryBuilder":
@@ -1265,6 +1270,9 @@ class QueryBuilder(Selectable, Term):
         if self._offset:
             querystring += self._offset_sql()
 
+        if self._for_update:
+            querystring += self._for_update_sql()
+
         if subquery:
             querystring = "({query})".format(query=querystring)
 
@@ -1292,6 +1300,14 @@ class QueryBuilder(Selectable, Term):
             distinct = ''
 
         return distinct
+
+    def _for_update_sql(self) -> str:
+        if self._for_update:
+            for_update = ' FOR UPDATE'
+        else:
+            for_update = ''
+
+        return for_update
 
     def _select_sql(self, **kwargs: Any) -> str:
         return "SELECT {distinct}{select}".format(
