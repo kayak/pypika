@@ -28,3 +28,23 @@ class SelectTests(unittest.TestCase):
     def test_top_select_non_int(self):
         with self.assertRaisesRegex(QueryException, "TOP value must be an integer"):
             MSSQLQuery.from_("abc").select("def").top("a")
+
+    def test_limit(self):
+        q = MSSQLQuery.from_("abc").select("def").orderby("def").limit(10)
+
+        self.assertEqual('SELECT "def" FROM "abc" ORDER BY "def" OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY', str(q))
+
+    def test_fetch_next(self):
+        q = MSSQLQuery.from_("abc").select("def").orderby("def").fetch_next(10)
+
+        self.assertEqual('SELECT "def" FROM "abc" ORDER BY "def" OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY', str(q))
+
+    def test_offset(self):
+        q = MSSQLQuery.from_("abc").select("def").orderby("def").offset(10)
+
+        self.assertEqual('SELECT "def" FROM "abc" ORDER BY "def" OFFSET 10 ROWS', str(q))
+
+    def test_fetch_next_with_offset(self):
+        q = MSSQLQuery.from_("abc").select("def").orderby("def").fetch_next(10).offset(10)
+
+        self.assertEqual('SELECT "def" FROM "abc" ORDER BY "def" OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY', str(q))

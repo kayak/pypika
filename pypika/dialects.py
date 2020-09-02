@@ -578,9 +578,31 @@ class MSSQLQueryBuilder(QueryBuilder):
         except ValueError:
             raise QueryException("TOP value must be an integer")
 
+    @builder
+    def fetch_next(self, limit: int) -> "MSSQLQueryBuilder":
+        # Overridden to provide a more domain-specific API for T-SQL users
+        self._limit = limit
+
+    def _offset_sql(self) -> str:
+        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
+
+    def _limit_sql(self) -> str:
+        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
+
+    def _apply_pagination(self, querystring: str) -> str:
+        # Note: Overridden as MSSQL specifies offset before the fetch next limit
+        if self._limit is not None or self._offset:
+            # Offset has to be present if fetch next is specified in a MSSQL query
+            querystring += self._offset_sql()
+
+        if self._limit is not None:
+            querystring += self._limit_sql()
+
+        return querystring
+
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
         return super().get_sql(
-              *args, groupby_alias=False, **kwargs
+            *args, groupby_alias=False, **kwargs
         )
 
     def _top_sql(self) -> str:

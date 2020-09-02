@@ -1276,11 +1276,7 @@ class QueryBuilder(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
-        if self._limit is not None:
-            querystring += self._limit_sql()
-
-        if self._offset:
-            querystring += self._offset_sql()
+        querystring = self._apply_pagination(querystring)
 
         if self._for_update:
             querystring += self._for_update_sql()
@@ -1296,13 +1292,22 @@ class QueryBuilder(Selectable, Term):
 
         return querystring
 
+    def _apply_pagination(self, querystring: str) -> str:
+        if self._limit is not None:
+            querystring += self._limit_sql()
+
+        if self._offset:
+            querystring += self._offset_sql()
+
+        return querystring
+
     def _with_sql(self, **kwargs: Any) -> str:
         return "WITH " + ",".join(
-              clause.name
-              + " AS ("
-              + clause.get_sql(subquery=False, with_alias=False, **kwargs)
-              + ") "
-              for clause in self._with
+            clause.name
+            + " AS ("
+            + clause.get_sql(subquery=False, with_alias=False, **kwargs)
+            + ") "
+            for clause in self._with
         )
 
     def _distinct_sql(self, **kwargs: Any) -> str:
