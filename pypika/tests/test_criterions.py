@@ -11,6 +11,7 @@ from pypika import (
     Table,
     functions as fn,
 )
+from pypika.queries import QueryBuilder
 from pypika.terms import Mod
 
 __author__ = "Timothy Heys"
@@ -265,6 +266,11 @@ class CriterionTests(unittest.TestCase):
         c1 = Field("foo").bitwiseand(2).as_('alias')
 
         self.assertEqual('("foo" & 2) "alias"', str(c1))
+
+    def test__bitwise_and_in_where_clause(self):
+        q = QueryBuilder().from_('items').select('abc').where(Field("foo").bitwiseand(1) == 1)
+
+        self.assertEqual('SELECT "abc" FROM "items" WHERE ("foo" & 1)=1', str(q))
 
 
 class NotTests(unittest.TestCase):
