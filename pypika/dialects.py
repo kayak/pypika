@@ -632,13 +632,46 @@ class MSSQLQuery(Query):
         return MSSQLQueryBuilder(**kwargs)
 
 
+class ClickHouseQueryBuilder(QueryBuilder):
+
+    @staticmethod
+    def _delete_sql(**kwargs: Any) -> str:
+        return 'ALTER TABLE'
+
+    def _update_sql(self, **kwargs: Any) -> str:
+        return "ALTER TABLE {table}".format(table=self._update_table.get_sql(**kwargs))
+
+    def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
+        selectable = ",".join(
+            clause.get_sql(subquery=True, with_alias=True, **kwargs)
+            for clause in self._from
+        )
+        if self._delete_from:
+            return " {selectable} DELETE".format(
+                selectable=selectable
+            )
+        return " FROM {selectable}".format(
+            selectable=selectable
+        )
+
+    def _set_sql(self, **kwargs: Any) -> str:
+        return " UPDATE {set}".format(
+            set=",".join(
+                "{field}={value}".format(
+                    field=field.get_sql(**dict(kwargs, with_namespace=False)), value=value.get_sql(**kwargs)
+                )
+                for field, value in self._updates
+            )
+        )
+
+
 class ClickHouseQuery(Query):
     """
     Defines a query class for use with Yandex ClickHouse.
     """
     @classmethod
     def _builder(cls, **kwargs: Any) -> QueryBuilder:
-        return QueryBuilder(dialect=Dialects.CLICKHOUSE, wrap_set_operation_queries=False, as_keyword=True, **kwargs)
+        return ClickHouseQueryBuilder(dialect=Dialects.CLICKHOUSE, wrap_set_operation_queries=False, as_keyword=True, **kwargs)
 
 
 class SQLLiteValueWrapper(ValueWrapper):
