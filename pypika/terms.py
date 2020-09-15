@@ -313,6 +313,8 @@ class ValueWrapper(Term):
             return format_quotes(value, quote_char)
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
+        if hasattr(self.value, "get_sql"):
+            return self.value.get_sql(**kwargs)                    
         if self.value is None:
             return "null"
         return str(self.value)
