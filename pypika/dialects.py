@@ -26,7 +26,7 @@ from pypika.utils import (
 
 class SnowFlakeQueryBuilder(QueryBuilder):
     QUOTE_CHAR = None
-    ALIAS_QUOTE_CHAR = '"'
+    ALIAS_QUOTE_CHAR = ''
     QUERY_ALIAS_QUOTE_CHAR = ''
 
     def __init__(self, **kwargs: Any) -> None:
