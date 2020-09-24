@@ -2,9 +2,11 @@ import unittest
 
 from pypika import (
     Tables,
+    Column,
     Columns,
     Query,
 )
+from pypika.terms import ValueWrapper
 
 
 class CreateTableTests(unittest.TestCase):
@@ -12,6 +14,20 @@ class CreateTableTests(unittest.TestCase):
     foo, bar = Columns(("a", "INT"), ("b", "VARCHAR(100)"))
 
     def test_create_table_with_columns(self):
+        with self.subTest("with nullable"):
+            a = Column("a", "INT", True)
+            b = Column("b", "VARCHAR(100)", False)
+            q = Query.create_table(self.new_table).columns(a, b)
+
+            self.assertEqual('CREATE TABLE "abc" ("a" INT NULL,"b" VARCHAR(100) NOT NULL)', str(q))
+
+        with self.subTest("with defaults"):
+            a = Column("a", "INT", default=ValueWrapper(42))
+            b = Column("b", "VARCHAR(100)", default=ValueWrapper("foo"))
+            q = Query.create_table(self.new_table).columns(a, b)
+
+            self.assertEqual('CREATE TABLE "abc" ("a" INT DEFAULT 42,"b" VARCHAR(100) DEFAULT \'foo\')', str(q))
+
         with self.subTest("without temporary keyword"):
             q = Query.create_table(self.new_table).columns(self.foo, self.bar)
 

@@ -248,16 +248,26 @@ def make_tables(*names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List
 
 
 class Column:
-    def __init__(self, column_name: str, column_type: Optional[str] = None) -> None:
+    def __init__(
+            self,
+            column_name: str,
+            column_type: Optional[str] = None,
+            nullable: Optional[bool] = None,
+            default: Optional[Term] = None
+    ) -> None:
         self.name = column_name
         self.type = column_type
+        self.nullable = nullable
+        self.default = default
 
     def get_sql(self, **kwargs: Any) -> str:
         quote_char = kwargs.get("quote_char")
 
-        column_sql = "{name}{type}".format(
+        column_sql = "{name}{type}{nullable}{default}".format(
               name=format_quotes(self.name, quote_char),
               type=" {}".format(self.type) if self.type else "",
+              nullable=" {}".format("NULL" if self.nullable else "NOT NULL") if self.nullable is not None else "",
+              default=" {}".format("DEFAULT " + self.default.get_sql(**kwargs)) if self.default else "",
         )
 
         return column_sql
@@ -282,7 +292,7 @@ def make_columns(*names: Union[TypedTuple[str, str], str]) -> List[Column]:
 
     return columns
 
-
+    
 # for typing in Query's methods
 _TableClass = Table
 
@@ -1680,6 +1690,8 @@ class CreateQueryBuilder:
         self._temporary = False
         self._as_select = None
         self._columns = []
+        self._period_fors = []
+        self._with_system_versioning = False
         self.dialect = dialect
 
     def _set_kwargs_defaults(self, kwargs: dict) -> None:
@@ -1703,6 +1715,9 @@ class CreateQueryBuilder:
         else:
             querystring += self._as_select_sql(**kwargs)
 
+        if self._period_fors:
+            querystring += self._Period_fors_sql(**kwargs)
+
         return querystring
 
     @builder
@@ -1717,6 +1732,10 @@ class CreateQueryBuilder:
         self._temporary = True
 
     @builder
+    def with_system_versioning(self) -> "CreateQueryBuilder":
+        self._with_system_versioning = True
+
+    @builder
     def columns(self, *columns: Union[str, TypedTuple[str, str], Column]) -> "CreateQueryBuilder":
         if self._as_select:
             raise AttributeError("'Query' object already has attribute as_select")
@@ -1727,6 +1746,13 @@ class CreateQueryBuilder:
             elif isinstance(column, tuple):
                 column = Column(column_name=column[0], column_type=column[1])
             self._columns.append(column)
+
+    @builder
+    def period_for(self, name, start_column_name: str, end_column_name: str) -> "CreateQueryBuilder":
+        start_column = next(column for column in self._columns if column.name == start_column_name)
+        end_column = next(column for column in self._columns if column.name == end_column_name)
+        period_for = PeriodFor(name, start_column, end_column)
+        self._period_fors.append(period_for)
 
     @builder
     def as_select(self, query_builder: QueryBuilder) -> "CreateQueryBuilder":
@@ -1748,6 +1774,9 @@ class CreateQueryBuilder:
         return " ({columns})".format(
               columns=",".join(column.get_sql(**kwargs) for column in self._columns)
         )
+
+    def _period_fors_sql(self, **kwargs: Any) -> str:
+        return 
 
     def _as_select_sql(self, **kwargs: Any) -> str:
         return " AS ({query})".format(query=self._as_select.get_sql(**kwargs), )
