@@ -44,6 +44,30 @@ class CreateTableTests(unittest.TestCase):
                 'CREATE TEMPORARY TABLE "abc" ("a" INT,"b" VARCHAR(100))', str(q)
             )
 
+        with self.subTest("with primary key"):
+            q = Query.create_table(
+                self.new_table
+            ).columns(
+                self.foo, self.bar
+            ).primary_key(
+                self.foo, self.bar
+            )
+
+            self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100),PRIMARY KEY ("a","b"))', str(q))
+
+        with self.subTest("with unique keys"):
+            q = Query.create_table(
+                self.new_table
+            ).columns(
+                self.foo, self.bar
+            ).unique(
+                self.foo, self.bar
+            ).unique(
+                self.foo
+            )
+
+            self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100),UNIQUE ("a","b"),UNIQUE ("a"))', str(q))
+
     def test_create_table_with_select(self):
         select = Query.from_(self.existing_table).select(
             self.existing_table.foo, self.existing_table.bar

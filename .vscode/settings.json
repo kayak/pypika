@@ -1,0 +1,21 @@
+{
+    "editor.rulers": [80],
+    "python.pythonPath": "venv/bin/python",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+    "[python]": {
+        "editor.formatOnSave": true
+    },
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./pypika",
+        "-p",
+        "test_*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.unittestEnabled": true,
+    "python.linting.mypyEnabled": true
+}
