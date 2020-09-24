@@ -301,18 +301,18 @@ def make_columns(*names: Union[TypedTuple[str, str], str]) -> List[Column]:
 
 
 class PeriodFor:
-    def __init__(self, name: str, start_column: Column, end_column: Column) -> None:
+    def __init__(self, name: str, start_column: Union[str, Column], end_column: Union[str, Column]) -> None:
         self.name = name
-        self.start_column = start_column
-        self.end_column = end_column
+        self.start_column = start_column if isinstance(start_column, Column) else Column(start_column)
+        self.end_column = end_column if isinstance(end_column, Column) else Column(end_column)
 
     def get_sql(self, **kwargs: Any) -> str:
         quote_char = kwargs.get("quote_char")
 
-        period_for_sql = "PERIOD FOR {name} ({start_column_name}, {end_column_name})".format(
+        period_for_sql = "PERIOD FOR {name} ({start_column_name},{end_column_name})".format(
             name=format_quotes(self.name, quote_char),
-            start_column_name=format_quotes(self.start_column.name, quote_char),
-            end_column_name=format_quotes(self.end_column.name, quote_char)
+            start_column_name=self.start_column.get_name_sql(**kwargs),
+            end_column_name=self.end_column.get_name_sql(**kwargs)
         )
 
         return period_for_sql
@@ -1786,11 +1786,8 @@ class CreateQueryBuilder:
             self._columns.append(column)
 
     @builder
-    def period_for(self, name, start_column_name: str, end_column_name: str) -> "CreateQueryBuilder":
-        start_column = next(column for column in self._columns if column.name == start_column_name)
-        end_column = next(column for column in self._columns if column.name == end_column_name)
-        period_for = PeriodFor(name, start_column, end_column)
-        self._period_fors.append(period_for)
+    def period_for(self, name, start_column: Union[str, Column], end_column: Union[str, Column]) -> "CreateQueryBuilder":
+        self._period_fors.append(PeriodFor(name, start_column, end_column))
 
     @builder
     def unique(self, *columns: Union[str, Column]) -> "CreateQueryBuilder":

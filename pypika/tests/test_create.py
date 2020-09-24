@@ -28,6 +28,21 @@ class CreateTableTests(unittest.TestCase):
 
             self.assertEqual('CREATE TABLE "abc" ("a" INT DEFAULT 42,"b" VARCHAR(100) DEFAULT \'foo\')', str(q))
 
+        with self.subTest("with period for"):
+            a = Column("id", "INT")
+            b = Column("valid_from", "DATETIME")
+            c = Column("valid_to", "DATETIME")
+            q = Query.create_table(self.new_table).columns(a, b, c).period_for('valid_period', b, c)
+
+            self.assertEqual(
+                'CREATE TABLE "abc" ('
+                '"id" INT,'
+                '"valid_from" DATETIME,'
+                '"valid_to" DATETIME,'
+                'PERIOD FOR "valid_period" ("valid_from","valid_to"))',
+                str(q)
+            )
+
         with self.subTest("without temporary keyword"):
             q = Query.create_table(self.new_table).columns(self.foo, self.bar)
 
