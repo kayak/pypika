@@ -1738,23 +1738,26 @@ class CreateQueryBuilder:
         querystring = self._create_table_sql(**kwargs)
 
         if self._as_select:
-            querystring += self._as_select_sql(**kwargs)
-        else:
-            clauses = [column.get_sql(**kwargs) for column in self._columns]
-            clauses += [period_for.get_sql(**kwargs) for period_for in self._period_fors]
-            clauses += [
-                "UNIQUE ({unique})".format(
-                    unique=",".join(
-                        column.get_name_sql(**kwargs)
-                        for column in unique)
-                )
-                for unique in self._uniques
-            ]
-            if self._primary_key:
-                clauses.append("PRIMARY KEY ({columns})".format(
-                    columns=",".join(column.get_name_sql(**kwargs) for column in self._primary_key))
-                )
-            querystring += " ({clauses})".format(clauses=",".join(clauses))
+            return querystring + self._as_select_sql(**kwargs)
+
+        clauses = [column.get_sql(**kwargs) for column in self._columns]
+        clauses += [period_for.get_sql(**kwargs) for period_for in self._period_fors]
+        clauses += [
+            "UNIQUE ({unique})".format(
+                unique=",".join(
+                    column.get_name_sql(**kwargs)
+                    for column in unique)
+            )
+            for unique in self._uniques
+        ]
+        if self._primary_key:
+            clauses.append("PRIMARY KEY ({columns})".format(
+                columns=",".join(column.get_name_sql(**kwargs) for column in self._primary_key))
+            )
+        querystring += " ({clauses})".format(clauses=",".join(clauses))
+
+        if self._with_system_versioning:
+            querystring += ' WITH SYSTEM VERSIONING'
 
         return querystring
 

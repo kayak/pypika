@@ -83,6 +83,11 @@ class CreateTableTests(unittest.TestCase):
 
             self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100),UNIQUE ("a","b"),UNIQUE ("a"))', str(q))
 
+        with self.subTest("with system versioning"):
+            q = Query.create_table(self.new_table).columns(self.foo, self.bar).with_system_versioning()
+
+            self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100)) WITH SYSTEM VERSIONING', str(q))
+
     def test_create_table_with_select(self):
         select = Query.from_(self.existing_table).select(
             self.existing_table.foo, self.existing_table.bar
