@@ -1740,21 +1740,7 @@ class CreateQueryBuilder:
         if self._as_select:
             return querystring + self._as_select_sql(**kwargs)
 
-        clauses = [column.get_sql(**kwargs) for column in self._columns]
-        clauses += [period_for.get_sql(**kwargs) for period_for in self._period_fors]
-        clauses += [
-            "UNIQUE ({unique})".format(
-                unique=",".join(
-                    column.get_name_sql(**kwargs)
-                    for column in unique)
-            )
-            for unique in self._uniques
-        ]
-        if self._primary_key:
-            clauses.append("PRIMARY KEY ({columns})".format(
-                columns=",".join(column.get_name_sql(**kwargs) for column in self._primary_key))
-            )
-        querystring += " ({clauses})".format(clauses=",".join(clauses))
+        querystring += " {body}".format(body=self._body_sql(**kwargs))
 
         if self._with_system_versioning:
             querystring += ' WITH SYSTEM VERSIONING'
@@ -1824,13 +1810,41 @@ class CreateQueryBuilder:
             table=self._create_table.get_sql(**kwargs),
         )
 
-    def _columns_sql(self, **kwargs: Any) -> str:
-        return " ({columns})".format(
-            columns=",".join(column.get_sql(**kwargs) for column in self._columns)
-        )
+    def _body_sql(self, **kwargs) -> str:
+        # Columns
+        clauses = [
+            column.get_sql(**kwargs)
+            for column in self._columns
+        ]
 
-    def _period_fors_sql(self, **kwargs: Any) -> str:
-        return
+        # Period for
+        clauses += [
+            period_for.get_sql(**kwargs)
+            for period_for in self._period_fors
+        ]
+
+        # Unique keys
+        clauses += [
+            "UNIQUE ({unique})".format(
+                unique=",".join(
+                    column.get_name_sql(**kwargs)
+                    for column in unique)
+            )
+            for unique in self._uniques
+        ]
+
+        # Primary keys
+        if self._primary_key:
+            clauses.append(
+                "PRIMARY KEY ({columns})".format(
+                    columns=",".join(
+                        column.get_name_sql(**kwargs)
+                        for column in self._primary_key
+                    )
+                )
+            )
+
+        return "({clauses})".format(clauses=",".join(clauses))
 
     def _as_select_sql(self, **kwargs: Any) -> str:
         return " AS ({query})".format(query=self._as_select.get_sql(**kwargs), )
