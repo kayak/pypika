@@ -519,6 +519,17 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
         self.assertEqual(
             'INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT ("id") DO UPDATE SET "abc"=1 WHERE "abc"."abc"=1', str(qs))
 
+    def test_on_conflict_do_update_with_excluded_where(self):
+        qs = (
+            PostgreSQLQuery.into(self.table_abc)
+                .insert(1, "m")
+                .on_conflict("id")
+                .do_update('abc')
+                .where(self.table_abc.abc.eq(1))
+        )
+        self.assertEqual(
+            'INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT ("id") DO UPDATE SET "abc"=EXCLUDED."abc" WHERE "abc"."abc"=1', str(qs))
+
     def test_on_conflict_where_complex(self):
         table_bcd = Table('bcd')
 
