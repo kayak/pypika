@@ -37,7 +37,7 @@ jobs:
       - name: Coveralls
         # Official Coveralls GitHub action does not work with Python coverage files!
         # https://github.com/coverallsapp/github-action/issues/30
-        uses: AndreMiras/coveralls-python-action@develop
+        uses: AndreMiras/coveralls-python-action@v20200413
         with:
           parallel: true
           debug: true
