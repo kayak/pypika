@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Union, Optional
+from typing import Any, List, Union, Optional
 
 from pypika.enums import Dialects
 from pypika.queries import (
@@ -221,11 +221,10 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
               table=self._create_table.get_sql(**kwargs),
         )
 
-    def _columns_sql(self, **kwargs: Any) -> str:
-        return " ({columns}){preserve_rows}".format(
-              columns=",".join(column.get_sql(**kwargs) for column in self._columns),
-              preserve_rows=self._preserve_rows_sql(),
-        )
+    def _table_options_sql(self, **kwargs) -> str:
+        table_options = super()._table_options_sql(**kwargs)
+        table_options += self._preserve_rows_sql()
+        return table_options
 
     def _as_select_sql(self, **kwargs: Any) -> str:
         return "{preserve_rows} AS ({query})".format(

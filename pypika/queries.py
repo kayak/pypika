@@ -1726,27 +1726,6 @@ class CreateQueryBuilder:
         kwargs.setdefault("secondary_quote_char", self.SECONDARY_QUOTE_CHAR)
         kwargs.setdefault("dialect", self.dialect)
 
-    def get_sql(self, **kwargs: Any) -> str:
-        self._set_kwargs_defaults(kwargs)
-
-        if not self._create_table:
-            return ""
-
-        if not self._columns and not self._as_select:
-            return ""
-
-        querystring = self._create_table_sql(**kwargs)
-
-        if self._as_select:
-            return querystring + self._as_select_sql(**kwargs)
-
-        querystring += " {body}".format(body=self._body_sql(**kwargs))
-
-        if self._with_system_versioning:
-            querystring += ' WITH SYSTEM VERSIONING'
-
-        return querystring
-
     @builder
     def create_table(self, table: Union[Table, str]) -> "CreateQueryBuilder":
         if self._create_table:
@@ -1804,27 +1783,57 @@ class CreateQueryBuilder:
 
         self._as_select = query_builder
 
+    def get_sql(self, **kwargs: Any) -> str:
+        self._set_kwargs_defaults(kwargs)
+
+        if not self._create_table:
+            return ""
+
+        if not self._columns and not self._as_select:
+            return ""
+
+        create_table = self._create_table_sql(**kwargs)
+
+        if self._as_select:
+            return create_table + self._as_select_sql(**kwargs)
+
+        body = self._body_sql(**kwargs)
+        table_options = self._table_options_sql(**kwargs)
+
+        return "{create_table} ({body}){table_options}".format(
+            create_table=create_table,
+            body=body,
+            table_options=table_options
+        )
+
     def _create_table_sql(self, **kwargs: Any) -> str:
         return "CREATE {temporary}TABLE {table}".format(
             temporary="TEMPORARY " if self._temporary else "",
             table=self._create_table.get_sql(**kwargs),
         )
 
-    def _body_sql(self, **kwargs) -> str:
-        # Columns
-        clauses = [
+    def _table_options_sql(self, **kwargs) -> str:
+        table_options = ""
+
+        if self._with_system_versioning:
+            table_options += ' WITH SYSTEM VERSIONING'
+            
+        return table_options
+
+    def _column_clauses(self, **kwargs) -> List[str]:
+        return [
             column.get_sql(**kwargs)
             for column in self._columns
         ]
 
-        # Period for
-        clauses += [
+    def _period_for_clauses(self, **kwargs) -> List[str]:
+        return [
             period_for.get_sql(**kwargs)
             for period_for in self._period_fors
         ]
 
-        # Unique keys
-        clauses += [
+    def _unique_key_clauses(self, **kwargs) -> List[str]:
+        return [
             "UNIQUE ({unique})".format(
                 unique=",".join(
                     column.get_name_sql(**kwargs)
@@ -1833,18 +1842,24 @@ class CreateQueryBuilder:
             for unique in self._uniques
         ]
 
+    def _primary_key_clause(self, **kwargs) -> str:
+        return "PRIMARY KEY ({columns})".format(
+            columns=",".join(
+                column.get_name_sql(**kwargs)
+                for column in self._primary_key
+            )
+        )
+
+    def _body_sql(self, **kwargs) -> str:
+        clauses = self._column_clauses(**kwargs)
+        clauses += self._period_for_clauses(**kwargs)
+        clauses += self._unique_key_clauses(**kwargs)
+
         # Primary keys
         if self._primary_key:
-            clauses.append(
-                "PRIMARY KEY ({columns})".format(
-                    columns=",".join(
-                        column.get_name_sql(**kwargs)
-                        for column in self._primary_key
-                    )
-                )
-            )
+            clauses.append(self._primary_key_clause(**kwargs))
 
-        return "({clauses})".format(clauses=",".join(clauses))
+        return ",".join(clauses)
 
     def _as_select_sql(self, **kwargs: Any) -> str:
         return " AS ({query})".format(query=self._as_select.get_sql(**kwargs), )
