@@ -248,6 +248,9 @@ def make_tables(*names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List
 
 
 class Column:
+    """Represents a column.
+    """
+    
     def __init__(
             self,
             column_name: str,
@@ -1728,6 +1731,18 @@ class CreateQueryBuilder:
 
     @builder
     def create_table(self, table: Union[Table, str]) -> "CreateQueryBuilder":
+        """
+        Creates the table.
+
+        :param table:
+            An instance of a Table object or a string table name.
+
+        :raises AttributeError:
+            If the table is already created.
+
+        :return:
+            CreateQueryBuilder.
+        """
         if self._create_table:
             raise AttributeError("'Query' object already has attribute create_table")
 
@@ -1735,14 +1750,40 @@ class CreateQueryBuilder:
 
     @builder
     def temporary(self) -> "CreateQueryBuilder":
+        """
+        Makes the table temporary.
+
+        :return:
+            CreateQueryBuilder.
+        """
         self._temporary = True
 
     @builder
     def with_system_versioning(self) -> "CreateQueryBuilder":
+        """
+        Adds system versioning.
+
+        :return:
+            CreateQueryBuilder.
+        """
         self._with_system_versioning = True
 
     @builder
     def columns(self, *columns: Union[str, TypedTuple[str, str], Column]) -> "CreateQueryBuilder":
+        """
+        Adds the columns.
+
+        :param columns:
+            Type:  Union[str, TypedTuple[str, str], Column]
+
+            A list of columns.
+
+        :raises AttributeError:
+            If the table is an as_select table.
+
+        :return:
+            CreateQueryBuilder.
+        """
         if self._as_select:
             raise AttributeError("'Query' object already has attribute as_select")
 
@@ -1755,10 +1796,36 @@ class CreateQueryBuilder:
 
     @builder
     def period_for(self, name, start_column: Union[str, Column], end_column: Union[str, Column]) -> "CreateQueryBuilder":
+        """
+        Adds a PERIOD FOR clause.
+
+        :param name:
+            The period name.
+
+        :param start_column:
+            The column that starts the period.
+
+        :param end_column:
+            The column that ends the period.
+        
+        :return:
+            CreateQueryBuilder.
+        """
         self._period_fors.append(PeriodFor(name, start_column, end_column))
 
     @builder
     def unique(self, *columns: Union[str, Column]) -> "CreateQueryBuilder":
+        """
+        Adds a UNIQUE constraint.
+
+        :param columns:
+            Type:  Union[str, TypedTuple[str, str], Column]
+
+            A list of columns.
+        
+        :return:
+            CreateQueryBuilder.
+        """
         self._uniques.append([
             (column if isinstance(column, Column) else Column(column))
             for column in columns
@@ -1766,6 +1833,20 @@ class CreateQueryBuilder:
 
     @builder
     def primary_key(self, *columns: Union[str, Column]) -> "CreateQueryBuilder":
+        """
+        Adds a primary key constraint.
+
+        :param columns:
+            Type:  Union[str, TypedTuple[str, str], Column]
+
+            A list of columns.
+
+        :raises AttributeError:
+            If the primary key is already defined.
+        
+        :return:
+            CreateQueryBuilder.
+        """
         if self._primary_key:
             raise AttributeError("'Query' object already has attribute primary_key")
         self._primary_key = [
@@ -1775,6 +1856,18 @@ class CreateQueryBuilder:
 
     @builder
     def as_select(self, query_builder: QueryBuilder) -> "CreateQueryBuilder":
+        """
+        Creates the table from a select statement.
+
+        :param query_builder:
+            The query.
+
+        :raises AttributeError:
+            If columns have been defined for the table.
+        
+        :return:
+            CreateQueryBuilder.
+        """
         if self._columns:
             raise AttributeError("'Query' object already has attribute columns")
 
@@ -1784,6 +1877,12 @@ class CreateQueryBuilder:
         self._as_select = query_builder
 
     def get_sql(self, **kwargs: Any) -> str:
+        """
+        Gets the sql statement string.
+
+        :return: The create table statement.
+        :rtype: str
+        """
         self._set_kwargs_defaults(kwargs)
 
         if not self._create_table:

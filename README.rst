@@ -1073,6 +1073,56 @@ MSSQL:
 
 You can find out what parameter style is needed for DBAPI compliant drivers here: https://www.python.org/dev/peps/pep-0249/#paramstyle or in the DB driver documentation.
 
+Creating Tables
+^^^^^^^^^^^^^^^
+
+The entry point for creating tables is ``pypika.Query.create_table``, which is used with the class ``pypika.Column``.
+As with selecting data, first the table should be specified. This can be either a
+string or a `pypika.Table`. Then the columns, and constraints. Here's an example
+that demonstrates much of the functionality.
+
+.. code-block:: python
+
+    stmt = Query \
+        .create_table("person") \
+        .columns(
+            Column("id", "INT", nullable=False),
+            Column("first_name", "VARCHAR(100)", nullable=False),
+            Column("last_name", "VARCHAR(100)", nullable=False),
+            Column("phone_number", "VARCHAR(20)", nullable=True),
+            Column("status", "VARCHAR(20)", nullable=False, default=ValueWrapper("NEW")),
+            Column("date_of_birth", "DATETIME")) \
+        .unique("last_name", "first_name") \
+        .primary_key("id")
+
+This produces:
+
+.. code-block:: sql
+
+    CREATE TABLE "person" (
+        "id" INT NOT NULL,
+        "first_name" VARCHAR(100) NOT NULL,
+        "last_name" VARCHAR(100) NOT NULL,
+        "phone_number" VARCHAR(20) NULL,
+        "status" VARCHAR(20) NOT NULL DEFAULT 'NEW',
+        "date_of_birth" DATETIME,
+        UNIQUE ("last_name","first_name"),
+        PRIMARY KEY ("id")
+    )
+
+There is also support for creating a table from a query.
+
+.. code-block:: python
+
+    stmt = Query.create_table("names").as_select(
+        Query.from_("person").select("last_name", "first_name")
+    )
+
+This produces:
+
+.. code-block:: sql
+
+        CREATE TABLE "names" AS (SELECT "last_name","first_name" FROM "person")
 
 .. _tutorial_end:
 
