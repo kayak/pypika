@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Table, Query, PostgreSQLQuery, AliasedQuery, SQLLiteQuery
+from pypika import Table, Query, PostgreSQLQuery, AliasedQuery, SQLLiteQuery, SYSTEM_TIME
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -92,6 +92,30 @@ class UpdateTests(unittest.TestCase):
             str(q)
         )
 
+    def test_for_portion(self):
+        with self.subTest("with system time"):
+            q = Query.update(
+                self.table_abc.for_portion(
+                    SYSTEM_TIME.from_to('2020-01-01', '2020-02-01')
+                )
+            ).set("foo", "bar")
+
+            self.assertEqual(
+                'UPDATE "abc" FOR PORTION OF SYSTEM_TIME FROM \'2020-01-01\' TO \'2020-02-01\' SET "foo"=\'bar\'',
+                str(q)
+            )
+
+        with self.subTest("with column"):
+            q = Query.update(
+                self.table_abc.for_portion(
+                    self.table_abc.valid_period.from_to('2020-01-01', '2020-02-01')
+                )
+            ).set("foo", "bar")
+
+            self.assertEqual(
+                'UPDATE "abc" FOR PORTION OF "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\' SET "foo"=\'bar\'',
+                str(q)
+            )
 
 class PostgresUpdateTests(unittest.TestCase):
     table_abc = Table("abc")

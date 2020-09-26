@@ -74,7 +74,7 @@ class Term(Node):
         return set(self.find_(Field))
 
     @staticmethod
-    def wrap_constant(val, wrapper_cls: Optional[Type["Term"]] = None) -> Union[ValueError, NodeT, "NullValue", "Array", "Tuple", "ValueWrapper"]:
+    def wrap_constant(val, wrapper_cls: Optional[Type["Term"]] = None) -> Union[ValueError, NodeT, "LiteralValue", "Array", "Tuple", "ValueWrapper"]:
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
@@ -177,6 +177,17 @@ class Term(Node):
         return BetweenCriterion(
             self, self.wrap_constant(lower), self.wrap_constant(upper)
         )
+
+    def from_to(self, start: Any, end: Any) -> "PeriodCriterion":
+        return PeriodCriterion(
+            self, self.wrap_constant(start), self.wrap_constant(end)
+        )
+
+    def as_of(self, expr: str) -> "BasicCriterion":
+        return BasicCriterion(Matching.as_of, self, self.wrap_constant(expr))
+
+    def all_(self) -> "All":
+        return All(self)
 
     def isin(self, arg: Union[list, tuple, set, "Term"]) -> "ContainsCriterion":
         if isinstance(arg, (list, tuple, set)):
@@ -398,7 +409,6 @@ class JSON(Term):
         return BasicCriterion(JSONOperators.HAS_ANY_KEYS, self, Array(*other))
 
 
-
 class Values(Term):
     def __init__(
           self, field: Union[str, "Field"]
@@ -412,10 +422,24 @@ class Values(Term):
         )
 
 
-class NullValue(Term):
+class LiteralValue(Term):
+
+    def __init__(self, value, alias: Optional[str] = None) -> None:
+        super().__init__(alias)
+        self._value = value
+
     def get_sql(self, **kwargs: Any) -> str:
-        sql = "NULL"
-        return format_alias_sql(sql, self.alias, **kwargs)
+        return format_alias_sql(self._value, self.alias, **kwargs)
+
+
+class NullValue(LiteralValue):
+    def __init__(self, alias: Optional[str] = None) -> None:
+        super().__init__("NULL", alias)
+
+
+class SystemTimeValue(LiteralValue):
+    def __init__(self, alias: Optional[str] = None) -> None:
+        super().__init__("SYSTEM_TIME", alias)
 
 
 class Criterion(Term):
@@ -754,7 +778,7 @@ class ContainsCriterion(Criterion):
         self._is_negated = True
 
 
-class BetweenCriterion(Criterion):
+class RangeCriterion(Criterion):
     def __init__(self, term: Term, start: Any, end: Any, alias: Optional[str] = None) -> str:
         super().__init__(alias)
         self.term = term
@@ -771,6 +795,8 @@ class BetweenCriterion(Criterion):
     def is_aggregate(self) -> Optional[bool]:
         return self.term.is_aggregate
 
+
+class BetweenCriterion(RangeCriterion):
     @builder
     def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "BetweenCriterion":
         """
@@ -788,6 +814,16 @@ class BetweenCriterion(Criterion):
     def get_sql(self, **kwargs: Any) -> str:
         # FIXME escape
         sql = "{term} BETWEEN {start} AND {end}".format(
+              term=self.term.get_sql(**kwargs),
+              start=self.start.get_sql(**kwargs),
+              end=self.end.get_sql(**kwargs),
+        )
+        return format_alias_sql(sql, self.alias, **kwargs)
+
+
+class PeriodCriterion(RangeCriterion):
+    def get_sql(self, **kwargs: Any) -> str:
+        sql = "{term} FROM {start} TO {end}".format(
               term=self.term.get_sql(**kwargs),
               start=self.start.get_sql(**kwargs),
               end=self.end.get_sql(**kwargs),
@@ -1081,6 +1117,20 @@ class Not(Criterion):
             A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
+
+
+class All(Criterion):
+    def __init__(self, term: Any, alias: Optional[str] = None) -> None:
+        super().__init__(alias=alias)
+        self.term = term
+
+    def nodes_(self) -> Iterator[NodeT]:
+        yield self
+        yield from self.term.nodes_()
+
+    def get_sql(self, **kwargs: Any) -> str:
+        sql = "{term} ALL".format(term=self.term.get_sql(**kwargs))
+        return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class CustomFunction:

@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Table, Query, PostgreSQLQuery
+from pypika import Table, Query, PostgreSQLQuery, SYSTEM_TIME
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -33,6 +33,31 @@ class DeleteTests(unittest.TestCase):
 
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar"', str(q1))
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar"', str(q2))
+
+    def test_for_portion(self):
+        with self.subTest("with system time"):
+            q = Query.from_(
+                self.table_abc.for_portion(
+                    SYSTEM_TIME.from_to('2020-01-01', '2020-02-01')
+                )
+            ).delete()
+
+            self.assertEqual(
+                'DELETE FROM "abc" FOR PORTION OF SYSTEM_TIME FROM \'2020-01-01\' TO \'2020-02-01\'',
+                str(q)
+            )
+
+        with self.subTest("with column"):
+            q = Query.from_(
+                self.table_abc.for_portion(
+                    self.table_abc.valid_period.from_to('2020-01-01', '2020-02-01')
+                )
+            ).delete()
+
+            self.assertEqual(
+                'DELETE FROM "abc" FOR PORTION OF "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\'',
+                str(q)
+            )
 
 
 class PostgresDeleteTests(unittest.TestCase):

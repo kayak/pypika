@@ -1073,6 +1073,123 @@ MSSQL:
 
 You can find out what parameter style is needed for DBAPI compliant drivers here: https://www.python.org/dev/peps/pep-0249/#paramstyle or in the DB driver documentation.
 
+Temporal support
+^^^^^^^^^^^^^^^^
+
+Temporal criteria can be added to the tables.
+
+Select
+""""""
+
+Here is a select using system time.
+
+.. code-block:: python
+
+    t = Table("abc")
+    q = Query.from_(t.for_(SYSTEM_TIME.as_of('2020-01-01'))).select("*")
+
+This produces:
+
+.. code-block:: sql
+
+    SELECT * FROM "abc" FOR SYSTEM_TIME AS OF '2020-01-01'
+
+You can also use between.
+
+.. code-block:: python
+
+    t = Table("abc")
+    q = Query.from_(
+        t.for_(SYSTEM_TIME.between('2020-01-01', '2020-02-01'))
+    ).select("*")
+
+This produces:
+
+.. code-block:: sql
+
+    SELECT * FROM "abc" FOR SYSTEM_TIME BETWEEN '2020-01-01' AND '2020-02-01'
+
+You can also use a period range.
+
+.. code-block:: python
+
+    t = Table("abc")
+    q = Query.from_(
+        t.for_(SYSTEM_TIME.from_to('2020-01-01', '2020-02-01'))
+    ).select("*")
+
+This produces:
+
+.. code-block:: sql
+
+    SELECT * FROM "abc" FOR SYSTEM_TIME FROM '2020-01-01' TO '2020-02-01'
+
+Finally you can select for all times:
+
+.. code-block:: python
+
+    t = Table("abc")
+    q = Query.from_(t.for_(SYSTEM_TIME.all_())).select("*")
+
+This produces:
+
+.. code-block:: sql
+
+    SELECT * FROM "abc" FOR SYSTEM_TIME ALL
+
+A user defined period can also be used in the following manner.
+
+.. code-block:: python
+
+    t = Table("abc")
+    q = Query.from_(
+        t.for_(t.valid_period.between('2020-01-01', '2020-02-01'))
+    ).select("*")
+
+This produces:
+
+.. code-block:: sql
+
+    SELECT * FROM "abc" FOR "valid_period" BETWEEN '2020-01-01' AND '2020-02-01'
+
+Update & Deletes
+""""""""""""""""
+
+An update can be written as follows:
+
+.. code-block:: python
+
+    t = Table("abc")
+    q = Query.update(
+        t.for_portion(
+            SYSTEM_TIME.from_to('2020-01-01', '2020-02-01')
+        )
+    ).set("foo", "bar")
+
+This produces:
+
+.. code-block:: sql
+
+    UPDATE "abc"
+    FOR PORTION OF SYSTEM_TIME FROM '2020-01-01' TO '2020-02-01'
+    SET "foo"='bar'
+
+Here is a delete:
+
+.. code-block:: python
+
+    t = Table("abc")
+    q = Query.from_(
+        t.for_portion(t.valid_period.from_to('2020-01-01', '2020-02-01'))
+    ).delete()
+
+This produces:
+
+.. code-block:: sql
+
+    DELETE FROM "abc"
+    FOR PORTION OF "valid_period" FROM '2020-01-01' TO '2020-02-01'
+
 Creating Tables
 ^^^^^^^^^^^^^^^
 
