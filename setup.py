@@ -15,8 +15,7 @@ def version():
         for node in (n for n in t.body if isinstance(n, ast.Assign)):
             if len(node.targets) == 1:
                 name = node.targets[0]
-                if isinstance(name, ast.Name) and \
-                      name.id in ('__version__', '__version_info__', 'VERSION'):
+                if isinstance(name, ast.Name) and name.id in ('__version__', '__version_info__', 'VERSION'):
                     v = node.value
                     if isinstance(v, ast.Str):
                         return v.s

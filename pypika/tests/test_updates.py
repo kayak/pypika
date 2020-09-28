@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Table, Query, PostgreSQLQuery, AliasedQuery, SQLLiteQuery
+from pypika import AliasedQuery, PostgreSQLQuery, Query, SQLLiteQuery, Table
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -69,7 +69,7 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(
             'UPDATE "abc" SET "lname"="from_table"."long_name" FROM "from_table" '
             'WHERE "abc"."fname"="from_table"."full_name"',
-            str(q)
+            str(q),
         )
 
     def test_update_with_statement(self):
@@ -89,7 +89,7 @@ class UpdateTests(unittest.TestCase):
             'WITH an_alias AS (SELECT "fizz" FROM "efg") '
             'UPDATE "abc" SET "lname"="an_alias"."long_name" FROM an_alias '
             'WHERE "abc"."comp"="an_alias"."alias_comp"',
-            str(q)
+            str(q),
         )
 
 
@@ -97,16 +97,9 @@ class PostgresUpdateTests(unittest.TestCase):
     table_abc = Table("abc")
 
     def test_update_returning_str(self):
-        q = (
-            PostgreSQLQuery.update(self.table_abc)
-            .where(self.table_abc.foo == 0)
-            .set("foo", "bar")
-            .returning("id")
-        )
+        q = PostgreSQLQuery.update(self.table_abc).where(self.table_abc.foo == 0).set("foo", "bar").returning("id")
 
-        self.assertEqual(
-            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING "abc"."id"', str(q)
-        )
+        self.assertEqual('UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING "abc"."id"', str(q))
 
     def test_update_returning(self):
         q = (
@@ -116,9 +109,7 @@ class PostgresUpdateTests(unittest.TestCase):
             .returning(self.table_abc.id)
         )
 
-        self.assertEqual(
-            'UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING "abc"."id"', str(q)
-        )
+        self.assertEqual('UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING "abc"."id"', str(q))
 
     def test_update_returning_from_different_tables(self):
         table_bcd = Table('bcd')

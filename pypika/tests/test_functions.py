@@ -21,9 +21,7 @@ __email__ = "theys@kayak.com"
 class FunctionTests(unittest.TestCase):
     def test_dialect_propagation(self):
         func = fn.Function("func", ["a"], ["b"])
-        self.assertEqual(
-            "func(ARRAY['a'],ARRAY['b'])", func.get_sql(dialect=Dialects.POSTGRESQL)
-        )
+        self.assertEqual("func(ARRAY['a'],ARRAY['b'])", func.get_sql(dialect=Dialects.POSTGRESQL))
 
     def test_is_aggregate_None_for_non_aggregate_function_or_function_with_no_aggregate_functions(self):
         self.assertIsNone(fn.Coalesce('a', 0).is_aggregate)
@@ -320,21 +318,15 @@ class ConditionTests(unittest.TestCase):
     def test__case__else(self):
         q = Q.from_("abc").select(Case().when(F("foo") == 1, "a").else_("b"))
 
-        self.assertEqual(
-            "SELECT CASE WHEN \"foo\"=1 THEN 'a' ELSE 'b' END FROM \"abc\"", str(q)
-        )
+        self.assertEqual("SELECT CASE WHEN \"foo\"=1 THEN 'a' ELSE 'b' END FROM \"abc\"", str(q))
 
     def test__case__field(self):
         q = Q.from_("abc").select(Case().when(F("foo") == 1, F("bar")).else_(F("buz")))
 
-        self.assertEqual(
-            'SELECT CASE WHEN "foo"=1 THEN "bar" ELSE "buz" END FROM "abc"', str(q)
-        )
+        self.assertEqual('SELECT CASE WHEN "foo"=1 THEN "bar" ELSE "buz" END FROM "abc"', str(q))
 
     def test__case__multi(self):
-        q = Q.from_("abc").select(
-            Case().when(F("foo") > 0, F("fiz")).when(F("bar") <= 0, F("buz")).else_(1)
-        )
+        q = Q.from_("abc").select(Case().when(F("foo") > 0, F("fiz")).when(F("bar") <= 0, F("buz")).else_(1))
 
         self.assertEqual(
             'SELECT CASE WHEN "foo">0 THEN "fiz" WHEN "bar"<=0 THEN "buz" ELSE 1 END FROM "abc"',
@@ -575,9 +567,7 @@ class DateFunctionsTests(unittest.TestCase):
     def _test_extract_datepart(self, date_part):
         q = Q.from_(self.t).select(fn.Extract(date_part, self.t.foo))
 
-        self.assertEqual(
-            'SELECT EXTRACT(%s FROM "foo") FROM "abc"' % date_part.value, str(q)
-        )
+        self.assertEqual('SELECT EXTRACT(%s FROM "foo") FROM "abc"' % date_part.value, str(q))
 
     def test_extract_microsecond(self):
         self._test_extract_datepart(DatePart.microsecond)
@@ -607,17 +597,10 @@ class DateFunctionsTests(unittest.TestCase):
         self._test_extract_datepart(DatePart.year)
 
     def test_extract_join(self):
-        q = (
-            Q.from_(self.t)
-            .join(self.t2)
-            .on(self.t.id == self.t2.t_id)
-            .select(fn.Extract(DatePart.year, self.t.foo))
-        )
+        q = Q.from_(self.t).join(self.t2).on(self.t.id == self.t2.t_id).select(fn.Extract(DatePart.year, self.t.foo))
 
         self.assertEqual(
-            'SELECT EXTRACT(YEAR FROM "abc"."foo") FROM "abc" '
-            'JOIN "efg" ON "abc"."id"="efg"."t_id"',
-            str(q)
+            'SELECT EXTRACT(YEAR FROM "abc"."foo") FROM "abc" ' 'JOIN "efg" ON "abc"."id"="efg"."t_id"', str(q)
         )
 
     def test_timestampadd(self):
@@ -668,9 +651,7 @@ class DateFunctionsTests(unittest.TestCase):
         q3 = Query.from_(self.t).select(fn.ToDate(F("foo"), "yyyy-mm-dd"))
 
         self.assertEqual(str(q1), "TO_DATE('2019-06-21','yyyy-mm-dd')")
-        self.assertEqual(
-            str(q2), "SELECT TO_DATE('2019-06-21','yyyy-mm-dd') FROM \"abc\""
-        )
+        self.assertEqual(str(q2), "SELECT TO_DATE('2019-06-21','yyyy-mm-dd') FROM \"abc\"")
         self.assertEqual(str(q3), 'SELECT TO_DATE("foo",\'yyyy-mm-dd\') FROM "abc"')
 
 

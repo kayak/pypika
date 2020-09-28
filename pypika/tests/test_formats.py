@@ -19,7 +19,8 @@ class QuoteTests(unittest.TestCase):
         )
 
         subquery2 = Query.from_(self.table_efg).select(
-            self.table_efg.foo.as_("foo_two"), self.table_efg.bar,
+            self.table_efg.foo.as_("foo_two"),
+            self.table_efg.bar,
         )
 
         self.query = (
