@@ -11,6 +11,7 @@ from pypika import (
     Tables,
     SetOperationException,
     functions as fn,
+    SYSTEM_TIME
 )
 
 __author__ = "Timothy Heys"
@@ -368,6 +369,23 @@ class SelectQueryJoinTests(unittest.TestCase):
         )
         self.assertEqual(
             'SELECT "b"."ouch" FROM "a" JOIN "b" ON "a"."foo"="b"."boo"', str(q2)
+        )
+
+    def test_temporal_join(self):
+        t0 = self.table0.for_(SYSTEM_TIME.as_of('2020-01-01'))
+        t1 = self.table1.for_(SYSTEM_TIME.as_of('2020-01-01'))
+        query = (
+            Query.from_(t0)
+            .join(t1)
+            .on(t0.foo == t1.bar)
+            .select("*")
+        )
+
+        self.assertEqual(
+            'SELECT * FROM "abc" FOR SYSTEM_TIME AS OF \'2020-01-01\' '
+            'JOIN "efg" FOR SYSTEM_TIME AS OF \'2020-01-01\' '
+            'ON "abc"."foo"="efg"."bar"',
+            str(query)
         )
 
 

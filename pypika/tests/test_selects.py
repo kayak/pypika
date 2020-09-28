@@ -334,7 +334,7 @@ class SelectTests(unittest.TestCase):
                 str(q)
             )
 
-        with self.subTest("with as of ALL"):
+        with self.subTest("with ALL"):
             q = Query.from_(t.for_(SYSTEM_TIME.all_())).select("*")
 
             self.assertEqual(
@@ -362,7 +362,7 @@ class SelectTests(unittest.TestCase):
                 str(q)
             )
 
-        with self.subTest("with period as of ALL"):
+        with self.subTest("with ALL"):
             q = Query.from_(t.for_(t.valid_period.all_())).select("*")
 
             self.assertEqual(

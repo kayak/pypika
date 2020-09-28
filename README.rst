@@ -1152,6 +1152,33 @@ This produces:
 
     SELECT * FROM "abc" FOR "valid_period" BETWEEN '2020-01-01' AND '2020-02-01'
 
+Joins
+"""""
+
+With joins, when the table object is used when specifying columns, it is
+important to use the table from which the temporal constraint was generated.
+This is because `Table("abc")` is not the same table as `Table("abc").for_(...)`.
+The following example demonstrates this.
+
+.. code-block:: python
+
+    t0 = Table("abc").for_(SYSTEM_TIME.as_of('2020-01-01'))
+    t1 = Table("efg").for_(SYSTEM_TIME.as_of('2020-01-01'))
+    query = (
+        Query.from_(t0)
+        .join(t1)
+        .on(t0.foo == t1.bar)
+        .select("*")
+    )
+
+This produces:
+
+.. code-block:: sql
+
+    SELECT * FROM "abc" FOR SYSTEM_TIME AS OF '2020-01-01'
+    JOIN "efg" FOR SYSTEM_TIME AS OF '2020-01-01'
+    ON "abc"."foo"="efg"."bar"
+
 Update & Deletes
 """"""""""""""""
 
