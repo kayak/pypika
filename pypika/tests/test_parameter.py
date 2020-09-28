@@ -1,17 +1,13 @@
 import unittest
 
-from pypika import Tables, Query, Parameter
+from pypika import Parameter, Query, Tables
 
 
 class ParametrizedTests(unittest.TestCase):
     table_abc, table_efg = Tables("abc", "efg")
 
     def test_param_insert(self):
-        q = (
-            Query.into(self.table_abc)
-            .columns("a", "b", "c")
-            .insert(Parameter("?"), Parameter("?"), Parameter("?"))
-        )
+        q = Query.into(self.table_abc).columns("a", "b", "c").insert(Parameter("?"), Parameter("?"), Parameter("?"))
 
         self.assertEqual('INSERT INTO "abc" ("a","b","c") VALUES (?,?,?)', q.get_sql())
 

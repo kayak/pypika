@@ -9,9 +9,7 @@ from pypika.utils import format_alias_sql
 
 
 class Array(Term):
-    def __init__(
-          self, values: list, converter_cls=None, converter_options: dict = None, alias: str = None
-    ):
+    def __init__(self, values: list, converter_cls=None, converter_options: dict = None, alias: str = None):
         super().__init__(alias)
         self._values = values
         self._converter_cls = converter_cls
@@ -33,11 +31,11 @@ class Array(Term):
 
 class HasAny(Function):
     def __init__(
-          self,
-          left_array: Array or Field,
-          right_array: Array or Field,
-          alias: str = None,
-          schema: str = None,
+        self,
+        left_array: Array or Field,
+        right_array: Array or Field,
+        alias: str = None,
+        schema: str = None,
     ):
         self._left_array = left_array
         self._right_array = right_array
@@ -46,20 +44,13 @@ class HasAny(Function):
         self.args = ()
         self.name = "hasAny"
 
-    def get_sql(
-          self,
-          with_alias=False,
-          with_namespace=False,
-          quote_char=None,
-          dialect=None,
-          **kwargs
-    ):
+    def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None, **kwargs):
         left = self._left_array.get_sql()
         right = self._right_array.get_sql()
         sql = "{name}({left},{right})".format(
-              name=self.name,
-              left='"%s"' % left if isinstance(self._left_array, Field) else left,
-              right='"%s"' % right if isinstance(self._right_array, Field) else right,
+            name=self.name,
+            left='"%s"' % left if isinstance(self._left_array, Field) else left,
+            right='"%s"' % right if isinstance(self._right_array, Field) else right,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -71,17 +62,11 @@ class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
         self.name = self.clickhouse_function()
         self._array = array
 
-    def get_sql(
-          self,
-          with_namespace=False,
-          quote_char=None,
-          dialect=None,
-          **kwargs
-    ):
+    def get_sql(self, with_namespace=False, quote_char=None, dialect=None, **kwargs):
         array = self._array.get_sql()
         sql = "{name}({array})".format(
-              name=self.name,
-              array='"%s"' % array if isinstance(self._array, Field) else array,
+            name=self.name,
+            array='"%s"' % array if isinstance(self._array, Field) else array,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 

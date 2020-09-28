@@ -28,6 +28,4 @@ class NegationTests(unittest.TestCase):
     def test_negate_function(self):
         q = -fn.Sum(self.table_abc.foo)
 
-        self.assertEqual(
-            '-SUM("abc"."foo")', q.get_sql(with_namespace=True, quote_char='"')
-        )
+        self.assertEqual('-SUM("abc"."foo")', q.get_sql(with_namespace=True, quote_char='"'))

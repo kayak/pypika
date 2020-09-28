@@ -1,14 +1,6 @@
 import unittest
 
-from pypika import (
-    Database,
-    Dialects,
-    Schema,
-    SQLLiteQuery,
-    Table,
-    Tables,
-    Query,
-)
+from pypika import Database, Dialects, Query, SQLLiteQuery, Schema, Table, Tables
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -23,9 +15,7 @@ class TableStructureTests(unittest.TestCase):
     def test_table_with_alias(self):
         table = Table("test_table").as_("my_table")
 
-        self.assertEqual(
-            '"test_table" "my_table"', table.get_sql(with_alias=True, quote_char='"')
-        )
+        self.assertEqual('"test_table" "my_table"', table.get_sql(with_alias=True, quote_char='"'))
 
     def test_schema_table_attr(self):
         table = Schema("x_schema").test_table
