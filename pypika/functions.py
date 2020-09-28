@@ -96,15 +96,11 @@ class Floor(Function):
 
 class ApproximatePercentile(AggregateFunction):
     def __init__(self, term, percentile, alias=None):
-        super(ApproximatePercentile, self).__init__(
-            "APPROXIMATE_PERCENTILE", term, alias=alias
-        )
+        super(ApproximatePercentile, self).__init__("APPROXIMATE_PERCENTILE", term, alias=alias)
         self.percentile = float(percentile)
 
     def get_special_params_sql(self, **kwargs):
-        return "USING PARAMETERS percentile={percentile}".format(
-            percentile=self.percentile
-        )
+        return "USING PARAMETERS percentile={percentile}".format(percentile=self.percentile)
 
 
 # Type Functions
@@ -114,11 +110,7 @@ class Cast(Function):
         self.as_type = as_type
 
     def get_special_params_sql(self, **kwargs):
-        type_sql = (
-            self.as_type.get_sql(**kwargs)
-            if hasattr(self.as_type, "get_sql")
-            else str(self.as_type).upper()
-        )
+        type_sql = self.as_type.get_sql(**kwargs) if hasattr(self.as_type, "get_sql") else str(self.as_type).upper()
 
         return "AS {type}".format(type=type_sql)
 
@@ -154,9 +146,7 @@ class Date(Function):
 
 class DateDiff(Function):
     def __init__(self, interval, start_date, end_date, alias=None):
-        super(DateDiff, self).__init__(
-            "DATEDIFF", interval, start_date, end_date, alias=alias
-        )
+        super(DateDiff, self).__init__("DATEDIFF", interval, start_date, end_date, alias=alias)
 
 
 class TimeDiff(Function):
@@ -166,9 +156,7 @@ class TimeDiff(Function):
 
 class DateAdd(Function):
     def __init__(self, date_part, interval, term, alias=None):
-        super(DateAdd, self).__init__(
-            "DATE_ADD", date_part, interval, term, alias=alias
-        )
+        super(DateAdd, self).__init__("DATE_ADD", date_part, interval, term, alias=alias)
 
 
 class ToDate(Function):
@@ -183,9 +171,7 @@ class Timestamp(Function):
 
 class TimestampAdd(Function):
     def __init__(self, date_part, interval, term, alias=None):
-        super(TimestampAdd, self).__init__(
-            "TIMESTAMPADD", date_part, interval, term, alias=alias
-        )
+        super(TimestampAdd, self).__init__("TIMESTAMPADD", date_part, interval, term, alias=alias)
 
 
 # String Functions
@@ -247,23 +233,17 @@ class Trim(Function):
 
 class SplitPart(Function):
     def __init__(self, term, delimiter, index, alias=None):
-        super(SplitPart, self).__init__(
-            "SPLIT_PART", term, delimiter, index, alias=alias
-        )
+        super(SplitPart, self).__init__("SPLIT_PART", term, delimiter, index, alias=alias)
 
 
 class RegexpMatches(Function):
     def __init__(self, term, pattern, modifiers=None, alias=None):
-        super(RegexpMatches, self).__init__(
-            "REGEXP_MATCHES", term, pattern, modifiers, alias=alias
-        )
+        super(RegexpMatches, self).__init__("REGEXP_MATCHES", term, pattern, modifiers, alias=alias)
 
 
 class RegexpLike(Function):
     def __init__(self, term, pattern, modifiers=None, alias=None):
-        super(RegexpLike, self).__init__(
-            "REGEXP_LIKE", term, pattern, modifiers, alias=alias
-        )
+        super(RegexpLike, self).__init__("REGEXP_LIKE", term, pattern, modifiers, alias=alias)
 
 
 # Date/Time Functions

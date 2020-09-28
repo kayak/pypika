@@ -54,11 +54,7 @@ class IsAggregateTests(unittest.TestCase):
         self.assertTrue(v.is_aggregate)
 
     def test__agg_case_criterion_is_aggregate(self):
-        v = (
-            Case()
-            .when(fn.Sum(Field("foo")) > 666, 'More than 666')
-            .else_('Less than 666')
-        )
+        v = Case().when(fn.Sum(Field("foo")) > 666, 'More than 666').else_('Less than 666')
 
         self.assertTrue(v.is_aggregate)
 
@@ -73,11 +69,7 @@ class IsAggregateTests(unittest.TestCase):
         self.assertTrue(v.is_aggregate)
 
     def test__mixed_case_is_not_aggregate(self):
-        v = (
-            Case()
-            .when(Field("foo") == 1, fn.Sum(Field("bar")))
-            .when(Field("foo") == 2, Field("fiz"))
-        )
+        v = Case().when(Field("foo") == 1, fn.Sum(Field("bar"))).when(Field("foo") == 2, Field("fiz"))
 
         self.assertFalse(v.is_aggregate)
 
@@ -92,12 +84,7 @@ class IsAggregateTests(unittest.TestCase):
         self.assertFalse(v.is_aggregate)
 
     def test__case_mixed_constant_is_not_aggregate(self):
-        v = (
-            Case()
-            .when(Field("foo") == 1, fn.Sum(Field("bar")))
-            .when(Field("foo") == 2, fn.Sum(Field("fiz")))
-            .else_(1)
-        )
+        v = Case().when(Field("foo") == 1, fn.Sum(Field("bar"))).when(Field("foo") == 2, fn.Sum(Field("fiz"))).else_(1)
 
         self.assertTrue(v.is_aggregate)
 
@@ -107,12 +94,7 @@ class IsAggregateTests(unittest.TestCase):
         self.assertFalse(v.is_aggregate)
 
     def test__case_with_single_aggregate_field_in_one_criterion_is_aggregate(self):
-        v = (
-            Case()
-            .when(Field("foo") == 1, 1)
-            .when(fn.Sum(Field("foo")) == 2, 2)
-            .else_(3)
-        )
+        v = Case().when(Field("foo") == 1, 1).when(fn.Sum(Field("foo")) == 2, 2).else_(3)
 
         self.assertTrue(v.is_aggregate)
 
@@ -126,9 +108,7 @@ class IsAggregateTests(unittest.TestCase):
         t = Table("abc")
         is_placebo = t.campaign_extra_info == "placebo"
 
-        pixel_mobile_search = Case().when(
-            is_placebo, t.action_fb_pixel_search + t.action_fb_mobile_search
-        )
+        pixel_mobile_search = Case().when(is_placebo, t.action_fb_pixel_search + t.action_fb_mobile_search)
         unique_impressions = Case().when(is_placebo, t.unique_impressions)
 
         v = fn.Sum(pixel_mobile_search) / fn.Sum(unique_impressions) - 1.96 * fn.Sqrt(

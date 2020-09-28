@@ -1,9 +1,6 @@
 import unittest
 
-from pypika import (
-    Table,
-    Query,
-)
+from pypika import Query, Table
 from pypika.pseudocolumns import (
     ColumnValue,
     ObjectID,
@@ -40,19 +37,11 @@ class PseudoColumnsTest(unittest.TestCase):
         self.assertEqual("SYSDATE", SysDate)
 
     def test_can_be_used_in_a_select_statement(self):
-        query = (
-            Query.from_(self.table1)
-            .where(self.table1.is_active == 1)
-            .select(PseudoColumn("abcde"))
-        )
+        query = Query.from_(self.table1).where(self.table1.is_active == 1).select(PseudoColumn("abcde"))
 
         self.assertEqual(str(query), 'SELECT abcde FROM "table1" WHERE "is_active"=1')
 
     def test_can_be_used_in_a_where_clause(self):
-        query = (
-            Query.from_(self.table1)
-            .where(PseudoColumn("abcde") > 1)
-            .select(self.table1.is_active)
-        )
+        query = Query.from_(self.table1).where(PseudoColumn("abcde") > 1).select(self.table1.is_active)
 
         self.assertEqual(str(query), 'SELECT "is_active" FROM "table1" WHERE abcde>1')

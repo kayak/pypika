@@ -1,11 +1,6 @@
 import unittest
 
-from pypika import (
-    Tables,
-    Column,
-    Columns,
-    Query,
-)
+from pypika import Column, Columns, Query, Tables
 from pypika.terms import ValueWrapper
 
 
@@ -40,7 +35,7 @@ class CreateTableTests(unittest.TestCase):
                 '"valid_from" DATETIME,'
                 '"valid_to" DATETIME,'
                 'PERIOD FOR "valid_period" ("valid_from","valid_to"))',
-                str(q)
+                str(q),
             )
 
         with self.subTest("without temporary keyword"):
@@ -49,36 +44,21 @@ class CreateTableTests(unittest.TestCase):
             self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100))', str(q))
 
         with self.subTest("with temporary keyword"):
-            q = (
-                Query.create_table(self.new_table)
-                .temporary()
-                .columns(self.foo, self.bar)
-            )
+            q = Query.create_table(self.new_table).temporary().columns(self.foo, self.bar)
 
-            self.assertEqual(
-                'CREATE TEMPORARY TABLE "abc" ("a" INT,"b" VARCHAR(100))', str(q)
-            )
+            self.assertEqual('CREATE TEMPORARY TABLE "abc" ("a" INT,"b" VARCHAR(100))', str(q))
 
         with self.subTest("with primary key"):
-            q = Query.create_table(
-                self.new_table
-            ).columns(
-                self.foo, self.bar
-            ).primary_key(
-                self.foo, self.bar
-            )
+            q = Query.create_table(self.new_table).columns(self.foo, self.bar).primary_key(self.foo, self.bar)
 
             self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100),PRIMARY KEY ("a","b"))', str(q))
 
         with self.subTest("with unique keys"):
-            q = Query.create_table(
-                self.new_table
-            ).columns(
-                self.foo, self.bar
-            ).unique(
-                self.foo, self.bar
-            ).unique(
-                self.foo
+            q = (
+                Query.create_table(self.new_table)
+                .columns(self.foo, self.bar)
+                .unique(self.foo, self.bar)
+                .unique(self.foo)
             )
 
             self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100),UNIQUE ("a","b"),UNIQUE ("a"))', str(q))
@@ -89,16 +69,12 @@ class CreateTableTests(unittest.TestCase):
             self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100)) WITH SYSTEM VERSIONING', str(q))
 
     def test_create_table_with_select(self):
-        select = Query.from_(self.existing_table).select(
-            self.existing_table.foo, self.existing_table.bar
-        )
+        select = Query.from_(self.existing_table).select(self.existing_table.foo, self.existing_table.bar)
 
         with self.subTest("without temporary keyword"):
             q = Query.create_table(self.new_table).as_select(select)
 
-            self.assertEqual(
-                'CREATE TABLE "abc" AS (SELECT "foo","bar" FROM "efg")', str(q)
-            )
+            self.assertEqual('CREATE TABLE "abc" AS (SELECT "foo","bar" FROM "efg")', str(q))
 
         with self.subTest("with temporary keyword"):
             q = Query.create_table(self.new_table).temporary().as_select(select)
@@ -114,21 +90,15 @@ class CreateTableTests(unittest.TestCase):
         self.assertEqual("", str(q))
 
     def test_create_table_with_select_and_columns_fails(self):
-        select = Query.from_(self.existing_table).select(
-            self.existing_table.foo, self.existing_table.bar
-        )
+        select = Query.from_(self.existing_table).select(self.existing_table.foo, self.existing_table.bar)
 
         with self.subTest("for columns before as_select"):
             with self.assertRaises(AttributeError):
-                Query.create_table(self.new_table).columns(
-                    self.foo, self.bar
-                ).as_select(select)
+                Query.create_table(self.new_table).columns(self.foo, self.bar).as_select(select)
 
         with self.subTest("for as_select before columns"):
             with self.assertRaises(AttributeError):
-                Query.create_table(self.new_table).as_select(select).columns(
-                    self.foo, self.bar
-                )
+                Query.create_table(self.new_table).as_select(select).columns(self.foo, self.bar)
 
     def test_create_table_as_select_not_query_raises_error(self):
         with self.assertRaises(TypeError):

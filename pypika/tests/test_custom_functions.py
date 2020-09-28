@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import FunctionException, Query, Table, functions as fn, CustomFunction
+from pypika import CustomFunction, FunctionException, Query, Table
 
 __author__ = "Airton Zanon"
 __email__ = "me@airton.dev"
@@ -33,9 +33,7 @@ class TestFunctionalCustomFunction(unittest.TestCase):
 
         DateDiff = CustomFunction("DATE_DIFF", ["interval", "start_date", "end_date"])
 
-        q = Query.from_(service).select(
-            DateDiff("day", service.created_date, service.updated_date)
-        )
+        q = Query.from_(service).select(DateDiff("day", service.created_date, service.updated_date))
 
         self.assertEqual(
             'SELECT DATE_DIFF(\'day\',"created_date","updated_date") FROM "service"',

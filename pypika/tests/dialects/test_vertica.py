@@ -1,11 +1,6 @@
 import unittest
 
-from pypika import (
-    Table,
-    Tables,
-    Columns,
-    VerticaQuery,
-)
+from pypika import Columns, Table, Tables, VerticaQuery
 
 
 class VerticaQueryTests(unittest.TestCase):
@@ -19,9 +14,7 @@ class VerticaQueryTests(unittest.TestCase):
     def test_insert_query_with_hint(self):
         query = VerticaQuery.into(self.table_abc).insert(1).hint("test_hint")
 
-        self.assertEqual(
-            'INSERT /*+label(test_hint)*/ INTO "abc" VALUES (1)', str(query)
-        )
+        self.assertEqual('INSERT /*+label(test_hint)*/ INTO "abc" VALUES (1)', str(query))
 
     def test_update_query_with_hint(self):
         q = VerticaQuery.update(self.table_abc).set("foo", "bar").hint("test_hint")
@@ -58,30 +51,16 @@ class CopyCSVTests(unittest.TestCase):
 class CreateTemporaryTableTests(unittest.TestCase):
     new_table, existing_table = Tables("abc", "efg")
     foo, bar = Columns(("a", "INT"), ("b", "VARCHAR(100)"))
-    select = VerticaQuery.from_(existing_table).select(
-        existing_table.foo, existing_table.bar
-    )
+    select = VerticaQuery.from_(existing_table).select(existing_table.foo, existing_table.bar)
 
     def test_create_local_temporary_table(self):
         with self.subTest("with columns"):
-            q = (
-                VerticaQuery.create_table(self.new_table)
-                .temporary()
-                .local()
-                .columns(self.foo, self.bar)
-            )
+            q = VerticaQuery.create_table(self.new_table).temporary().local().columns(self.foo, self.bar)
 
-            self.assertEqual(
-                'CREATE LOCAL TEMPORARY TABLE "abc" ("a" INT,"b" VARCHAR(100))', str(q)
-            )
+            self.assertEqual('CREATE LOCAL TEMPORARY TABLE "abc" ("a" INT,"b" VARCHAR(100))', str(q))
 
         with self.subTest("with select"):
-            q = (
-                VerticaQuery.create_table(self.new_table)
-                .temporary()
-                .local()
-                .as_select(self.select)
-            )
+            q = VerticaQuery.create_table(self.new_table).temporary().local().as_select(self.select)
 
             self.assertEqual(
                 'CREATE LOCAL TEMPORARY TABLE "abc" AS (SELECT "foo","bar" FROM "efg")',
@@ -94,12 +73,7 @@ class CreateTemporaryTableTests(unittest.TestCase):
 
     def test_create_temporary_table_preserve_rows(self):
         with self.subTest("with columns"):
-            q = (
-                VerticaQuery.create_table(self.new_table)
-                .temporary()
-                .preserve_rows()
-                .columns(self.foo, self.bar)
-            )
+            q = VerticaQuery.create_table(self.new_table).temporary().preserve_rows().columns(self.foo, self.bar)
 
             self.assertEqual(
                 'CREATE TEMPORARY TABLE "abc" ("a" INT,"b" VARCHAR(100)) ON COMMIT PRESERVE ROWS',
@@ -107,12 +81,7 @@ class CreateTemporaryTableTests(unittest.TestCase):
             )
 
         with self.subTest("with select"):
-            q = (
-                VerticaQuery.create_table(self.new_table)
-                .temporary()
-                .preserve_rows()
-                .as_select(self.select)
-            )
+            q = VerticaQuery.create_table(self.new_table).temporary().preserve_rows().as_select(self.select)
 
             self.assertEqual(
                 'CREATE TEMPORARY TABLE "abc" ON COMMIT PRESERVE ROWS AS (SELECT "foo","bar" FROM "efg")',

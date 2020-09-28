@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Case, Query, Tables, functions, Tuple
+from pypika import Case, Query, Tables, Tuple, functions
 
 
 class QueryTablesTests(unittest.TestCase):
@@ -56,16 +56,10 @@ class QueryTablesTests(unittest.TestCase):
         )
 
     def test_replace_filter_tables(self):
-        query = (
-            Query.from_(self.table_a)
-            .select(self.table_a.name)
-            .where(self.table_a.name == "Mustermann")
-        )
+        query = Query.from_(self.table_a).select(self.table_a.name).where(self.table_a.name == "Mustermann")
         query = query.replace_table(self.table_a, self.table_b)
 
-        self.assertEqual(
-            'SELECT "name" FROM "b" WHERE "name"=\'Mustermann\'', str(query)
-        )
+        self.assertEqual('SELECT "name" FROM "b" WHERE "name"=\'Mustermann\'', str(query))
 
     def test_replace_having_table(self):
         query = (
@@ -77,10 +71,7 @@ class QueryTablesTests(unittest.TestCase):
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual(
-            'SELECT SUM("revenue") '
-            'FROM "b" '
-            'GROUP BY "customer" '
-            'HAVING SUM("revenue")>=1000',
+            'SELECT SUM("revenue") ' 'FROM "b" ' 'GROUP BY "customer" ' 'HAVING SUM("revenue")>=1000',
             str(query),
         )
 
@@ -104,16 +95,10 @@ class QueryTablesTests(unittest.TestCase):
         )
 
     def test_replace_orderby_table(self):
-        query = (
-            Query.from_(self.table_a)
-            .select(self.table_a.customer)
-            .orderby(self.table_a.customer)
-        )
+        query = Query.from_(self.table_a).select(self.table_a.customer).orderby(self.table_a.customer)
         query = query.replace_table(self.table_a, self.table_b)
 
-        self.assertEqual(
-            'SELECT "customer" FROM "b" ORDER BY "customer"', str(query)
-        )
+        self.assertEqual('SELECT "customer" FROM "b" ORDER BY "customer"', str(query))
 
     def test_replace_tuple_table(self):
         query = (
@@ -131,11 +116,7 @@ class QueryTablesTests(unittest.TestCase):
         )
 
     def test_is_joined(self):
-        q = (
-            Query.from_(self.table_a)
-            .join(self.table_b)
-            .on(self.table_a.foo == self.table_b.boo)
-        )
+        q = Query.from_(self.table_a).join(self.table_b).on(self.table_a.foo == self.table_b.boo)
 
         self.assertTrue(q.is_joined(self.table_b))
         self.assertFalse(q.is_joined(self.table_c))

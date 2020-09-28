@@ -20,16 +20,8 @@ class DeleteTests(unittest.TestCase):
         self.assertEqual('DELETE FROM "schema1"."abc"', str(q))
 
     def test_where_field_equals(self):
-        q1 = (
-            Query.from_(self.table_abc)
-            .where(self.table_abc.foo == self.table_abc.bar)
-            .delete()
-        )
-        q2 = (
-            Query.from_(self.table_abc)
-            .where(self.table_abc.foo.eq(self.table_abc.bar))
-            .delete()
-        )
+        q1 = Query.from_(self.table_abc).where(self.table_abc.foo == self.table_abc.bar).delete()
+        q2 = Query.from_(self.table_abc).where(self.table_abc.foo.eq(self.table_abc.bar)).delete()
 
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar"', str(q1))
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar"', str(q2))

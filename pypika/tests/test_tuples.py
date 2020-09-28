@@ -22,9 +22,7 @@ class TupleTests(unittest.TestCase):
             .where(Tuple(self.table_abc.foo, self.table_abc.bar) == Tuple(1, 2))
         )
 
-        self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar")=(1,2)', str(q)
-        )
+        self.assertEqual('SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar")=(1,2)', str(q))
 
     def test_tuple_equality_tuple_on_left(self):
         q = (
@@ -33,9 +31,7 @@ class TupleTests(unittest.TestCase):
             .where(Tuple(self.table_abc.foo, self.table_abc.bar) == (1, 2))
         )
 
-        self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar")=(1,2)', str(q)
-        )
+        self.assertEqual('SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar")=(1,2)', str(q))
 
     def test_tuple_equality_tuple_on_right(self):
         q = (
@@ -45,24 +41,17 @@ class TupleTests(unittest.TestCase):
         )
 
         # Order is reversed due to lack of right equals method
-        self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" ' 'WHERE (1,2)=("foo","bar")', str(q)
-        )
+        self.assertEqual('SELECT "foo","bar" FROM "abc" ' 'WHERE (1,2)=("foo","bar")', str(q))
 
     def test_tuple_in_using_python_tuples(self):
         q = (
             Query.from_(self.table_abc)
             .select(self.table_abc.foo, self.table_abc.bar)
-            .where(
-                Tuple(self.table_abc.foo, self.table_abc.bar).isin(
-                    [(1, 1), (2, 2), (3, 3)]
-                )
-            )
+            .where(Tuple(self.table_abc.foo, self.table_abc.bar).isin([(1, 1), (2, 2), (3, 3)]))
         )
 
         self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" '
-            'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
+            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
             str(q),
         )
 
@@ -70,16 +59,11 @@ class TupleTests(unittest.TestCase):
         q = (
             Query.from_(self.table_abc)
             .select(self.table_abc.foo, self.table_abc.bar)
-            .where(
-                Tuple(self.table_abc.foo, self.table_abc.bar).isin(
-                    [Tuple(1, 1), Tuple(2, 2), Tuple(3, 3)]
-                )
-            )
+            .where(Tuple(self.table_abc.foo, self.table_abc.bar).isin([Tuple(1, 1), Tuple(2, 2), Tuple(3, 3)]))
         )
 
         self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" '
-            'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
+            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
             str(q),
         )
 
@@ -87,16 +71,11 @@ class TupleTests(unittest.TestCase):
         q = (
             Query.from_(self.table_abc)
             .select(self.table_abc.foo, self.table_abc.bar)
-            .where(
-                Tuple(self.table_abc.foo, self.table_abc.bar).isin(
-                    [(1, 1), Tuple(2, 2), (3, 3)]
-                )
-            )
+            .where(Tuple(self.table_abc.foo, self.table_abc.bar).isin([(1, 1), Tuple(2, 2), (3, 3)]))
         )
 
         self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" '
-            'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
+            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
             str(q),
         )
 
@@ -106,11 +85,7 @@ class TupleTests(unittest.TestCase):
             .join(self.table_efg)
             .on(self.table_abc.foo == self.table_efg.bar)
             .select("*")
-            .where(
-                Tuple(self.table_abc.foo, self.table_efg.bar).isin(
-                    [(1, 1), Tuple(2, 2), (3, 3)]
-                )
-            )
+            .where(Tuple(self.table_abc.foo, self.table_efg.bar).isin([(1, 1), Tuple(2, 2), (3, 3)]))
         )
 
         self.assertEqual(
@@ -171,8 +146,6 @@ class BracketTests(unittest.TestCase):
         self.assertEqual('SELECT ("foo"/2)/2 FROM "abc"', str(q))
 
     def test_arithmetic_with_brackets_and_alias(self):
-        q = Query.from_(self.table_abc).select(
-            Bracket(self.table_abc.foo / 2).as_("alias")
-        )
+        q = Query.from_(self.table_abc).select(Bracket(self.table_abc.foo / 2).as_("alias"))
 
         self.assertEqual('SELECT ("foo"/2) "alias" FROM "abc"', str(q))

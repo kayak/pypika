@@ -57,56 +57,32 @@ class JSONOperatorsTests(unittest.TestCase):
     table_abc = Table("abc")
 
     def test_get_json_value_by_key(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.get_json_value("dates"))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.get_json_value("dates"))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "json"->\'dates\'', str(q))
 
     def test_get_json_value_by_index(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.get_json_value(1))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.get_json_value(1))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "json"->1', str(q))
 
     def test_get_text_value_by_key(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.get_text_value("dates"))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.get_text_value("dates"))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "json"->>\'dates\'', str(q))
 
     def test_get_text_value_by_index(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.get_text_value(1))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.get_text_value(1))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "json"->>1', str(q))
 
     def test_get_path_json_value(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.get_path_json_value("{a,b}"))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.get_path_json_value("{a,b}"))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "json"#>\'{a,b}\'', str(q))
 
     def test_get_path_text_value(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.get_path_text_value("{a,b}"))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.get_path_text_value("{a,b}"))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "json"#>>\'{a,b}\'', str(q))
 
@@ -134,9 +110,7 @@ class JSONBOperatorsTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "SELECT * "
-            'FROM "abc" '
-            'WHERE "json"@>\'{"dates":"2018-07-10 - 2018-07-17"}\'',
+            "SELECT * " 'FROM "abc" ' 'WHERE "json"@>\'{"dates":"2018-07-10 - 2018-07-17"}\'',
             str(q),
         )
 
@@ -147,14 +121,16 @@ class JSONBOperatorsTests(unittest.TestCase):
             .where(
                 self.table_abc.json.contained_by(
                     OrderedDict(
-                        [("dates", "2018-07-10 - 2018-07-17"), ("imported", "8"),]
+                        [
+                            ("dates", "2018-07-10 - 2018-07-17"),
+                            ("imported", "8"),
+                        ]
                     )
                 )
             )
         )
         self.assertEqual(
-            'SELECT * FROM "abc" '
-            'WHERE "json"<@\'{"dates":"2018-07-10 - 2018-07-17","imported":"8"}\'',
+            'SELECT * FROM "abc" ' 'WHERE "json"<@\'{"dates":"2018-07-10 - 2018-07-17","imported":"8"}\'',
             str(q),
         )
 
@@ -165,18 +141,13 @@ class JSONBOperatorsTests(unittest.TestCase):
             .where(self.table_abc.json.contained_by(["One", "Two", "Three"]))
         )
 
-        self.assertEqual(
-            'SELECT * FROM "abc" WHERE "json"<@\'["One","Two","Three"]\'', str(q)
-        )
+        self.assertEqual('SELECT * FROM "abc" WHERE "json"<@\'["One","Two","Three"]\'', str(q))
 
     def test_json_contained_by_with_complex_criterion(self):
         q = (
             PostgreSQLQuery.from_(self.table_abc)
             .select("*")
-            .where(
-                self.table_abc.json.contained_by(["One", "Two", "Three"])
-                & (self.table_abc.id == 26)
-            )
+            .where(self.table_abc.json.contained_by(["One", "Two", "Three"]) & (self.table_abc.id == 26))
         )
 
         self.assertEqual(
@@ -185,24 +156,14 @@ class JSONBOperatorsTests(unittest.TestCase):
         )
 
     def test_json_has_key(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.has_key("dates"))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.has_key("dates"))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "json"?\'dates\'', str(q))
 
     def test_json_has_keys(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .select("*")
-            .where(self.table_abc.json.has_keys(["dates", "imported"]))
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).select("*").where(self.table_abc.json.has_keys(["dates", "imported"]))
 
-        self.assertEqual(
-            "SELECT * FROM \"abc\" WHERE \"json\"?&ARRAY['dates','imported']", str(q)
-        )
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"json\"?&ARRAY['dates','imported']", str(q))
 
     def test_json_has_any_keys(self):
         q = (
@@ -211,24 +172,16 @@ class JSONBOperatorsTests(unittest.TestCase):
             .where(self.table_abc.json.has_any_keys(["dates", "imported"]))
         )
 
-        self.assertEqual(
-            "SELECT * FROM \"abc\" WHERE \"json\"?|ARRAY['dates','imported']", str(q)
-        )
+        self.assertEqual("SELECT * FROM \"abc\" WHERE \"json\"?|ARRAY['dates','imported']", str(q))
 
 
 class DistinctOnTests(unittest.TestCase):
     table_abc = Table("abc")
 
     def test_distinct_on(self):
-        q = (
-            PostgreSQLQuery.from_(self.table_abc)
-            .distinct_on("lname", self.table_abc.fname)
-            .select("lname", "id")
-        )
+        q = PostgreSQLQuery.from_(self.table_abc).distinct_on("lname", self.table_abc.fname).select("lname", "id")
 
-        self.assertEqual(
-            '''SELECT DISTINCT ON("lname","fname") "lname","id" FROM "abc"''', str(q)
-        )
+        self.assertEqual('''SELECT DISTINCT ON("lname","fname") "lname","id" FROM "abc"''', str(q))
 
 
 class ArrayTests(unittest.TestCase):

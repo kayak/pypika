@@ -2,11 +2,9 @@ import unittest
 
 from parameterized import parameterized
 
-from pypika.clickhouse.condition import MultiIf
-from pypika.clickhouse.type_conversion import ToFixedString
-
 from pypika import Field
-from pypika.clickhouse.condition import If
+from pypika.clickhouse.condition import If, MultiIf
+from pypika.clickhouse.type_conversion import ToFixedString
 
 
 class TestIfCondition(unittest.TestCase):
