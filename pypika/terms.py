@@ -161,9 +161,7 @@ class Term(Node):
         return BetweenCriterion(self, self.wrap_constant(lower), self.wrap_constant(upper))
 
     def from_to(self, start: Any, end: Any) -> "PeriodCriterion":
-        return PeriodCriterion(
-            self, self.wrap_constant(start), self.wrap_constant(end)
-        )
+        return PeriodCriterion(self, self.wrap_constant(start), self.wrap_constant(end))
 
     def as_of(self, expr: str) -> "BasicCriterion":
         return BasicCriterion(Matching.as_of, self, self.wrap_constant(expr))
@@ -389,7 +387,6 @@ class Values(Term):
 
 
 class LiteralValue(Term):
-
     def __init__(self, value, alias: Optional[str] = None) -> None:
         super().__init__(alias)
         self._value = value
@@ -791,9 +788,9 @@ class BetweenCriterion(RangeCriterion):
 class PeriodCriterion(RangeCriterion):
     def get_sql(self, **kwargs: Any) -> str:
         sql = "{term} FROM {start} TO {end}".format(
-              term=self.term.get_sql(**kwargs),
-              start=self.start.get_sql(**kwargs),
-              end=self.end.get_sql(**kwargs),
+            term=self.term.get_sql(**kwargs),
+            start=self.start.get_sql(**kwargs),
+            end=self.end.get_sql(**kwargs),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 

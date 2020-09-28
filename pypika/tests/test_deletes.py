@@ -28,27 +28,19 @@ class DeleteTests(unittest.TestCase):
 
     def test_for_portion(self):
         with self.subTest("with system time"):
-            q = Query.from_(
-                self.table_abc.for_portion(
-                    SYSTEM_TIME.from_to('2020-01-01', '2020-02-01')
-                )
-            ).delete()
+            q = Query.from_(self.table_abc.for_portion(SYSTEM_TIME.from_to('2020-01-01', '2020-02-01'))).delete()
 
             self.assertEqual(
-                'DELETE FROM "abc" FOR PORTION OF SYSTEM_TIME FROM \'2020-01-01\' TO \'2020-02-01\'',
-                str(q)
+                'DELETE FROM "abc" FOR PORTION OF SYSTEM_TIME FROM \'2020-01-01\' TO \'2020-02-01\'', str(q)
             )
 
         with self.subTest("with column"):
             q = Query.from_(
-                self.table_abc.for_portion(
-                    self.table_abc.valid_period.from_to('2020-01-01', '2020-02-01')
-                )
+                self.table_abc.for_portion(self.table_abc.valid_period.from_to('2020-01-01', '2020-02-01'))
             ).delete()
 
             self.assertEqual(
-                'DELETE FROM "abc" FOR PORTION OF "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\'',
-                str(q)
+                'DELETE FROM "abc" FOR PORTION OF "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\'', str(q)
             )
 
 

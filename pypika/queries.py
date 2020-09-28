@@ -151,20 +151,13 @@ class Table(Selectable):
         table_sql = format_quotes(self._table_name, quote_char)
 
         if self._schema is not None:
-            table_sql = "{schema}.{table}".format(
-                schema=self._schema.get_sql(**kwargs),
-                table=table_sql
-            )
+            table_sql = "{schema}.{table}".format(schema=self._schema.get_sql(**kwargs), table=table_sql)
 
         if self._for:
-            table_sql = "{table} FOR {criterion}".format(
-                table=table_sql,
-                criterion=self._for.get_sql(**kwargs)
-            )
+            table_sql = "{table} FOR {criterion}".format(table=table_sql, criterion=self._for.get_sql(**kwargs))
         elif self._for_portion:
             table_sql = "{table} FOR PORTION OF {criterion}".format(
-                table=table_sql,
-                criterion=self._for_portion.get_sql(**kwargs)
+                table=table_sql, criterion=self._for_portion.get_sql(**kwargs)
             )
 
         return format_alias_sql(table_sql, self.alias, **kwargs)

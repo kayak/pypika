@@ -21,7 +21,7 @@ from pypika import (
     Tables,
     VerticaQuery,
     functions as fn,
-    SYSTEM_TIME
+    SYSTEM_TIME,
 )
 from pypika.terms import ValueWrapper
 
@@ -306,66 +306,37 @@ class SelectTests(unittest.TestCase):
         with self.subTest("with system time as of"):
             q = Query.from_(t.for_(SYSTEM_TIME.as_of('2020-01-01'))).select("*")
 
-            self.assertEqual(
-                'SELECT * FROM "abc" FOR SYSTEM_TIME AS OF \'2020-01-01\'',
-                str(q)
-            )
+            self.assertEqual('SELECT * FROM "abc" FOR SYSTEM_TIME AS OF \'2020-01-01\'', str(q))
 
         with self.subTest("with system time between"):
-            q = Query.from_(
-                t.for_(SYSTEM_TIME.between('2020-01-01', '2020-02-01'))
-            ).select("*")
+            q = Query.from_(t.for_(SYSTEM_TIME.between('2020-01-01', '2020-02-01'))).select("*")
 
-            self.assertEqual(
-                'SELECT * FROM "abc" FOR SYSTEM_TIME BETWEEN \'2020-01-01\' AND \'2020-02-01\'',
-                str(q)
-            )
+            self.assertEqual('SELECT * FROM "abc" FOR SYSTEM_TIME BETWEEN \'2020-01-01\' AND \'2020-02-01\'', str(q))
 
         with self.subTest("with system time from to"):
-            q = Query.from_(
-                t.for_(SYSTEM_TIME.from_to('2020-01-01', '2020-02-01'))
-            ).select("*")
+            q = Query.from_(t.for_(SYSTEM_TIME.from_to('2020-01-01', '2020-02-01'))).select("*")
 
-            self.assertEqual(
-                'SELECT * FROM "abc" FOR SYSTEM_TIME FROM \'2020-01-01\' TO \'2020-02-01\'',
-                str(q)
-            )
+            self.assertEqual('SELECT * FROM "abc" FOR SYSTEM_TIME FROM \'2020-01-01\' TO \'2020-02-01\'', str(q))
 
         with self.subTest("with ALL"):
             q = Query.from_(t.for_(SYSTEM_TIME.all_())).select("*")
 
-            self.assertEqual(
-                'SELECT * FROM "abc" FOR SYSTEM_TIME ALL',
-                str(q)
-            )
+            self.assertEqual('SELECT * FROM "abc" FOR SYSTEM_TIME ALL', str(q))
 
         with self.subTest("with period between"):
-            q = Query.from_(
-                t.for_(t.valid_period.between('2020-01-01', '2020-02-01'))
-            ).select("*")
+            q = Query.from_(t.for_(t.valid_period.between('2020-01-01', '2020-02-01'))).select("*")
 
-            self.assertEqual(
-                'SELECT * FROM "abc" FOR "valid_period" BETWEEN \'2020-01-01\' AND \'2020-02-01\'',
-                str(q)
-            )
+            self.assertEqual('SELECT * FROM "abc" FOR "valid_period" BETWEEN \'2020-01-01\' AND \'2020-02-01\'', str(q))
 
         with self.subTest("with period from to"):
-            q = Query.from_(
-                t.for_(t.valid_period.from_to('2020-01-01', '2020-02-01'))
-            ).select("*")
+            q = Query.from_(t.for_(t.valid_period.from_to('2020-01-01', '2020-02-01'))).select("*")
 
-            self.assertEqual(
-                'SELECT * FROM "abc" FOR "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\'',
-                str(q)
-            )
+            self.assertEqual('SELECT * FROM "abc" FOR "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\'', str(q))
 
         with self.subTest("with ALL"):
             q = Query.from_(t.for_(t.valid_period.all_())).select("*")
 
-            self.assertEqual(
-                'SELECT * FROM "abc" FOR "valid_period" ALL',
-                str(q)
-            )
+            self.assertEqual('SELECT * FROM "abc" FOR "valid_period" ALL', str(q))
 
 
 class WhereTests(unittest.TestCase):
