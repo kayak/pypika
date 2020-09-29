@@ -275,12 +275,12 @@ class Column:
         column_name: str,
         column_type: Optional[str] = None,
         nullable: Optional[bool] = None,
-        default: Optional[Term] = None,
+        default: Optional[Union[Any, Term]] = None,
     ) -> None:
         self.name = column_name
         self.type = column_type
         self.nullable = nullable
-        self.default = default
+        self.default = default if default is None or isinstance(default, Term) else ValueWrapper(default)
 
     def get_name_sql(self, **kwargs: Any) -> str:
         quote_char = kwargs.get("quote_char")

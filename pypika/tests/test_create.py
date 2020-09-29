@@ -23,6 +23,13 @@ class CreateTableTests(unittest.TestCase):
 
             self.assertEqual('CREATE TABLE "abc" ("a" INT DEFAULT 42,"b" VARCHAR(100) DEFAULT \'foo\')', str(q))
 
+        with self.subTest("with unwrapped defaults"):
+            a = Column("a", "INT", default=42)
+            b = Column("b", "VARCHAR(100)", default="foo")
+            q = Query.create_table(self.new_table).columns(a, b)
+
+            self.assertEqual('CREATE TABLE "abc" ("a" INT DEFAULT 42,"b" VARCHAR(100) DEFAULT \'foo\')', str(q))
+
         with self.subTest("with period for"):
             a = Column("id", "INT")
             b = Column("valid_from", "DATETIME")
