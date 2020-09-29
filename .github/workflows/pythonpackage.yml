@@ -30,17 +30,13 @@ jobs:
       - name: Run test suite
         run: tox
 
-      # Uncomment when Black is setup for PyPika
-      #    - name: Run Black code formatter check
-      #      run: black --check .
-
-      - name: Coveralls
-        # Official Coveralls GitHub action does not work with Python coverage files!
-        # https://github.com/coverallsapp/github-action/issues/30
-        uses: AndreMiras/coveralls-python-action@v20200413
+      - name: Generate coverage report
+      - uses: codecov/codecov-action@v1
         with:
-          parallel: true
-          debug: true
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
 
   coveralls_finish:
     needs: test
