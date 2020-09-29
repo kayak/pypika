@@ -75,6 +75,7 @@ from pypika.terms import (
     JSON,
     Not,
     NullValue,
+    SystemTimeValue,
     Parameter,
     Rollup,
     Tuple,
@@ -94,4 +95,7 @@ from pypika.utils import (
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.41.0"
+__version__ = "0.40.0"
+
+NULL = NullValue()
+SYSTEM_TIME = SystemTimeValue()

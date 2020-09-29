@@ -1,6 +1,7 @@
+# from pypika.terms import ValueWrapper, SystemTimeValue
 import unittest
 
-from pypika import Database, Dialects, Query, SQLLiteQuery, Schema, Table, Tables
+from pypika import Database, Dialects, Schema, SQLLiteQuery, Table, Tables, Query, SYSTEM_TIME
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -36,6 +37,41 @@ class TableStructureTests(unittest.TestCase):
         table = Table("test_table", schema=Schema("x_schema", parent=Database("x_db")))
 
         self.assertEqual('"x_db"."x_schema"."test_table"', str(table))
+
+    def test_table_for_system_time_sql(self):
+        with self.subTest("with between criterion"):
+            table = Table("test_table").for_(SYSTEM_TIME.between('2020-01-01', '2020-02-01'))
+
+            self.assertEqual('"test_table" FOR SYSTEM_TIME BETWEEN \'2020-01-01\' AND \'2020-02-01\'', str(table))
+
+        with self.subTest("with as of criterion"):
+            table = Table("test_table").for_(SYSTEM_TIME.as_of('2020-01-01'))
+
+            self.assertEqual('"test_table" FOR SYSTEM_TIME AS OF \'2020-01-01\'', str(table))
+
+        with self.subTest("with from to criterion"):
+            table = Table("test_table").for_(SYSTEM_TIME.from_to('2020-01-01', '2020-02-01'))
+
+            self.assertEqual('"test_table" FOR SYSTEM_TIME FROM \'2020-01-01\' TO \'2020-02-01\'', str(table))
+
+    def test_table_for_period_sql(self):
+        with self.subTest("with between criterion"):
+            table = Table("test_table")
+            table = table.for_(table.valid_period.between('2020-01-01', '2020-02-01'))
+
+            self.assertEqual('"test_table" FOR "valid_period" BETWEEN \'2020-01-01\' AND \'2020-02-01\'', str(table))
+
+        with self.subTest("with as of criterion"):
+            table = Table("test_table")
+            table = table.for_(table.valid_period.as_of('2020-01-01'))
+
+            self.assertEqual('"test_table" FOR "valid_period" AS OF \'2020-01-01\'', str(table))
+
+        with self.subTest("with from to criterion"):
+            table = Table("test_table")
+            table = table.for_(table.valid_period.from_to('2020-01-01', '2020-02-01'))
+
+            self.assertEqual('"test_table" FOR "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\'', str(table))
 
 
 class TableEqualityTests(unittest.TestCase):

@@ -16,6 +16,8 @@ from pypika.terms import (
     Term,
     Tuple,
     ValueWrapper,
+    Criterion,
+    PeriodCriterion,
 )
 from pypika.utils import (
     JoinException,
@@ -135,6 +137,8 @@ class Table(Selectable):
         self._table_name = name
         self._schema = self._init_schema(schema)
         self._query_cls = query_cls or Query
+        self._for = None
+        self._for_portion = None
         if not issubclass(self._query_cls, Query):
             raise TypeError("Expected 'query_cls' to be subclass of Query")
 
@@ -149,7 +153,30 @@ class Table(Selectable):
         if self._schema is not None:
             table_sql = "{schema}.{table}".format(schema=self._schema.get_sql(**kwargs), table=table_sql)
 
+        if self._for:
+            table_sql = "{table} FOR {criterion}".format(table=table_sql, criterion=self._for.get_sql(**kwargs))
+        elif self._for_portion:
+            table_sql = "{table} FOR PORTION OF {criterion}".format(
+                table=table_sql, criterion=self._for_portion.get_sql(**kwargs)
+            )
+
         return format_alias_sql(table_sql, self.alias, **kwargs)
+
+    @builder
+    def for_(self, temporal_criterion: Criterion) -> "Table":
+        if self._for:
+            raise AttributeError("'Query' object already has attribute for_")
+        if self._for_portion:
+            raise AttributeError("'Query' object already has attribute for_portion")
+        self._for = temporal_criterion
+
+    @builder
+    def for_portion(self, period_criterion: PeriodCriterion) -> "Table":
+        if self._for_portion:
+            raise AttributeError("'Query' object already has attribute for_portion")
+        if self._for:
+            raise AttributeError("'Query' object already has attribute for_")
+        self._for_portion = period_criterion
 
     def __str__(self) -> str:
         return self.get_sql(quote_char='"')
