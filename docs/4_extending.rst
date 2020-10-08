@@ -10,7 +10,7 @@ SQL Functions not included in PyPika
 """"""""""""""""""""""""""""""""""""
 
 PyPika includes a couple of the most common SQL functions, but due to many differences between different SQL databases,
-many are not included. Any SQL function can be implemented in PyPika by extended the ``pypika.Function`` class.
+many are not included. Any SQL function can be implemented in PyPika by extended the ``pypika.terms.Function`` class.
 
 When defining SQL function wrappers, it is necessary to define the name of the SQL function as well as the arguments it
 requires.
@@ -18,7 +18,7 @@ requires.
 
 .. code-block:: python
 
-    from pypika import Function
+    from pypika.terms import Function
 
     class CurDate(Function):
         def __init__(self, alias=None):
@@ -29,7 +29,7 @@ requires.
 
 .. code-block:: python
 
-    from pypika import Function
+    from pypika.terms import Function
 
     class DateDiff(Function):
         def __init__(self, interval, start_date, end_date, alias=None):
@@ -52,11 +52,11 @@ There is also a helper function ``pypika.CustomFunction`` which enables 1-line c
         DateDiff('day', customers.created_date, customers.updated_date)
     )
 
-Similarly analytic functions can be defined by extending ``pypika.AnalyticFunction``.
+Similarly analytic functions can be defined by extending ``pypika.terms.AnalyticFunction``.
 
 .. code-block:: python
 
-    from pypika import AnalyticFunction
+    from pypika.terms import AnalyticFunction
 
     class RowNumber(AnalyticFunction):
         def __init__(self, **kwargs):
