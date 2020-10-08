@@ -165,6 +165,18 @@ class InsertIntoTests(unittest.TestCase):
             'WITH sub_qs AS (SELECT "id" FROM "abc") INSERT INTO "abc" SELECT "sub_qs"."id" FROM sub_qs', str(q)
         )
 
+    def test_insert_default_values(self):
+        q = Query.into(self.table_abc).insert_default_values()
+        self.assertEqual(
+            'INSERT INTO "abc" DEFAULT VALUES', str(q)
+        )
+
+    def test_insert_default_values_using_table_alias(self):
+        q = self.table_abc.insert_default_values()
+        self.assertEqual(
+            'INSERT INTO "abc" DEFAULT VALUES', str(q)
+        )
+
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     table_abc = Table("abc")

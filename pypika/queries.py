@@ -241,6 +241,14 @@ class Table(Selectable):
         """
         return self._query_cls.into(self).insert(*terms)
 
+    def insert_default_values(self) -> "QueryBuilder":
+        """
+        Perform an INSERT operation on the current table with DEFAULT VALUES
+
+        :return: QueryBuilder
+        """
+        return self._query_cls.into(self).insert_default_values()
+
 
 def make_tables(*names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List[Table]:
     """
@@ -653,6 +661,7 @@ class QueryBuilder(Selectable, Term):
         self._use_indexes = []
         self._columns = []
         self._values = []
+        self._insert_default_values = False
         self._distinct = False
         self._ignore = False
         self._for_update = False
@@ -830,6 +839,15 @@ class QueryBuilder(Selectable, Term):
             return
         else:
             self._validate_terms_and_append(*terms)
+        self._replace = False
+
+    @builder
+    def insert_default_values(self) -> "QueryBuilder":
+        if self._insert_table is None:
+            raise AttributeError("'Query' object has no attribute '%s'" % "insert_default_values")
+        
+        self._insert_default_values = True
+
         self._replace = False
 
     @builder
@@ -1157,7 +1175,7 @@ class QueryBuilder(Selectable, Term):
         self._set_kwargs_defaults(kwargs)
         if not (self._selects or self._insert_table or self._delete_from or self._update_table):
             return ""
-        if self._insert_table and not (self._selects or self._values):
+        if self._insert_table and not (self._selects or self._values or self._insert_default_values):
             return ""
         if self._update_table and not self._updates:
             return ""
@@ -1219,7 +1237,7 @@ class QueryBuilder(Selectable, Term):
             if self._columns:
                 querystring += self._columns_sql(**kwargs)
 
-            if self._values:
+            if self._values or self._insert_default_values:
                 querystring += self._values_sql(**kwargs)
                 return querystring
             else:
@@ -1347,6 +1365,9 @@ class QueryBuilder(Selectable, Term):
         )
 
     def _values_sql(self, **kwargs: Any) -> str:
+        if self._insert_default_values:
+            return " DEFAULT VALUES"
+
         return " VALUES ({values})".format(
             values="),(".join(
                 ",".join(term.get_sql(with_alias=True, subquery=True, **kwargs) for term in row) for row in self._values

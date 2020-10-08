@@ -848,6 +848,21 @@ Multiple rows of data can be inserted either by chaining the ``insert`` function
     q = Query.into(customers).insert((1, 'Jane', 'Doe', 'jane@example.com'),
                                      (2, 'John', 'Doe', 'john@example.com'))
 
+Insert with default values
+""""""""""""""""""""""""""
+
+Rows can be inserted into a table with default values for all columns
+
+.. code-block:: python
+
+    customers = Table('customers')
+
+    q = Query.into(customers).insert_default_values()
+
+    # or
+
+    customers.insert_default_values()
+
 Insert with constraint violation handling
 """""""""""""""""""""""""""""""""""""""""
 
