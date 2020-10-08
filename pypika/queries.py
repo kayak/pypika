@@ -845,7 +845,7 @@ class QueryBuilder(Selectable, Term):
     def insert_default_values(self) -> "QueryBuilder":
         if self._insert_table is None:
             raise AttributeError("'Query' object has no attribute '%s'" % "insert_default_values")
-        
+
         self._insert_default_values = True
 
         self._replace = False
