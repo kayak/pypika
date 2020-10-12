@@ -173,6 +173,14 @@ class InsertIntoTests(unittest.TestCase):
         )
         self.assertEqual('INSERT INTO "abc" ("foo","bar","buz") VALUES (DEFAULT,DEFAULT,DEFAULT)', str(q))
 
+    def test_insert_default_no_columns(self):
+        with self.assertRaises(AttributeError):
+            Query.into(self.table_abc).insert_default_values()
+
+    def test_insert_default_no_table(self):
+        with self.assertRaises(AttributeError):
+            Query.insert_default_values()
+
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     table_abc = Table("abc")
