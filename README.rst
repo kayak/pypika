@@ -857,11 +857,9 @@ Rows can be inserted into a table with default values for all columns
 
     customers = Table('customers')
 
-    q = Query.into(customers).insert_default_values()
+    q = Query.into(customers).columns(customers.id, customers.sign_up_date).insert_default_values()
 
-    # or
-
-    customers.insert_default_values()
+    # sql: INSERT INTO "customers" (id, sign_up_date) VALUES (DEFAULT,DEFAULT)
 
 Insert with constraint violation handling
 """""""""""""""""""""""""""""""""""""""""

@@ -166,12 +166,12 @@ class InsertIntoTests(unittest.TestCase):
         )
 
     def test_insert_default_values(self):
-        q = Query.into(self.table_abc).insert_default_values()
-        self.assertEqual('INSERT INTO "abc" DEFAULT VALUES', str(q))
-
-    def test_insert_default_values_using_table_alias(self):
-        q = self.table_abc.insert_default_values()
-        self.assertEqual('INSERT INTO "abc" DEFAULT VALUES', str(q))
+        q = (
+            Query.into(self.table_abc)
+            .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.buz)
+            .insert_default_values()
+        )
+        self.assertEqual('INSERT INTO "abc" ("foo","bar","buz") VALUES (DEFAULT,DEFAULT,DEFAULT)', str(q))
 
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):

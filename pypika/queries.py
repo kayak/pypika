@@ -241,14 +241,6 @@ class Table(Selectable):
         """
         return self._query_cls.into(self).insert(*terms)
 
-    def insert_default_values(self) -> "QueryBuilder":
-        """
-        Perform an INSERT operation on the current table with DEFAULT VALUES
-
-        :return: QueryBuilder
-        """
-        return self._query_cls.into(self).insert_default_values()
-
 
 def make_tables(*names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List[Table]:
     """
@@ -846,8 +838,10 @@ class QueryBuilder(Selectable, Term):
         if self._insert_table is None:
             raise AttributeError("'Query' object has no attribute '%s'" % "insert_default_values")
 
-        self._insert_default_values = True
+        if not self._columns:
+            raise AttributeError("'Query' object has no attribute '%s'" % "insert_default_values")
 
+        self._insert_default_values = True
         self._replace = False
 
     @builder
@@ -1366,7 +1360,8 @@ class QueryBuilder(Selectable, Term):
 
     def _values_sql(self, **kwargs: Any) -> str:
         if self._insert_default_values:
-            return " DEFAULT VALUES"
+            defaults = ['DEFAULT'] * len(self._columns)
+            return " VALUES ({defaults})".format(defaults=",".join(defaults))
 
         return " VALUES ({values})".format(
             values="),(".join(
