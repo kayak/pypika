@@ -349,7 +349,7 @@ class PostgreQueryBuilder(QueryBuilder):
         else:
             raise QueryException("Unsupported update_field")
 
-        if update_value:
+        if update_value is not None:
             self._on_conflict_do_updates.append((field, ValueWrapper(update_value)))
         else:
             self._on_conflict_do_updates.append((field, None))
