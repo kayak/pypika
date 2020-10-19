@@ -45,3 +45,7 @@ class PseudoColumnsTest(unittest.TestCase):
         query = Query.from_(self.table1).where(PseudoColumn("abcde") > 1).select(self.table1.is_active)
 
         self.assertEqual(str(query), 'SELECT "is_active" FROM "table1" WHERE abcde>1')
+
+    def test_can_be_used_in_orderby(self):
+        query = Query.from_(self.table1).select(self.table1.abcde.as_("some_name")).orderby(PseudoColumn("some_name"))
+        self.assertEqual(str(query), 'SELECT "abcde" "some_name" FROM "table1" ORDER BY some_name')

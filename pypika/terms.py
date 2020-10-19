@@ -1447,6 +1447,7 @@ class PseudoColumn(Term):
     """
 
     def __init__(self, name: str) -> None:
+        super().__init__(alias=None)
         self.name = name
 
     def get_sql(self, **kwargs: Any) -> str:
