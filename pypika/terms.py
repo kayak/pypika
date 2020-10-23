@@ -314,7 +314,7 @@ class ValueWrapper(Term):
 class JSON(Term):
     table = None
 
-    def __init__(self, value: Any, alias: Optional[str] = None) -> None:
+    def __init__(self, value: Any = None, alias: Optional[str] = None) -> None:
         super().__init__(alias)
         self.value = value
 
@@ -458,7 +458,7 @@ class Field(Criterion, JSON):
     def __init__(
         self, name: str, alias: Optional[str] = None, table: Optional[Union[str, "Selectable"]] = None
     ) -> None:
-        super().__init__(alias)
+        super().__init__(alias=alias)
         self.name = name
         self.table = table
 
