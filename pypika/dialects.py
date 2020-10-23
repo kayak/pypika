@@ -15,6 +15,8 @@ from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field,
 from pypika.utils import (
     QueryException,
     builder,
+    SetOperationException,
+    format_quotes,
 )
 
 
@@ -634,7 +636,7 @@ class MSSQLQueryBuilder(QueryBuilder):
     def _limit_sql(self) -> str:
         return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
 
-    def _apply_pagination(self, querystring: str) -> str:
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
         # Note: Overridden as MSSQL specifies offset before the fetch next limit
         if self._limit is not None or self._offset:
             # Offset has to be present if fetch next is specified in a MSSQL query
@@ -679,6 +681,62 @@ class ClickHouseQuery(Query):
 
 class ClickHouseQueryBuilder(QueryBuilder):
     QUERY_CLS = ClickHouseQuery
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._limit_by_limit = None
+        self._limit_by_fields = []
+
+    @builder
+    def limitby(self, limit: int, *fields: Any) -> "ClickHouseQueryBuilder":
+        if not fields:
+            raise SetOperationException('LIMIT BY must have at least one field')
+
+        self._limit_by_limit = limit
+
+        for field in fields:
+            field = Field(field, table=self._from[0]) if isinstance(field, str) else self.wrap_constant(field)
+
+            self._limit_by_fields.append(field)
+
+    def _limitby_sql(
+        self,
+        quote_char: Optional[str] = None,
+        alias_quote_char: Optional[str] = None,
+        limitby_alias: bool = True,
+        **kwargs: Any,
+    ) -> str:
+        """
+        If an limit by field is used in the select clause,
+        determined by a matching, and the limitby_alias
+        is set True then the LIMIT BY clause will use
+        the alias, otherwise the field will be rendered as SQL.
+        """
+        clauses = []
+        selected_aliases = {s.alias for s in self._selects}
+
+        for field in self._limit_by_fields:
+            term = (
+                format_quotes(field.alias, alias_quote_char or quote_char)
+                if limitby_alias and field.alias and field.alias in selected_aliases
+                else field.get_sql(quote_char=quote_char, alias_quote_char=alias_quote_char, **kwargs)
+            )
+
+            clauses.append(str(term))
+
+        return " LIMIT {limit} BY {by}".format(limit=self._limit_by_limit, by=",".join(clauses))
+
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
+        if self._limit_by_fields:
+            querystring += self._limitby_sql(**kwargs)
+
+        if self._limit is not None:
+            querystring += self._limit_sql()
+
+        if self._offset:
+            querystring += self._offset_sql()
+
+        return querystring
 
     @staticmethod
     def _delete_sql(**kwargs: Any) -> str:

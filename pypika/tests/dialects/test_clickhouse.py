@@ -12,6 +12,21 @@ class ClickHouseQueryTests(TestCase):
         query = ClickHouseQuery.from_(t).select(t.foo.as_('f1'), t.bar.as_('f2'))
         self.assertEqual(str(query), 'SELECT "foo" AS "f1","bar" AS "f2" FROM "abc"')
 
+    def test_select_with_limit_by(self):
+        q1 = ClickHouseQuery.from_("abc").select("foo").limitby(10, "field1", "field2")
+
+        self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10 BY "field1","field2"', str(q1))
+
+    def test_select_with_limit_by_and_limit(self):
+        q1 = ClickHouseQuery.from_("abc").select("foo").limitby(10, "field1", "field2").limit(100)
+
+        self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10 BY "field1","field2" LIMIT 100', str(q1))
+
+    def test_select_with_limit_by_and_order_by_and_limit(self):
+        q1 = ClickHouseQuery.from_("abc").select("foo").limitby(10, "field1", "field2").orderby("field3").limit(100)
+
+        self.assertEqual('SELECT "foo" FROM "abc" ORDER BY "field3" LIMIT 10 BY "field1","field2" LIMIT 100', str(q1))
+
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")

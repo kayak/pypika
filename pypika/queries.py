@@ -1294,7 +1294,7 @@ class QueryBuilder(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
-        querystring = self._apply_pagination(querystring)
+        querystring = self._apply_pagination(querystring, **kwargs)
 
         if self._for_update:
             querystring += self._for_update_sql()
@@ -1310,7 +1310,7 @@ class QueryBuilder(Selectable, Term):
 
         return querystring
 
-    def _apply_pagination(self, querystring: str) -> str:
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
         if self._limit is not None:
             querystring += self._limit_sql()
 
