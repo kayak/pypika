@@ -188,6 +188,21 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10', str(q1))
 
+    def test_select_with_limit_by(self):
+        q1 = Query.from_("abc").select("foo").limitby(10, "field1", "field2")
+
+        self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10 BY "field1","field2"', str(q1))
+
+    def test_select_with_limit_by_and_limit(self):
+        q1 = Query.from_("abc").select("foo").limitby(10, "field1", "field2").limit(100)
+
+        self.assertEqual('SELECT "foo" FROM "abc" LIMIT 10 BY "field1","field2" LIMIT 100', str(q1))
+
+    def test_select_with_limit_by_and_order_by_and_limit(self):
+        q1 = Query.from_("abc").select("foo").limitby(10, "field1", "field2").orderby("field3").limit(100)
+
+        self.assertEqual('SELECT "foo" FROM "abc" ORDER BY "field3" LIMIT 10 BY "field1","field2" LIMIT 100', str(q1))
+
     def test_select_with_offset(self):
         q1 = Query.from_("abc").select("foo")[10:]
 

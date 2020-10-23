@@ -682,6 +682,8 @@ class QueryBuilder(Selectable, Term):
 
         self._limit = None
         self._offset = None
+        self._limit_by_limit = None
+        self._limit_by_fields = []
 
         self._updates = []
 
@@ -1018,6 +1020,18 @@ class QueryBuilder(Selectable, Term):
         self._offset = offset
 
     @builder
+    def limitby(self, limit: int, *fields: Any) -> "QueryBuilder":
+        if not fields:
+            raise SetOperationException('LIMIT BY must have at least one field')
+
+        self._limit_by_limit = limit
+
+        for field in fields:
+            field = Field(field, table=self._from[0]) if isinstance(field, str) else self.wrap_constant(field)
+
+            self._limit_by_fields.append(field)
+
+    @builder
     def union(self, other: "QueryBuilder") -> _SetOperation:
         return _SetOperation(self, other, SetOperation.union, wrapper_cls=self._wrapper_cls)
 
@@ -1294,6 +1308,9 @@ class QueryBuilder(Selectable, Term):
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
+        if self._limit_by_limit:
+            querystring += self._limitby_sql(**kwargs)
+
         querystring = self._apply_pagination(querystring)
 
         if self._for_update:
@@ -1489,6 +1506,33 @@ class QueryBuilder(Selectable, Term):
 
     def _limit_sql(self) -> str:
         return " LIMIT {limit}".format(limit=self._limit)
+
+    def _limitby_sql(
+        self,
+        quote_char: Optional[str] = None,
+        alias_quote_char: Optional[str] = None,
+        limitby_alias: bool = True,
+        **kwargs: Any,
+    ) -> str:
+        """
+        If an limit by field is used in the select clause,
+        determined by a matching, and the limitby_alias
+        is set True then the LIMIT BY clause will use
+        the alias, otherwise the field will be rendered as SQL.
+        """
+        clauses = []
+        selected_aliases = {s.alias for s in self._selects}
+
+        for field in self._limit_by_fields:
+            term = (
+                format_quotes(field.alias, alias_quote_char or quote_char)
+                if limitby_alias and field.alias and field.alias in selected_aliases
+                else field.get_sql(quote_char=quote_char, alias_quote_char=alias_quote_char, **kwargs)
+            )
+
+            clauses.append(str(term))
+
+        return " LIMIT {limit} BY {by}".format(limit=self._limit_by_limit, by=",".join(clauses))
 
     def _set_sql(self, **kwargs: Any) -> str:
         return " SET {set}".format(
