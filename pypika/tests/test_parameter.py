@@ -1,6 +1,15 @@
 import unittest
 
-from pypika import Parameter, Query, Tables
+from pypika import (
+    FormatParameter,
+    NamedParameter,
+    NumericParameter,
+    Parameter,
+    PyformatParameter,
+    QmarkParameter,
+    Query,
+    Tables,
+)
 
 
 class ParametrizedTests(unittest.TestCase):
@@ -67,3 +76,19 @@ class ParametrizedTests(unittest.TestCase):
             ' "sq0" ON "abc"."bar"="sq0"."buz" WHERE "abc"."bar"=:bar',
             q.get_sql(),
         )
+
+    def test_qmark_parameter(self):
+        self.assertEqual('?', QmarkParameter().get_sql())
+
+    def test_numeric_parameter(self):
+        self.assertEqual(':14', NumericParameter('14').get_sql())
+        self.assertEqual(':15', NumericParameter(15).get_sql())
+
+    def test_named_parameter(self):
+        self.assertEqual(':buz', NamedParameter('buz').get_sql())
+
+    def test_format_parameter(self):
+        self.assertEqual('%s', FormatParameter().get_sql())
+
+    def test_pyformat_parameter(self):
+        self.assertEqual('%(buz)s', PyformatParameter('buz').get_sql())
