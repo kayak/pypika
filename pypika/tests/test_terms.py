@@ -1,7 +1,18 @@
 from unittest import TestCase
 
-from pypika import Query, Table
+from pypika import Query, Table, Field
 from pypika.terms import AtTimezone
+
+
+class FieldAliasTests(TestCase):
+    t = Table("test", alias="crit")
+
+    def test_when_alias_specified(self):
+        c1 = Field("foo", alias="bar")
+        self.assertEqual('bar', str(c1.alias))
+
+        c1 = Field("foo").as_("bar")
+        self.assertEqual('bar', str(c1.alias))
 
 
 class AtTimezoneTests(TestCase):
