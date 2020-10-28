@@ -496,6 +496,15 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo",SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"', str(q))
 
+    def test_groupby__sum_filter(self):
+        q = (
+            Query.from_(self.t)
+            .groupby(self.t.foo)
+            .select(self.t.foo, fn.Sum(self.t.bar).filter(self.t.id.eq(1) & self.t.cid.gt(2)))
+        )
+
+        self.assertEqual('SELECT "foo",SUM("bar") FILTER(WHERE "id"=1 AND "cid">2) FROM "abc" GROUP BY "foo"', str(q))
+
     def test_groupby__str(self):
         q = Query.from_("abc").groupby("foo").select("foo", fn.Count("*").distinct())
 
