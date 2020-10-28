@@ -258,12 +258,53 @@ class Term(Node):
 class Parameter(Term):
     is_aggregate = None
 
-    def __init__(self, placeholder: str) -> None:
+    def __init__(self, placeholder: Union[str, int]) -> None:
         super().__init__()
         self.placeholder = placeholder
 
     def get_sql(self, **kwargs: Any) -> str:
         return str(self.placeholder)
+
+
+class QmarkParameter(Parameter):
+    """Question mark style, e.g. ...WHERE name=?"""
+
+    def __init__(self) -> None:
+        pass
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return "?"
+
+
+class NumericParameter(Parameter):
+    """Numeric, positional style, e.g. ...WHERE name=:1"""
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return ":{placeholder}".format(placeholder=self.placeholder)
+
+
+class NamedParameter(Parameter):
+    """Named style, e.g. ...WHERE name=:name"""
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return ":{placeholder}".format(placeholder=self.placeholder)
+
+
+class FormatParameter(Parameter):
+    """ANSI C printf format codes, e.g. ...WHERE name=%s"""
+
+    def __init__(self) -> None:
+        pass
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return "%s"
+
+
+class PyformatParameter(Parameter):
+    """Python extended format codes, e.g. ...WHERE name=%(name)s"""
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return "%({placeholder})s".format(placeholder=self.placeholder)
 
 
 class Negative(Term):

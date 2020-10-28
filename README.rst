@@ -1054,7 +1054,9 @@ PyPika allows you to use ``Parameter(str)`` term as a placeholder for parametriz
 
 This allows you to build prepared statements, and/or avoid SQL-injection related risks.
 
-Due to the mix of syntax for parameters, depending on connector/driver, it is required that you specify the parameter token explicitly.
+Due to the mix of syntax for parameters, depending on connector/driver, it is required that you specify the
+parameter token explicitly or use one of the specialized Parameter types per [PEP-0249](https://www.python.org/dev/peps/pep-0249/#paramstyle):
+``QmarkParameter()``, ``NumericParameter(int)``,  ``NamedParameter(str)``, ``FormatParameter()``, ``PyformatParameter(str)``
 
 An example of some common SQL parameter styles used in Python drivers are:
 
