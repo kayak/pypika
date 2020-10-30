@@ -744,8 +744,8 @@ class QueryBuilder(Selectable, Term):
             A copy of the query with the tables replaced.
         """
         self._from = [new_table if table == current_table else table for table in self._from]
-        self._insert_table = new_table if self._insert_table else None
-        self._update_table = new_table if self._update_table else None
+        self._insert_table = new_table if self._insert_table == current_table else self._insert_table
+        self._update_table = new_table if self._update_table == current_table else self._update_table
 
         self._with = [alias_query.replace_table(current_table, new_table) for alias_query in self._with]
         self._selects = [select.replace_table(current_table, new_table) for select in self._selects]
