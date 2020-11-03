@@ -24,11 +24,23 @@ class QueryTablesTests(unittest.TestCase):
 
         self.assertEqual('INSERT INTO "b" VALUES (1)', str(query))
 
+    def test_replace_insert_table_current_table_not_match(self):
+        query = Query.into(self.table_a).insert(1)
+        query = query.replace_table(self.table_c, self.table_b)
+
+        self.assertEqual('INSERT INTO "a" VALUES (1)', str(query))
+
     def test_replace_update_table(self):
         query = Query.update(self.table_a).set("foo", "bar")
         query = query.replace_table(self.table_a, self.table_b)
 
         self.assertEqual('UPDATE "b" SET "foo"=\'bar\'', str(query))
+
+    def test_replace_update_table_current_table_not_match(self):
+        query = Query.update(self.table_a).set("foo", "bar")
+        query = query.replace_table(self.table_c, self.table_b)
+
+        self.assertEqual('UPDATE "a" SET "foo"=\'bar\'', str(query))
 
     def test_replace_delete_table(self):
         query = Query.from_(self.table_a).delete()
