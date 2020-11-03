@@ -990,10 +990,11 @@ class ArithmeticExpression(Term):
 
 
 class Case(Term):
-    def __init__(self, alias: Optional[str] = None) -> None:
+    def __init__(self, alias: Optional[str] = None, parentheses=False) -> None:
         super().__init__(alias=alias)
         self._cases = []
         self._else = None
+        self.parentheses = parentheses
 
     def nodes_(self) -> Iterator[NodeT]:
         yield self
@@ -1054,7 +1055,8 @@ class Case(Term):
         else_ = " ELSE {}".format(self._else.get_sql(**kwargs)) if self._else else ""
 
         case_sql = "CASE {cases}{else_} END".format(cases=cases, else_=else_)
-
+        if self.parentheses:
+            case_sql = "({})".format(case_sql)
         if with_alias:
             return format_alias_sql(case_sql, self.alias, **kwargs)
 

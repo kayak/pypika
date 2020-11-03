@@ -333,6 +333,11 @@ class ConditionTests(unittest.TestCase):
             str(q),
         )
 
+    def test__case__enclosed_parentheses(self):
+        q = Q.from_("abc").select(Case(parentheses=True).when(F("foo") == 1, F("bar")).else_(F("buz")))
+
+        self.assertEqual('SELECT (CASE WHEN "foo"=1 THEN "bar" ELSE "buz" END) FROM "abc"', str(q))
+
     def test__case__no_cases(self):
         with self.assertRaises(CaseException):
             q = Q.from_("abc").select(Case())
