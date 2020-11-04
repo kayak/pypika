@@ -272,10 +272,10 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
 
-    def test_oracle_query_uses_double_quote_chars(self):
+    def test_oracle_query_uses_no_quote_chars(self):
         q = OracleQuery.from_("abc").select("foo", "bar")
 
-        self.assertEqual('SELECT "foo","bar" FROM "abc"', str(q))
+        self.assertEqual('SELECT foo,bar FROM abc', str(q))
 
     def test_postgresql_query_uses_double_quote_chars(self):
         q = PostgreSQLQuery.from_("abc").select("foo", "bar")
@@ -530,12 +530,17 @@ class GroupByTests(unittest.TestCase):
             q.get_sql(groupby_alias=False),
         )
 
-    def test_groupby__no_alias_platforms(self):
+    def test_groupby__no_alias_mssql(self):
         bar = self.t.bar.as_("bar01")
-        for query_cls in [MSSQLQuery, OracleQuery]:
-            q = query_cls.from_(self.t).select(fn.Sum(self.t.foo), bar).groupby(bar)
+        q = MSSQLQuery.from_(self.t).select(fn.Sum(self.t.foo), bar).groupby(bar)
 
-            self.assertEqual('SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"', str(q))
+        self.assertEqual('SELECT SUM("foo"),"bar" "bar01" FROM "abc" GROUP BY "bar"', str(q))
+
+    def test_groupby__no_alias_oracle(self):
+        bar = self.t.bar.as_("bar01")
+        q = OracleQuery.from_(self.t).select(fn.Sum(self.t.foo), bar).groupby(bar)
+
+        self.assertEqual('SELECT SUM(foo),bar bar01 FROM abc GROUP BY bar', str(q))
 
     def test_groupby__alias_platforms(self):
         bar = self.t.bar.as_("bar01")
@@ -609,10 +614,10 @@ class GroupByTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
 
-    def test_oracle_query_uses_double_quote_chars(self):
+    def test_oracle_query_uses_no_quote_chars(self):
         q = OracleQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
 
-        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo"', str(q))
+        self.assertEqual('SELECT foo FROM abc GROUP BY foo', str(q))
 
     def test_postgres_query_uses_double_quote_chars(self):
         q = PostgreSQLQuery.from_(self.t).groupby(self.t.foo).select(self.t.foo)
@@ -710,14 +715,14 @@ class HavingTests(unittest.TestCase):
         )
         self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo" HAVING "buz"=\'fiz\'', str(q))
 
-    def test_oracle_query_uses_double_quote_chars(self):
+    def test_oracle_query_uses_no_quote_chars(self):
         q = (
             OracleQuery.from_(self.table_abc)
             .select(self.table_abc.foo)
             .groupby(self.table_abc.foo)
             .having(self.table_abc.buz == "fiz")
         )
-        self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo" HAVING "buz"=\'fiz\'', str(q))
+        self.assertEqual('SELECT foo FROM abc GROUP BY foo HAVING buz=\'fiz\'', str(q))
 
     def test_postgres_query_uses_double_quote_chars(self):
         q = (
