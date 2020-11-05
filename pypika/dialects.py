@@ -270,6 +270,8 @@ class VerticaQuery(Query):
 
 
 class OracleQueryBuilder(QueryBuilder):
+    QUOTE_CHAR = None
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.ORACLE, **kwargs)
 
