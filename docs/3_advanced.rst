@@ -176,4 +176,92 @@ following the current row by omitting the ``constant_value`` parameter like ``an
 
     SELECT SUM("total") OVER(PARTITION BY "item_id" ORDER BY "day" ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) FROM "t_customers"
 
+DDL
+===
 
+CREATE TABLE
+------------
+
+Simple example of creating table:
+
+.. code-block:: python
+
+    from pypika import Query, Table, Columns
+
+    columns = Columns(
+        ('id', 'integer'),
+        ('price', 'decimal(15, 9)'),
+        ('name', 'varchar(128)')
+    )
+
+    Query.create_table(Table('items')).columns(*columns).if_not_exists()
+
+.. code-block:: sql
+
+    CREATE TABLE IF NOT EXISTS items (
+        id integer,
+        price decimal(15, 9),
+        name varchar(128)
+    )
+
+Create table from query:
+
+.. code-block:: python
+
+    from pypika import Query, Table
+
+    items = Table('items')
+
+    query = Query.select(items.id, items.price, items.name).from_(items)
+
+    Query.create_table(Table('items')).as_select(query)
+
+.. code-block:: sql
+
+    CREATE TABLE items
+    AS
+        (SELECT id, price, name FROM items)
+
+TEMPORARY and UNLOGGED tables:
+
+.. code-block:: python
+
+    from pypika import Query, Table, Columns
+
+    columns = Columns(
+        ('id', 'integer'),
+        ('price', 'decimal(15, 9)'),
+        ('name', 'varchar(128)')
+    )
+
+    Query.create_table(Table('items')).columns(*columns).temporary()
+    Query.create_table(Table('items')).columns(*columns).unlogged()
+
+.. code-block:: sql
+
+    CREATE TEMPORARY TABLE items (
+        id integer,
+        price decimal(15, 9),
+        name varchar(128)
+    )
+
+    CREATE UNLOGGED TABLE items (
+        id integer,
+        price decimal(15, 9),
+        name varchar(128)
+    )
+
+DROP TABLE
+----------
+
+.. code-block:: python
+
+    from pypika import Query, Table
+
+    Query.drop_table(Table('items'))
+    Query.drop_table(Table('items')).if_exists()
+
+.. code-block:: sql
+
+    DROP TABLE items
+    DROP TABLE IF EXISTS items

@@ -75,6 +75,16 @@ class CreateTableTests(unittest.TestCase):
 
             self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100)) WITH SYSTEM VERSIONING', str(q))
 
+        with self.subTest("with unlogged keyword"):
+            q = Query.create_table(self.new_table).unlogged().columns(self.foo, self.bar)
+
+            self.assertEqual('CREATE UNLOGGED TABLE "abc" ("a" INT,"b" VARCHAR(100))', str(q))
+
+        with self.subTest("with if not exists keyword"):
+            q = Query.create_table(self.new_table).if_not_exists().columns(self.foo, self.bar)
+
+            self.assertEqual('CREATE TABLE IF NOT EXISTS "abc" ("a" INT,"b" VARCHAR(100))', str(q))
+
     def test_create_table_with_select(self):
         select = Query.from_(self.existing_table).select(self.existing_table.foo, self.existing_table.bar)
 
