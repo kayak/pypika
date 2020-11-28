@@ -487,7 +487,7 @@ Example of a correlated subquery in the `SELECT`
         history.purchase_at, order=Order.desc
     ).limit(1)
     q = Query.from_(customers).select(
-        customers.id, last_purchase_at._as('last_purchase_at')
+        customers.id, last_purchase_at.as_('last_purchase_at')
     )
 
 
