@@ -57,6 +57,7 @@ class JoinType(Enum):
     right_outer = "RIGHT OUTER"
     full_outer = "FULL OUTER"
     cross = "CROSS"
+    hash = "HASH"
 
 
 class SetOperation(Enum):
