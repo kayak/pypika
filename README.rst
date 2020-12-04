@@ -412,7 +412,7 @@ All join types are supported by |Brand|.
         .inner_join(join_table) \
         .outer_join(join_table) \
         .cross_join(join_table) \
-        .hash_join(join_table) \ # for google spanner, https://cloud.google.com/spanner/docs/query-execution-operators#hash-join
+        .hash_join(join_table) \
         ...
 
 See the list of join types here ``pypika.enums.JoinTypes``
