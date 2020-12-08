@@ -1,6 +1,30 @@
 import unittest
 
 from pypika import Case, Query, Tables, Tuple, functions
+from pypika.dialects import (
+    ClickHouseQuery,
+    ClickHouseQueryBuilder,
+    MSSQLQuery,
+    MSSQLQueryBuilder,
+    MySQLLoadQueryBuilder,
+    MySQLQuery,
+    MySQLQueryBuilder,
+    OracleQuery,
+    OracleQueryBuilder,
+    PostgreSQLQuery,
+    PostgreSQLQueryBuilder,
+    RedShiftQueryBuilder,
+    RedshiftQuery,
+    SQLLiteQuery,
+    SQLLiteQueryBuilder,
+    SnowflakeQuery,
+    SnowflakeQueryBuilder,
+    VerticaCopyQueryBuilder,
+    VerticaCreateQueryBuilder,
+    VerticaQuery,
+    VerticaQueryBuilder,
+)
+from pypika.queries import CreateQueryBuilder, DropQueryBuilder, QueryBuilder
 
 
 class QueryTablesTests(unittest.TestCase):
@@ -132,3 +156,51 @@ class QueryTablesTests(unittest.TestCase):
 
         self.assertTrue(q.is_joined(self.table_b))
         self.assertFalse(q.is_joined(self.table_c))
+
+
+class QueryBuilderTests(unittest.TestCase):
+    def test_query_builders_have_reference_to_correct_query_class(self):
+        with self.subTest('QueryBuilder'):
+            self.assertEqual(Query, QueryBuilder.QUERY_CLS)
+
+        with self.subTest('DropQueryBuilder'):
+            self.assertEqual(Query, DropQueryBuilder.QUERY_CLS)
+
+        with self.subTest('CreateQueryBuilder'):
+            self.assertEqual(Query, CreateQueryBuilder.QUERY_CLS)
+
+        with self.subTest('MySQLQueryBuilder'):
+            self.assertEqual(MySQLQuery, MySQLQueryBuilder.QUERY_CLS)
+
+        with self.subTest('MySQLLoadQueryBuilder'):
+            self.assertEqual(MySQLQuery, MySQLLoadQueryBuilder.QUERY_CLS)
+
+        with self.subTest('VerticaQueryBuilder'):
+            self.assertEqual(VerticaQuery, VerticaQueryBuilder.QUERY_CLS)
+
+        with self.subTest('VerticaCreateQueryBuilder'):
+            self.assertEqual(VerticaQuery, VerticaCreateQueryBuilder.QUERY_CLS)
+
+        with self.subTest('VerticaCopyQueryBuilder'):
+            self.assertEqual(VerticaQuery, VerticaCopyQueryBuilder.QUERY_CLS)
+
+        with self.subTest('PostgreSQLQueryBuilder'):
+            self.assertEqual(PostgreSQLQuery, PostgreSQLQueryBuilder.QUERY_CLS)
+
+        with self.subTest('MSSQLQueryBuilder'):
+            self.assertEqual(MSSQLQuery, MSSQLQueryBuilder.QUERY_CLS)
+
+        with self.subTest('SnowflakeQueryBuilder'):
+            self.assertEqual(SnowflakeQuery, SnowflakeQueryBuilder.QUERY_CLS)
+
+        with self.subTest('ClickHouseQueryBuilder'):
+            self.assertEqual(ClickHouseQuery, ClickHouseQueryBuilder.QUERY_CLS)
+
+        with self.subTest('RedShiftQueryBuilder'):
+            self.assertEqual(RedshiftQuery, RedShiftQueryBuilder.QUERY_CLS)
+
+        with self.subTest('SQLLiteQueryBuilder'):
+            self.assertEqual(SQLLiteQuery, SQLLiteQueryBuilder.QUERY_CLS)
+
+        with self.subTest('OracleQueryBuilder'):
+            self.assertEqual(OracleQuery, OracleQueryBuilder.QUERY_CLS)
