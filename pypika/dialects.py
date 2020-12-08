@@ -276,7 +276,10 @@ class OracleQueryBuilder(QueryBuilder):
         super().__init__(dialect=Dialects.ORACLE, **kwargs)
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
-        return super().get_sql(*args, groupby_alias=False, **kwargs)
+        # Oracle does not support group by a field alias
+        # Note: set directly in kwargs as they are re-used down the tree in the case of subqueries!
+        kwargs['groupby_alias'] = False
+        return super().get_sql(*args, **kwargs)
 
 
 class OracleQuery(Query):
@@ -577,7 +580,10 @@ class MSSQLQueryBuilder(QueryBuilder):
         return querystring
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
-        return super().get_sql(*args, groupby_alias=False, **kwargs)
+        # MSSQL does not support group by a field alias.
+        # Note: set directly in kwargs as they are re-used down the tree in the case of subqueries!
+        kwargs['groupby_alias'] = False
+        return super().get_sql(*args, **kwargs)
 
     def _top_sql(self) -> str:
         if self._top:
