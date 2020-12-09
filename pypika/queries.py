@@ -642,6 +642,7 @@ class QueryBuilder(Selectable, Term):
     SECONDARY_QUOTE_CHAR = "'"
     ALIAS_QUOTE_CHAR = None
     QUERY_ALIAS_QUOTE_CHAR = None
+    QUERY_CLS = Query
 
     def __init__(
         self,
@@ -1648,6 +1649,7 @@ class CreateQueryBuilder:
     QUOTE_CHAR = '"'
     SECONDARY_QUOTE_CHAR = "'"
     ALIAS_QUOTE_CHAR = None
+    QUERY_CLS = Query
 
     def __init__(self, dialect: Optional[Dialects] = None) -> None:
         self._create_table = None
@@ -1924,6 +1926,7 @@ class DropQueryBuilder:
     QUOTE_CHAR = '"'
     SECONDARY_QUOTE_CHAR = "'"
     ALIAS_QUOTE_CHAR = None
+    QUERY_CLS = Query
 
     def __init__(self, dialect: Optional[Dialects] = None) -> None:
         self._drop_table = None

@@ -15,27 +15,43 @@ from pypika.utils import (
 )
 
 
-class SnowFlakeQueryBuilder(QueryBuilder):
-    QUOTE_CHAR = None
-    ALIAS_QUOTE_CHAR = '"'
-    QUERY_ALIAS_QUOTE_CHAR = ''
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(dialect=Dialects.SNOWFLAKE, **kwargs)
-
-
 class SnowflakeQuery(Query):
     """
     Defines a query class for use with Snowflake.
     """
 
     @classmethod
-    def _builder(cls, **kwargs: Any) -> SnowFlakeQueryBuilder:
-        return SnowFlakeQueryBuilder(**kwargs)
+    def _builder(cls, **kwargs: Any) -> "SnowflakeQueryBuilder":
+        return SnowflakeQueryBuilder(**kwargs)
+
+
+class SnowflakeQueryBuilder(QueryBuilder):
+    QUOTE_CHAR = None
+    ALIAS_QUOTE_CHAR = '"'
+    QUERY_ALIAS_QUOTE_CHAR = ''
+    QUERY_CLS = SnowflakeQuery
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(dialect=Dialects.SNOWFLAKE, **kwargs)
+
+
+class MySQLQuery(Query):
+    """
+    Defines a query class for use with MySQL.
+    """
+
+    @classmethod
+    def _builder(cls, **kwargs: Any) -> "MySQLQueryBuilder":
+        return MySQLQueryBuilder(**kwargs)
+
+    @classmethod
+    def load(cls, fp: str) -> "MySQLLoadQueryBuilder":
+        return MySQLLoadQueryBuilder().load(fp)
 
 
 class MySQLQueryBuilder(QueryBuilder):
     QUOTE_CHAR = "`"
+    QUERY_CLS = MySQLQuery
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.MYSQL, wrap_set_operation_queries=False, **kwargs)
@@ -108,16 +124,18 @@ class MySQLQueryBuilder(QueryBuilder):
 
 
 class MySQLLoadQueryBuilder:
+    QUERY_CLS = MySQLQuery
+
     def __init__(self) -> None:
         self._load_file = None
         self._into_table = None
 
     @builder
-    def load(self, fp: str) -> "MySQLQueryBuilder":
+    def load(self, fp: str) -> "MySQLLoadQueryBuilder":
         self._load_file = fp
 
     @builder
-    def into(self, table: Union[str, Table]) -> "MySQLQueryBuilder":
+    def into(self, table: Union[str, Table]) -> "MySQLLoadQueryBuilder":
         self._into_table = table if isinstance(table, Table) else Table(table)
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
@@ -142,21 +160,27 @@ class MySQLLoadQueryBuilder:
         return self.get_sql()
 
 
-class MySQLQuery(Query):
+class VerticaQuery(Query):
     """
-    Defines a query class for use with MySQL.
+    Defines a query class for use with Vertica.
     """
 
     @classmethod
-    def _builder(cls, **kwargs: Any) -> "MySQLQueryBuilder":
-        return MySQLQueryBuilder(**kwargs)
+    def _builder(cls, **kwargs) -> "VerticaQueryBuilder":
+        return VerticaQueryBuilder(**kwargs)
 
     @classmethod
-    def load(cls, fp: str) -> "MySQLQueryBuilder":
-        return MySQLLoadQueryBuilder().load(fp)
+    def from_file(cls, fp: str) -> "VerticaCopyQueryBuilder":
+        return VerticaCopyQueryBuilder().from_file(fp)
+
+    @classmethod
+    def create_table(cls, table: Union[str, Table]) -> "VerticaCreateQueryBuilder":
+        return VerticaCreateQueryBuilder().create_table(table)
 
 
 class VerticaQueryBuilder(QueryBuilder):
+    QUERY_CLS = VerticaQuery
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.VERTICA, **kwargs)
         self._hint = None
@@ -175,6 +199,8 @@ class VerticaQueryBuilder(QueryBuilder):
 
 
 class VerticaCreateQueryBuilder(CreateQueryBuilder):
+    QUERY_CLS = VerticaQuery
+
     def __init__(self) -> None:
         super().__init__(dialect=Dialects.VERTICA)
         self._local = False
@@ -217,6 +243,8 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
 
 
 class VerticaCopyQueryBuilder:
+    QUERY_CLS = VerticaQuery
+
     def __init__(self) -> None:
         self._copy_table = None
         self._from_file = None
@@ -251,26 +279,19 @@ class VerticaCopyQueryBuilder:
         return self.get_sql()
 
 
-class VerticaQuery(Query):
+class OracleQuery(Query):
     """
-    Defines a query class for use with Vertica.
+    Defines a query class for use with Oracle.
     """
 
     @classmethod
-    def _builder(cls, **kwargs) -> VerticaQueryBuilder:
-        return VerticaQueryBuilder(**kwargs)
-
-    @classmethod
-    def from_file(cls, fp: str) -> VerticaCopyQueryBuilder:
-        return VerticaCopyQueryBuilder().from_file(fp)
-
-    @classmethod
-    def create_table(cls, table: Union[str, Table]) -> VerticaCreateQueryBuilder:
-        return VerticaCreateQueryBuilder().create_table(table)
+    def _builder(cls, **kwargs: Any) -> "OracleQueryBuilder":
+        return OracleQueryBuilder(**kwargs)
 
 
 class OracleQueryBuilder(QueryBuilder):
     QUOTE_CHAR = None
+    QUERY_CLS = OracleQuery
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.ORACLE, **kwargs)
@@ -282,20 +303,21 @@ class OracleQueryBuilder(QueryBuilder):
         return super().get_sql(*args, **kwargs)
 
 
-class OracleQuery(Query):
+class PostgreSQLQuery(Query):
     """
-    Defines a query class for use with Oracle.
+    Defines a query class for use with PostgreSQL.
     """
 
     @classmethod
-    def _builder(cls, **kwargs: Any) -> OracleQueryBuilder:
-        return OracleQueryBuilder(**kwargs)
+    def _builder(cls, **kwargs) -> "PostgreSQLQueryBuilder":
+        return PostgreSQLQueryBuilder(**kwargs)
 
 
-class PostgreQueryBuilder(QueryBuilder):
+class PostgreSQLQueryBuilder(QueryBuilder):
     ALIAS_QUOTE_CHAR = '"'
+    QUERY_CLS = PostgreSQLQuery
 
-    def __init__(self, **kwargs: str) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.POSTGRESQL, **kwargs)
         self._returns = []
         self._return_star = False
@@ -309,14 +331,14 @@ class PostgreQueryBuilder(QueryBuilder):
 
         self._distinct_on = []
 
-    def __copy__(self) -> "PostgreQueryBuilder":
+    def __copy__(self) -> "PostgreSQLQueryBuilder":
         newone = super().__copy__()
         newone._returns = copy(self._returns)
         newone._on_conflict_do_updates = copy(self._on_conflict_do_updates)
         return newone
 
     @builder
-    def distinct_on(self, *fields: Union[str, Term]) -> "PostgreQueryBuilder":
+    def distinct_on(self, *fields: Union[str, Term]) -> "PostgreSQLQueryBuilder":
         for field in fields:
             if isinstance(field, str):
                 self._distinct_on.append(Field(field))
@@ -324,7 +346,7 @@ class PostgreQueryBuilder(QueryBuilder):
                 self._distinct_on.append(field)
 
     @builder
-    def on_conflict(self, *target_fields: Union[str, Term]) -> "PostgreQueryBuilder":
+    def on_conflict(self, *target_fields: Union[str, Term]) -> "PostgreSQLQueryBuilder":
         if not self._insert_table:
             raise QueryException("On conflict only applies to insert query")
 
@@ -337,13 +359,15 @@ class PostgreQueryBuilder(QueryBuilder):
                 self._on_conflict_fields.append(target_field)
 
     @builder
-    def do_nothing(self) -> "PostgreQueryBuilder":
+    def do_nothing(self) -> "PostgreSQLQueryBuilder":
         if len(self._on_conflict_do_updates) > 0:
             raise QueryException("Can not have two conflict handlers")
         self._on_conflict_do_nothing = True
 
     @builder
-    def do_update(self, update_field: Union[str, Field], update_value: Optional[Any] = None) -> "PostgreQueryBuilder":
+    def do_update(
+        self, update_field: Union[str, Field], update_value: Optional[Any] = None
+    ) -> "PostgreSQLQueryBuilder":
         if self._on_conflict_do_nothing:
             raise QueryException("Can not have two conflict handlers")
 
@@ -360,7 +384,7 @@ class PostgreQueryBuilder(QueryBuilder):
             self._on_conflict_do_updates.append((field, None))
 
     @builder
-    def where(self, criterion: Criterion) -> "PostgreQueryBuilder":
+    def where(self, criterion: Criterion) -> "PostgreSQLQueryBuilder":
         if not self._on_conflict:
             return super().where(criterion)
 
@@ -444,7 +468,7 @@ class PostgreQueryBuilder(QueryBuilder):
         return ''
 
     @builder
-    def returning(self, *terms: Any) -> "PostgreQueryBuilder":
+    def returning(self, *terms: Any) -> "PostgreSQLQueryBuilder":
         for term in terms:
             if isinstance(term, Field):
                 self._return_field(term)
@@ -507,7 +531,7 @@ class PostgreQueryBuilder(QueryBuilder):
     def get_sql(self, with_alias: bool = False, subquery: bool = False, **kwargs: Any) -> str:
         self._set_kwargs_defaults(kwargs)
 
-        querystring = super(PostgreQueryBuilder, self).get_sql(with_alias, subquery, **kwargs)
+        querystring = super(PostgreSQLQueryBuilder, self).get_sql(with_alias, subquery, **kwargs)
 
         querystring += self._on_conflict_sql(**kwargs)
         querystring += self._on_conflict_action_sql(**kwargs)
@@ -518,27 +542,33 @@ class PostgreQueryBuilder(QueryBuilder):
         return querystring
 
 
-class PostgreSQLQuery(Query):
-    """
-    Defines a query class for use with PostgreSQL.
-    """
-
-    @classmethod
-    def _builder(cls, **kwargs) -> PostgreQueryBuilder:
-        return PostgreQueryBuilder(**kwargs)
-
-
 class RedshiftQuery(Query):
     """
     Defines a query class for use with Amazon Redshift.
     """
 
     @classmethod
-    def _builder(cls, **kwargs: Any) -> "QueryBuilder":
-        return QueryBuilder(dialect=Dialects.REDSHIFT, **kwargs)
+    def _builder(cls, **kwargs: Any) -> "RedShiftQueryBuilder":
+        return RedShiftQueryBuilder(dialect=Dialects.REDSHIFT, **kwargs)
+
+
+class RedShiftQueryBuilder(QueryBuilder):
+    QUERY_CLS = RedshiftQuery
+
+
+class MSSQLQuery(Query):
+    """
+    Defines a query class for use with Microsoft SQL Server.
+    """
+
+    @classmethod
+    def _builder(cls, **kwargs: Any) -> "MSSQLQueryBuilder":
+        return MSSQLQueryBuilder(**kwargs)
 
 
 class MSSQLQueryBuilder(QueryBuilder):
+    QUERY_CLS = MSSQLQuery
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.MSSQL, **kwargs)
         self._top = None
@@ -599,17 +629,21 @@ class MSSQLQueryBuilder(QueryBuilder):
         )
 
 
-class MSSQLQuery(Query):
+class ClickHouseQuery(Query):
     """
-    Defines a query class for use with Microsoft SQL Server.
+    Defines a query class for use with Yandex ClickHouse.
     """
 
     @classmethod
-    def _builder(cls, **kwargs: Any) -> MSSQLQueryBuilder:
-        return MSSQLQueryBuilder(**kwargs)
+    def _builder(cls, **kwargs: Any) -> "ClickHouseQueryBuilder":
+        return ClickHouseQueryBuilder(
+            dialect=Dialects.CLICKHOUSE, wrap_set_operation_queries=False, as_keyword=True, **kwargs
+        )
 
 
 class ClickHouseQueryBuilder(QueryBuilder):
+    QUERY_CLS = ClickHouseQuery
+
     @staticmethod
     def _delete_sql(**kwargs: Any) -> str:
         return 'ALTER TABLE'
@@ -634,18 +668,6 @@ class ClickHouseQueryBuilder(QueryBuilder):
         )
 
 
-class ClickHouseQuery(Query):
-    """
-    Defines a query class for use with Yandex ClickHouse.
-    """
-
-    @classmethod
-    def _builder(cls, **kwargs: Any) -> QueryBuilder:
-        return ClickHouseQueryBuilder(
-            dialect=Dialects.CLICKHOUSE, wrap_set_operation_queries=False, as_keyword=True, **kwargs
-        )
-
-
 class SQLLiteValueWrapper(ValueWrapper):
     def get_value_sql(self, *args: Any, **kwargs: Any) -> str:
         if isinstance(self.value, bool):
@@ -659,5 +681,9 @@ class SQLLiteQuery(Query):
     """
 
     @classmethod
-    def _builder(cls, **kwargs: Any) -> QueryBuilder:
-        return QueryBuilder(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+    def _builder(cls, **kwargs: Any) -> "SQLLiteQueryBuilder":
+        return SQLLiteQueryBuilder(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+
+
+class SQLLiteQueryBuilder(QueryBuilder):
+    QUERY_CLS = SQLLiteQuery
