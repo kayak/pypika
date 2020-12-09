@@ -1,5 +1,7 @@
 import unittest
 
+from pypika import Table
+from pypika.analytics import Count
 from pypika.dialects import MSSQLQuery
 from pypika.utils import QueryException
 
@@ -48,3 +50,20 @@ class SelectTests(unittest.TestCase):
         q = MSSQLQuery.from_("abc").select("def").orderby("def").fetch_next(10).offset(10)
 
         self.assertEqual('SELECT "def" FROM "abc" ORDER BY "def" OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY', str(q))
+
+    def test_groupby_alias_False_does_not_group_by_alias_with_standard_query(self):
+        t = Table('table1')
+        col = t.abc.as_('a')
+        q = MSSQLQuery.from_(t).select(col, Count('*')).groupby(col)
+
+        self.assertEqual('SELECT "abc" "a",COUNT(\'*\') FROM "table1" GROUP BY "abc"', str(q))
+
+    def test_groupby_alias_False_does_not_group_by_alias_when_subqueries_are_present(self):
+        t = Table('table1')
+        subquery = MSSQLQuery.from_(t).select(t.abc)
+        col = subquery.abc.as_('a')
+        q = MSSQLQuery.from_(subquery).select(col, Count('*')).groupby(col)
+
+        self.assertEqual(
+            'SELECT "sq0"."abc" "a",COUNT(\'*\') FROM (SELECT "abc" FROM "table1") "sq0" GROUP BY "sq0"."abc"', str(q)
+        )
