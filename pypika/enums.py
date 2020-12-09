@@ -46,6 +46,8 @@ class Boolean(Comparator):
 class Order(Enum):
     asc = "ASC"
     desc = "DESC"
+    asc_nulls_last = "ASC NULLS LAST"
+    desc_nulls_last = "DESC NULLS LAST"
 
 
 class JoinType(Enum):
