@@ -8,6 +8,7 @@ from pypika.queries import (
     Query,
     QueryBuilder,
     Table,
+    DropQueryBuilder,
 )
 from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
 from pypika.utils import (
@@ -25,6 +26,14 @@ class SnowflakeQuery(Query):
     def _builder(cls, **kwargs: Any) -> "SnowflakeQueryBuilder":
         return SnowflakeQueryBuilder(**kwargs)
 
+    @classmethod
+    def create_table(cls, table: Union[str, Table]) -> "SnowflakeCreateQueryBuilder":
+        return SnowflakeCreateQueryBuilder().create_table(table)
+
+    @classmethod
+    def drop_table(cls, table: Union[str, Table]) -> "SnowflakeDropQueryBuilder":
+        return SnowflakeDropQueryBuilder().drop_table(table)
+
 
 class SnowflakeQueryBuilder(QueryBuilder):
     QUOTE_CHAR = None
@@ -34,6 +43,22 @@ class SnowflakeQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.SNOWFLAKE, **kwargs)
+
+
+class SnowflakeCreateQueryBuilder(CreateQueryBuilder):
+    QUOTE_CHAR = None
+    QUERY_CLS = SnowflakeQuery
+
+    def __init__(self) -> None:
+        super().__init__(dialect=Dialects.SNOWFLAKE)
+
+
+class SnowflakeDropQueryBuilder(DropQueryBuilder):
+    QUOTE_CHAR = None
+    QUERY_CLS = SnowflakeQuery
+
+    def __init__(self) -> None:
+        super().__init__(dialect=Dialects.SNOWFLAKE)
 
 
 class MySQLQuery(Query):
