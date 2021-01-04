@@ -1,13 +1,18 @@
 import unittest
 
-from pypika import Table, Query, PostgreSQLQuery, SYSTEM_TIME
+from pypika import PostgreSQLQuery, Query, SYSTEM_TIME, Table
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
+from pypika.terms import Star
+
 
 class DeleteTests(unittest.TestCase):
-    table_abc = Table("abc")
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.table_abc = Table("abc")
 
     def test_omit_where(self):
         q = Query.from_("abc").delete()
@@ -45,7 +50,10 @@ class DeleteTests(unittest.TestCase):
 
 
 class PostgresDeleteTests(unittest.TestCase):
-    table_abc = Table("abc")
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.table_abc = Table("abc")
 
     def test_delete_returning(self):
         q1 = (
@@ -66,3 +74,13 @@ class PostgresDeleteTests(unittest.TestCase):
         )
 
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING "id"', str(q1))
+
+    def test_delete_returning_star(self):
+        q1 = (
+            PostgreSQLQuery.from_(self.table_abc)
+            .where(self.table_abc.foo == self.table_abc.bar)
+            .delete()
+            .returning(Star())
+        )
+
+        self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING *', str(q1))

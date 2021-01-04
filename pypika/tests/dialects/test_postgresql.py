@@ -3,7 +3,9 @@ from collections import OrderedDict
 
 from pypika import (
     Array,
+    Field,
     JSON,
+    QueryException,
     Table,
 )
 from pypika.dialects import PostgreSQLQuery
@@ -196,3 +198,56 @@ class ArrayTests(unittest.TestCase):
 
         q = PostgreSQLQuery.from_(tb).select(Array(tb.col).as_("different_name"))
         self.assertEqual(str(q), 'SELECT ARRAY["col"] "different_name" FROM "tb"')
+
+
+class ReturningClauseTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.table_abc = Table('abc')
+
+    def test_returning_from_missing_table_raises_queryexception(self):
+        field_from_diff_table = Field('xyz', table=Table('other'))
+
+        with self.assertRaisesRegex(QueryException, "You can't return from other tables"):
+            (
+                PostgreSQLQuery.from_(self.table_abc)
+                .where(self.table_abc.foo == self.table_abc.bar)
+                .delete()
+                .returning(field_from_diff_table)
+            )
+
+    def test_queryexception_if_returning_used_on_invalid_query(self):
+        with self.assertRaisesRegex(QueryException, "Returning can't be used in this query"):
+            PostgreSQLQuery.from_(self.table_abc).select('abc').returning('abc')
+
+    def test_no_queryexception_if_returning_used_on_valid_query_type(self):
+        # No exceptions for insert, update and delete queries
+        with self.subTest('DELETE'):
+            PostgreSQLQuery.from_(self.table_abc).where(self.table_abc.foo == self.table_abc.bar).delete().returning(
+                "id"
+            )
+        with self.subTest('UPDATE'):
+            PostgreSQLQuery.update(self.table_abc).where(self.table_abc.foo == 0).set("foo", "bar").returning("id")
+        with self.subTest('INSERT'):
+            PostgreSQLQuery.into(self.table_abc).insert('abc').returning('abc')
+
+    def test_return_field_from_join_table(self):
+        new_table = Table('xyz')
+        q = (
+            PostgreSQLQuery.update(self.table_abc)
+            .join(new_table)
+            .on(new_table.id == self.table_abc.xyz)
+            .where(self.table_abc.foo == 0)
+            .set("foo", "bar")
+            .returning(new_table.a)
+        )
+
+        self.assertEqual(
+            'UPDATE "abc" '
+            'JOIN "xyz" ON "xyz"."id"="abc"."xyz" '
+            'SET "foo"=\'bar\' '
+            'WHERE "abc"."foo"=0 '
+            'RETURNING "xyz"."a"',
+            str(q),
+        )
