@@ -922,7 +922,6 @@ class ArithmeticExpression(Term):
     are also preserved.
     """
 
-    mul_order = [Arithmetic.mul, Arithmetic.div]
     add_order = [Arithmetic.add, Arithmetic.sub]
 
     def __init__(self, operator: Arithmetic, left: Any, right: Any, alias: Optional[str] = None) -> None:
@@ -971,16 +970,60 @@ class ArithmeticExpression(Term):
         self.left = self.left.replace_table(current_table, new_table)
         self.right = self.right.replace_table(current_table, new_table)
 
+    def left_needs_parens(self, curr_op, left_op) -> bool:
+        """
+        Returns true if the expression on the left of the current operator needs to be enclosed in parentheses.
+
+        :param current_op:
+            The current operator.
+        :param left_op:
+            The highest level operator of the left expression.
+        """
+        if left_op is None:
+            # If the left expression is a single item.
+            return False
+        if curr_op in self.add_order:
+            # If the current operator is '+' or '-'.
+            return False
+        # The current operator is '*' or '/'. If the left operator is '+' or '-', we need to add parentheses:
+        # e.g. (A + B) / ..., (A - B) / ...
+        # Otherwise, no parentheses are necessary:
+        # e.g. A * B / ..., A / B / ...
+        return left_op in self.add_order
+
+    def right_needs_parens(self, curr_op, right_op) -> bool:
+        """
+        Returns true if the expression on the right of the current operator needs to be enclosed in parentheses.
+
+        :param current_op:
+            The current operator.
+        :param right_op:
+            The highest level operator of the right expression.
+        """
+        if right_op is None:
+            # If the right expression is a single item.
+            return False
+        if curr_op == Arithmetic.add:
+            return False
+        if curr_op == Arithmetic.div:
+            return True
+        # The current operator is '*' or '-. If the right operator is '+' or '-', we need to add parentheses:
+        # e.g. ... - (A + B), ... - (A - B)
+        # Otherwise, no parentheses are necessary:
+        # e.g. ... - A / B, ... - A * B
+        return right_op in self.add_order
+
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
-        is_mul = self.operator in self.mul_order
-        is_left_add, is_right_add = [
-            getattr(side, "operator", None) in self.add_order for side in [self.left, self.right]
-        ]
+        left_op, right_op = [getattr(side, "operator", None) for side in [self.left, self.right]]
 
         arithmetic_sql = "{left}{operator}{right}".format(
             operator=self.operator.value,
-            left=("({})" if is_mul and is_left_add else "{}").format(self.left.get_sql(**kwargs)),
-            right=("({})" if is_mul and is_right_add else "{}").format(self.right.get_sql(**kwargs)),
+            left=("({})" if self.left_needs_parens(self.operator, left_op) else "{}").format(
+                self.left.get_sql(**kwargs)
+            ),
+            right=("({})" if self.right_needs_parens(self.operator, right_op) else "{}").format(
+                self.right.get_sql(**kwargs)
+            ),
         )
 
         if with_alias:
