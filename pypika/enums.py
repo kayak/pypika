@@ -33,6 +33,7 @@ class Matching(Comparator):
     regex = " REGEX "
     bin_regex = " REGEX BINARY "
     as_of = " AS OF "
+    glob = " GLOB "
 
 
 class Boolean(Comparator):

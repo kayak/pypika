@@ -142,6 +142,9 @@ class Term(Node):
     def ne(self, other: Any) -> "BasicCriterion":
         return self != other
 
+    def glob(self, expr: str) -> "BasicCriterion":
+        return BasicCriterion(Matching.glob, self, self.wrap_constant(expr))
+
     def like(self, expr: str) -> "BasicCriterion":
         return BasicCriterion(Matching.like, self, self.wrap_constant(expr))
 
