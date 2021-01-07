@@ -575,6 +575,13 @@ class LikeTests(unittest.TestCase):
         self.assertEqual("\"foo\" NOT ILIKE 'a_b%c'", str(c1))
         self.assertEqual('"like"."foo" NOT ILIKE \'a_b%c\'', str(c2))
 
+    def test_glob_single_chars_and_various_chars(self):
+        c1 = Field("foo").glob("a_b*")
+        c2 = Field("foo", table=self.t).glob("a_b*")
+
+        self.assertEqual("\"foo\" GLOB 'a_b*'", str(c1))
+        self.assertEqual('"like"."foo" GLOB \'a_b*\'', str(c2))
+
 
 class ComplexCriterionTests(unittest.TestCase):
     table_abc, table_efg = Table("abc", alias="cx0"), Table("efg", alias="cx1")
