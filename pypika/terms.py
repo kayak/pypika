@@ -611,10 +611,11 @@ class Array(Tuple):
     def get_sql(self, **kwargs: Any) -> str:
         dialect = kwargs.get("dialect", None)
         values = ",".join(term.get_sql(**kwargs) for term in self.values)
+
+        sql = "[{}]".format(values)
         if dialect in (Dialects.POSTGRESQL, Dialects.REDSHIFT):
             sql = "ARRAY[{}]".format(values) if len(values) > 0 else "'{}'"
-        else:
-            sql = "[{}]".format(values)
+
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
