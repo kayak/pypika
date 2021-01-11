@@ -4,6 +4,7 @@ from pypika import (
     Array,
     Bracket,
     Query,
+    PostgreSQLQuery,
     Table,
     Tables,
     Tuple,
@@ -129,6 +130,16 @@ class ArrayTests(unittest.TestCase):
         query = Query.from_(self.table_abc).select(Array(1, "a", ["b", 2, 3]))
 
         self.assertEqual("SELECT [1,'a',['b',2,3]] FROM \"abc\"", str(query))
+
+    def test_empty_psql_array(self):
+        query = PostgreSQLQuery.from_(self.table_abc).select(Array())
+
+        self.assertEqual("SELECT '{}' FROM \"abc\"", str(query))
+
+    def test_psql_array_general(self):
+        query = PostgreSQLQuery.from_(self.table_abc).select(Array(1, Array(2, 2, 2), 3))
+
+        self.assertEqual("SELECT ARRAY[1,ARRAY[2,2,2],3] FROM \"abc\"", str(query))
 
     def test_render_alias_in_array_sql(self):
         tb = Table("tb")
