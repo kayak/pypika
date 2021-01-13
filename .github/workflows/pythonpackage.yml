@@ -26,7 +26,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
-          pip install coveralls
+          pip install coveralls==3.0.0
 
       - name: Run test suite
         env:
@@ -34,4 +34,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tox
-          coveralls --service=github-actions
+          coveralls --service=github
