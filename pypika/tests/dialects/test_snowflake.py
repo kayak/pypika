@@ -3,6 +3,7 @@ import unittest
 from pypika import (
     Tables,
     functions as fn,
+    Column,
 )
 from pypika.dialects import SnowflakeQuery
 
@@ -47,3 +48,11 @@ class QuoteTests(unittest.TestCase):
             "SELECT * " 'FROM (SELECT b FROM abc) sq0 ' 'JOIN (SELECT b FROM efg) sq1 ' "ON sq0.b=sq1.b",
             q.get_sql(),
         )
+
+    def test_dont_use_double_quotes_on_create_queries(self):
+        q = SnowflakeQuery.create_table(self.table_abc).columns(Column("id", "INT"))
+        self.assertEqual("CREATE TABLE abc (id INT)", q.get_sql())
+
+    def test_dont_use_double_quotes_on_drop_queries(self):
+        q = SnowflakeQuery.drop_table(self.table_abc)
+        self.assertEqual("DROP TABLE abc", q.get_sql())
