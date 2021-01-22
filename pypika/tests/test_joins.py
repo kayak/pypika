@@ -128,43 +128,65 @@ class SelectQueryJoinTests(unittest.TestCase):
             self.assertEqual(expected, str(query))
 
     def test_left_outer_join(self):
-        q = (
-            Query.from_(self.table0)
-            .join(self.table1, how=JoinType.left_outer)
-            .on(self.table0.foo == self.table1.bar)
-            .select("*")
-        )
+        expected = 'SELECT * FROM "abc" LEFT OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"'
+        with self.subTest("join with enum"):
+            query = (
+                Query.from_(self.table0)
+                .join(self.table1, how=JoinType.left_outer)
+                .on(self.table0.foo == self.table1.bar)
+                .select("*")
+            )
 
-        self.assertEqual(
-            'SELECT * FROM "abc" LEFT OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"',
-            str(q),
-        )
+            self.assertEqual(expected, str(query))
+
+        with self.subTest("join function"):
+            query = (
+                Query.from_(self.table0).left_outer_join(self.table1).on(self.table0.foo == self.table1.bar).select("*")
+            )
+
+            self.assertEqual(expected, str(query))
 
     def test_right_outer_join(self):
-        q = (
-            Query.from_(self.table0)
-            .join(self.table1, how=JoinType.right_outer)
-            .on(self.table0.foo == self.table1.bar)
-            .select("*")
-        )
+        expected = 'SELECT * FROM "abc" RIGHT OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"'
+        with self.subTest("join with enum"):
+            query = (
+                Query.from_(self.table0)
+                .join(self.table1, how=JoinType.right_outer)
+                .on(self.table0.foo == self.table1.bar)
+                .select("*")
+            )
 
-        self.assertEqual(
-            'SELECT * FROM "abc" RIGHT OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"',
-            str(q),
-        )
+            self.assertEqual(expected, str(query))
+
+        with self.subTest("join function"):
+            query = (
+                Query.from_(self.table0)
+                .right_outer_join(self.table1)
+                .on(self.table0.foo == self.table1.bar)
+                .select("*")
+            )
+
+            self.assertEqual(expected, str(query))
 
     def test_full_outer_join(self):
-        q = (
-            Query.from_(self.table0)
-            .join(self.table1, how=JoinType.full_outer)
-            .on(self.table0.foo == self.table1.bar)
-            .select("*")
-        )
+        expected = 'SELECT * FROM "abc" FULL OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"'
 
-        self.assertEqual(
-            'SELECT * FROM "abc" FULL OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"',
-            str(q),
-        )
+        with self.subTest("join with enum"):
+            query = (
+                Query.from_(self.table0)
+                .join(self.table1, how=JoinType.full_outer)
+                .on(self.table0.foo == self.table1.bar)
+                .select("*")
+            )
+
+            self.assertEqual(expected, str(query))
+
+        with self.subTest("join function"):
+            query = (
+                Query.from_(self.table0).full_outer_join(self.table1).on(self.table0.foo == self.table1.bar).select("*")
+            )
+
+            self.assertEqual(expected, str(query))
 
     def test_join_on_field_single(self):
         query = Query.from_(self.table0).join(self.table1).on_field("foo").select("*")

@@ -987,11 +987,20 @@ class QueryBuilder(Selectable, Term):
     def left_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
         return self.join(item, JoinType.left)
 
+    def left_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+        return self.join(item, JoinType.left_outer)
+
     def right_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
         return self.join(item, JoinType.right)
 
+    def right_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+        return self.join(item, JoinType.right_outer)
+
     def outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
         return self.join(item, JoinType.outer)
+
+    def full_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+        return self.join(item, JoinType.full_outer)
 
     def cross_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
         return self.join(item, JoinType.cross)

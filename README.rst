@@ -408,9 +408,12 @@ All join types are supported by |Brand|.
         .from_(base_table)
         ...
         .left_join(join_table) \
+        .left_outer_join(join_table) \
         .right_join(join_table) \
+        .right_outer_join(join_table) \
         .inner_join(join_table) \
         .outer_join(join_table) \
+        .full_outer_join(join_table) \
         .cross_join(join_table) \
         .hash_join(join_table) \
         ...
