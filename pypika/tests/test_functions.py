@@ -413,6 +413,11 @@ class AggregationTests(unittest.TestCase):
             str(q),
         )
 
+    def test__subquery_in_params_functions(self):
+        subquery = Query.from_('table').select('id')
+        func = fn.Function('func', 'id', subquery)
+        self.assertEqual("func('id',(SELECT id FROM table))", func.get_sql())
+
 
 class ConditionTests(unittest.TestCase):
     def test__case__raw(self):
