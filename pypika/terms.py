@@ -27,6 +27,8 @@ NodeT = TypeVar("NodeT", bound="Node")
 
 
 class Node:
+    is_aggregate = None
+
     def nodes_(self) -> Iterator[NodeT]:
         yield self
 
