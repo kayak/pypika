@@ -434,6 +434,11 @@ class WhereTests(unittest.TestCase):
         q = Query.from_(self.t).select(self.t.star).where(self.t.foo.regex(r"^b"))
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" REGEX \'^b\'', str(q))
+    
+    def test_where_field_matches_rlike(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.rlike(r"^b"))
+
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo" RLIKE \'^b\'', str(q))
 
     def test_ignore_empty_criterion(self):
         q1 = Query.from_(self.t).select("*").where(EmptyCriterion())
