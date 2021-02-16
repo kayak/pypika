@@ -1244,14 +1244,16 @@ class Function(Criterion):
     def get_special_params_sql(self, **kwargs: Any) -> Any:
         pass
 
+    @staticmethod
+    def get_arg_sql(arg, **kwargs):
+        return arg.get_sql(with_alias=False, **kwargs) if hasattr(arg, "get_sql") else str(arg)
+
     def get_function_sql(self, **kwargs: Any) -> str:
         special_params_sql = self.get_special_params_sql(**kwargs)
 
         return "{name}({args}{special})".format(
             name=self.name,
-            args=",".join(
-                p.get_sql(with_alias=False, **kwargs) if hasattr(p, "get_sql") else str(p) for p in self.args
-            ),
+            args=",".join(self.get_arg_sql(arg, **kwargs) for arg in self.args),
             special=(" " + special_params_sql) if special_params_sql else "",
         )
 
@@ -1437,14 +1439,13 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
 
 class Interval(Node):
     templates = {
-        # MySQL requires no single quotes around the expr and unit
-        Dialects.MYSQL: "INTERVAL {expr} {unit}",
         # PostgreSQL, Redshift and Vertica require quotes around the expr and unit e.g. INTERVAL '1 week'
         Dialects.POSTGRESQL: "INTERVAL '{expr} {unit}'",
         Dialects.REDSHIFT: "INTERVAL '{expr} {unit}'",
         Dialects.VERTICA: "INTERVAL '{expr} {unit}'",
-        # Oracle requires just single quotes around the expr
+        # Oracle and MySQL requires just single quotes around the expr
         Dialects.ORACLE: "INTERVAL '{expr}' {unit}",
+        Dialects.MYSQL: "INTERVAL '{expr}' {unit}",
     }
 
     units = ["years", "months", "days", "hours", "minutes", "seconds", "microseconds"]
@@ -1468,6 +1469,7 @@ class Interval(Node):
         self.dialect = dialect
         self.largest = None
         self.smallest = None
+        self.is_negative = False
 
         if quarters:
             self.quarters = quarters
@@ -1483,8 +1485,11 @@ class Interval(Node):
             [years, months, days, hours, minutes, seconds, microseconds],
         ):
             if value:
-                setattr(self, unit, int(value))
-                self.largest = self.largest or label
+                int_value = int(value)
+                setattr(self, unit, abs(int_value))
+                if self.largest is None:
+                    self.largest = label
+                    self.is_negative = int_value < 0
                 self.smallest = label
 
     def __str__(self) -> str:
@@ -1517,6 +1522,8 @@ class Interval(Node):
                 microseconds=getattr(self, "microseconds", 0),
             )
             expr = self.trim_pattern.sub("", expr)
+            if self.is_negative:
+                expr = "-" + expr
 
             unit = (
                 "{largest}_{smallest}".format(
