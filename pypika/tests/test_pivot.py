@@ -15,7 +15,7 @@ class PivotTests(unittest.TestCase):
         q = (
             Query.from_(self.table_test)
             .groupby(self.table_test.id)
-            .select(self.table_test.id, *pivot(self.table_test.month, self.table_test_sales, ["JAN", "FEB"], fn.Sum))
+            .select(self.table_test.id, *pivot(self.table_test.month, self.table_test.sales, ["JAN", "FEB"], fn.Sum))
         )
 
         self.assertEqual(
