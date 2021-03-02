@@ -6,6 +6,7 @@ from pypika.terms import (
     AggregateFunction,
     Function,
     Star,
+    LiteralValue,
 )
 from pypika.utils import builder
 
@@ -279,7 +280,7 @@ class CurTime(Function):
 
 class Extract(Function):
     def __init__(self, date_part, field, alias=None):
-        super(Extract, self).__init__("EXTRACT", date_part, alias=alias)
+        super(Extract, self).__init__("EXTRACT", LiteralValue(date_part), alias=alias)
         self.field = field
 
     def get_special_params_sql(self, **kwargs):

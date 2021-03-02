@@ -70,7 +70,7 @@ class SetOperation(Enum):
     minus = "MINUS"
 
 
-class DatePart(Enum):
+class DatePart(str, Enum):
     year = "YEAR"
     quarter = "QUARTER"
     month = "MONTH"
