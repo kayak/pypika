@@ -19,9 +19,7 @@ class PivotTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            '''
-            SELECT "id",SUM(CASE WHEN "month"=\'JAN\' THEN "sales" ELSE NULL END) "JAN",
-            SUM(CASE WHEN "month"=\'FEB\' THEN "sales" ELSE NULL END) "FEB" FROM "monthly_sales" GROUP BY "id"
-            ''',
+            '''SELECT "id",SUM(CASE WHEN "month"='JAN' THEN "sales" ELSE NULL END) "JAN",'''
+            + '''SUM(CASE WHEN "month"='FEB' THEN "sales" ELSE NULL END) "FEB" FROM "monthly_sales" GROUP BY "id"''',
             str(q),
         )
