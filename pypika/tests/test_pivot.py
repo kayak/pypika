@@ -3,8 +3,8 @@ import unittest
 from pypika import (
     Query,
     Table,
-    pivot,
 )
+from pypika.pivot import pivot
 import pypika.functions as fn
 
 
