@@ -355,6 +355,18 @@ class WhereTests(unittest.TestCase):
         q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update()
         self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE', str(q))
 
+    def test_where_field_equals_for_update_nowait(self):
+        q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(nowait=True)
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE NOWAIT', str(q))
+
+    def test_where_field_equals_for_update_skip_locked(self):
+        q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(skip_locked=True)
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE SKIP LOCKED', str(q))
+
+    def test_where_field_equals_for_update_of(self):
+        q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(of=("abc",))
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE OF "abc"', str(q))
+
     def test_where_field_equals_where(self):
         q = Query.from_(self.t).select("*").where(self.t.foo == 1).where(self.t.bar == self.t.baz)
 
