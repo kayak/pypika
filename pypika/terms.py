@@ -1246,7 +1246,7 @@ class Function(Criterion):
 
     @staticmethod
     def get_arg_sql(arg, **kwargs):
-        return arg.get_sql(with_alias=False, **kwargs) if hasattr(arg, "get_sql") else str(arg)
+        return arg.get_sql(subquery=True, with_alias=False, **kwargs) if hasattr(arg, "get_sql") else str(arg)
 
     def get_function_sql(self, **kwargs: Any) -> str:
         special_params_sql = self.get_special_params_sql(**kwargs)
