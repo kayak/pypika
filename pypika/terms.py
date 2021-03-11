@@ -1,5 +1,6 @@
 import inspect
 import re
+import uuid
 from datetime import date
 from enum import Enum
 from typing import Any, Iterable, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Type, TypeVar, Union
@@ -351,6 +352,8 @@ class ValueWrapper(Term):
             return format_quotes(value, quote_char)
         if isinstance(self.value, bool):
             return str.lower(str(self.value))
+        if isinstance(self.value, uuid.UUID):
+            return format_quotes(str(self.value), quote_char)
         if self.value is None:
             return "null"
         return str(self.value)
