@@ -881,7 +881,9 @@ class QueryBuilder(Selectable, Term):
         self._distinct = True
 
     @builder
-    def for_update(self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str] = ()) -> "QueryBuilder":
+    def for_update(
+        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+    ) -> "QueryBuilder":
         self._for_update = True
         self._for_update_skip_locked = skip_locked
         self._for_update_nowait = nowait
