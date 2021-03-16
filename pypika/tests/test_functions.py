@@ -672,34 +672,44 @@ class DateFunctionsTests(unittest.TestCase):
     def _test_extract_datepart(self, date_part):
         q = Q.from_(self.t).select(fn.Extract(date_part, self.t.foo))
 
-        self.assertEqual('SELECT EXTRACT(%s FROM "foo") FROM "abc"' % date_part.value, str(q))
+        value = getattr(date_part, 'value', date_part)
+        self.assertEqual('SELECT EXTRACT(%s FROM "foo") FROM "abc"' % value, str(q))
 
     def test_extract_microsecond(self):
         self._test_extract_datepart(DatePart.microsecond)
+        self._test_extract_datepart(DatePart.microsecond.value)
 
     def test_extract_second(self):
         self._test_extract_datepart(DatePart.second)
+        self._test_extract_datepart(DatePart.second.value)
 
     def test_extract_minute(self):
         self._test_extract_datepart(DatePart.minute)
+        self._test_extract_datepart(DatePart.minute.value)
 
     def test_extract_hour(self):
         self._test_extract_datepart(DatePart.hour)
+        self._test_extract_datepart(DatePart.hour.value)
 
     def test_extract_day(self):
         self._test_extract_datepart(DatePart.day)
+        self._test_extract_datepart(DatePart.day.value)
 
     def test_extract_week(self):
         self._test_extract_datepart(DatePart.week)
+        self._test_extract_datepart(DatePart.week.value)
 
     def test_extract_month(self):
         self._test_extract_datepart(DatePart.month)
+        self._test_extract_datepart(DatePart.month.value)
 
     def test_extract_quarter(self):
         self._test_extract_datepart(DatePart.quarter)
+        self._test_extract_datepart(DatePart.quarter.value)
 
     def test_extract_year(self):
         self._test_extract_datepart(DatePart.year)
+        self._test_extract_datepart(DatePart.year.value)
 
     def test_extract_join(self):
         q = Q.from_(self.t).join(self.t2).on(self.t.id == self.t2.t_id).select(fn.Extract(DatePart.year, self.t.foo))
@@ -710,7 +720,7 @@ class DateFunctionsTests(unittest.TestCase):
 
     def test_timestampadd(self):
         a = fn.TimestampAdd("year", 1, "2017-10-01")
-        self.assertEqual(str(a), "TIMESTAMPADD('year',1,'2017-10-01')")
+        self.assertEqual(str(a), "TIMESTAMPADD(year,1,'2017-10-01')")
 
     def test_time_diff(self):
         a = fn.TimeDiff("18:00:00", "10:00:00")
@@ -718,7 +728,7 @@ class DateFunctionsTests(unittest.TestCase):
 
     def test_date_add(self):
         a = fn.DateAdd("year", 1, "2017-10-01")
-        self.assertEqual(str(a), "DATE_ADD('year',1,'2017-10-01')")
+        self.assertEqual(str(a), "DATE_ADD(year,1,'2017-10-01')")
 
     def test_now(self):
         query = Query.select(fn.Now())
