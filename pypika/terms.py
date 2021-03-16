@@ -337,26 +337,29 @@ class ValueWrapper(Term):
         self.value = value
 
     def get_value_sql(self, **kwargs: Any) -> str:
+        return self.get_formatted_value(self.value, **kwargs)
+
+    @classmethod
+    def get_formatted_value(cls, value: Any, **kwargs):
         quote_char = kwargs.get("secondary_quote_char") or ""
 
         # FIXME escape values
-        if isinstance(self.value, Term):
-            return self.value.get_sql(**kwargs)
-        if isinstance(self.value, Enum):
-            return self.value.value
-        if isinstance(self.value, date):
-            value = self.value.isoformat()
+        if isinstance(value, Term):
+            return value.get_sql(**kwargs)
+        if isinstance(value, Enum):
+            return cls.get_formatted_value(value.value, **kwargs)
+        if isinstance(value, date):
+            return cls.get_formatted_value(value.isoformat(), **kwargs)
+        if isinstance(value, str):
+            value = value.replace(quote_char, quote_char * 2)
             return format_quotes(value, quote_char)
-        if isinstance(self.value, str):
-            value = self.value.replace(quote_char, quote_char * 2)
-            return format_quotes(value, quote_char)
-        if isinstance(self.value, bool):
-            return str.lower(str(self.value))
-        if isinstance(self.value, uuid.UUID):
-            return format_quotes(str(self.value), quote_char)
-        if self.value is None:
+        if isinstance(value, bool):
+            return str.lower(str(value))
+        if isinstance(value, uuid.UUID):
+            return cls.get_formatted_value(str(value), **kwargs)
+        if value is None:
             return "null"
-        return str(self.value)
+        return str(value)
 
     def get_sql(self, quote_char: Optional[str] = None, secondary_quote_char: str = "'", **kwargs: Any) -> str:
         sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
