@@ -1,5 +1,6 @@
 import inspect
 import re
+import uuid
 from datetime import date
 from enum import Enum
 from typing import Any, Iterable, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Type, TypeVar, Union
@@ -27,6 +28,8 @@ NodeT = TypeVar("NodeT", bound="Node")
 
 
 class Node:
+    is_aggregate = None
+
     def nodes_(self) -> Iterator[NodeT]:
         yield self
 
@@ -156,6 +159,9 @@ class Term(Node):
 
     def not_ilike(self, expr: str) -> "BasicCriterion":
         return BasicCriterion(Matching.not_ilike, self, self.wrap_constant(expr))
+
+    def rlike(self, expr: str) -> "BasicCriterion":
+        return BasicCriterion(Matching.rlike, self, self.wrap_constant(expr))
 
     def regex(self, pattern: str) -> "BasicCriterion":
         return BasicCriterion(Matching.regex, self, self.wrap_constant(pattern))
@@ -331,24 +337,29 @@ class ValueWrapper(Term):
         self.value = value
 
     def get_value_sql(self, **kwargs: Any) -> str:
+        return self.get_formatted_value(self.value, **kwargs)
+
+    @classmethod
+    def get_formatted_value(cls, value: Any, **kwargs):
         quote_char = kwargs.get("secondary_quote_char") or ""
 
         # FIXME escape values
-        if isinstance(self.value, Term):
-            return self.value.get_sql(**kwargs)
-        if isinstance(self.value, Enum):
-            return self.value.value
-        if isinstance(self.value, date):
-            value = self.value.isoformat()
+        if isinstance(value, Term):
+            return value.get_sql(**kwargs)
+        if isinstance(value, Enum):
+            return cls.get_formatted_value(value.value, **kwargs)
+        if isinstance(value, date):
+            return cls.get_formatted_value(value.isoformat(), **kwargs)
+        if isinstance(value, str):
+            value = value.replace(quote_char, quote_char * 2)
             return format_quotes(value, quote_char)
-        if isinstance(self.value, str):
-            value = self.value.replace(quote_char, quote_char * 2)
-            return format_quotes(value, quote_char)
-        if isinstance(self.value, bool):
-            return str.lower(str(self.value))
-        if self.value is None:
+        if isinstance(value, bool):
+            return str.lower(str(value))
+        if isinstance(value, uuid.UUID):
+            return cls.get_formatted_value(str(value), **kwargs)
+        if value is None:
             return "null"
-        return str(self.value)
+        return str(value)
 
     def get_sql(self, quote_char: Optional[str] = None, secondary_quote_char: str = "'", **kwargs: Any) -> str:
         sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
@@ -1239,6 +1250,10 @@ class Function(Criterion):
     def get_special_params_sql(self, **kwargs: Any) -> Any:
         pass
 
+    @staticmethod
+    def get_arg_sql(arg, **kwargs):
+        return arg.get_sql(with_alias=False, **kwargs) if hasattr(arg, "get_sql") else str(arg)
+
     def get_function_sql(self, **kwargs: Any) -> str:
         special_params_sql = self.get_special_params_sql(**kwargs)
 
@@ -1433,14 +1448,13 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
 
 class Interval(Node):
     templates = {
-        # MySQL requires no single quotes around the expr and unit
-        Dialects.MYSQL: "INTERVAL {expr} {unit}",
         # PostgreSQL, Redshift and Vertica require quotes around the expr and unit e.g. INTERVAL '1 week'
         Dialects.POSTGRESQL: "INTERVAL '{expr} {unit}'",
         Dialects.REDSHIFT: "INTERVAL '{expr} {unit}'",
         Dialects.VERTICA: "INTERVAL '{expr} {unit}'",
-        # Oracle requires just single quotes around the expr
+        # Oracle and MySQL requires just single quotes around the expr
         Dialects.ORACLE: "INTERVAL '{expr}' {unit}",
+        Dialects.MYSQL: "INTERVAL '{expr}' {unit}",
     }
 
     units = ["years", "months", "days", "hours", "minutes", "seconds", "microseconds"]
@@ -1464,6 +1478,7 @@ class Interval(Node):
         self.dialect = dialect
         self.largest = None
         self.smallest = None
+        self.is_negative = False
 
         if quarters:
             self.quarters = quarters
@@ -1479,8 +1494,11 @@ class Interval(Node):
             [years, months, days, hours, minutes, seconds, microseconds],
         ):
             if value:
-                setattr(self, unit, int(value))
-                self.largest = self.largest or label
+                int_value = int(value)
+                setattr(self, unit, abs(int_value))
+                if self.largest is None:
+                    self.largest = label
+                    self.is_negative = int_value < 0
                 self.smallest = label
 
     def __str__(self) -> str:
@@ -1513,6 +1531,8 @@ class Interval(Node):
                 microseconds=getattr(self, "microseconds", 0),
             )
             expr = self.trim_pattern.sub("", expr)
+            if self.is_negative:
+                expr = "-" + expr
 
             unit = (
                 "{largest}_{smallest}".format(

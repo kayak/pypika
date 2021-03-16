@@ -5,6 +5,7 @@ from pypika.enums import SqlTypes
 from pypika.terms import (
     AggregateFunction,
     Function,
+    LiteralValue,
     Star,
 )
 from pypika.utils import builder
@@ -156,7 +157,8 @@ class TimeDiff(Function):
 
 class DateAdd(Function):
     def __init__(self, date_part, interval, term, alias=None):
-        super(DateAdd, self).__init__("DATE_ADD", date_part, interval, term, alias=alias)
+        date_part = getattr(date_part, "value", date_part)
+        super(DateAdd, self).__init__("DATE_ADD", LiteralValue(date_part), interval, term, alias=alias)
 
 
 class ToDate(Function):
@@ -171,7 +173,8 @@ class Timestamp(Function):
 
 class TimestampAdd(Function):
     def __init__(self, date_part, interval, term, alias=None):
-        super(TimestampAdd, self).__init__("TIMESTAMPADD", date_part, interval, term, alias=alias)
+        date_part = getattr(date_part, 'value', date_part)
+        super(TimestampAdd, self).__init__("TIMESTAMPADD", LiteralValue(date_part), interval, term, alias=alias)
 
 
 # String Functions
@@ -279,7 +282,8 @@ class CurTime(Function):
 
 class Extract(Function):
     def __init__(self, date_part, field, alias=None):
-        super(Extract, self).__init__("EXTRACT", date_part, alias=alias)
+        date_part = getattr(date_part, "value", date_part)
+        super(Extract, self).__init__("EXTRACT", LiteralValue(date_part), alias=alias)
         self.field = field
 
     def get_special_params_sql(self, **kwargs):

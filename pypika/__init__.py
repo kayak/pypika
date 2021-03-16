@@ -100,7 +100,7 @@ from pypika.utils import (
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.47.4"
+__version__ = "0.47.6"
 
 NULL = NullValue()
 SYSTEM_TIME = SystemTimeValue()

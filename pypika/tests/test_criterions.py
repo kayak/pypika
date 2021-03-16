@@ -575,6 +575,13 @@ class LikeTests(unittest.TestCase):
         self.assertEqual("\"foo\" NOT ILIKE 'a_b%c'", str(c1))
         self.assertEqual('"like"."foo" NOT ILIKE \'a_b%c\'', str(c2))
 
+    def test_rlike_escape_chars(self):
+        c1 = Field("foo").rlike("\\\\d+$")
+        c2 = Field("foo", table=self.t).rlike("\\\\d+$")
+
+        self.assertEqual("\"foo\" RLIKE '\\\\d+$'", str(c1))
+        self.assertEqual('"like"."foo" RLIKE \'\\\\d+$\'', str(c2))
+
     def test_glob_single_chars_and_various_chars(self):
         c1 = Field("foo").glob("a_b*")
         c2 = Field("foo", table=self.t).glob("a_b*")
