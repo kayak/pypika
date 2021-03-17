@@ -473,6 +473,26 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo"="bar"', str(q))
 
+    def test_where_with_multiple_wheres_using_and_case(self):
+        case_stmt = Case().when(self.t.foo == 'bar', 1).else_(0)
+        query = Query.from_(self.t).select(case_stmt).where(case_stmt & self.t.blah.isin(['test']))
+
+        self.assertEqual(
+            'SELECT CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 END FROM "abc" WHERE CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 '
+            'END AND "blah" IN (\'test\')',
+            str(query),
+        )
+
+    def test_where_with_multiple_wheres_using_or_case(self):
+        case_stmt = Case().when(self.t.foo == 'bar', 1).else_(0)
+        query = Query.from_(self.t).select(case_stmt).where(case_stmt | self.t.blah.isin(['test']))
+
+        self.assertEqual(
+            'SELECT CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 END FROM "abc" WHERE CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 '
+            'END OR "blah" IN (\'test\')',
+            str(query),
+        )
+
 
 class PreWhereTests(WhereTests):
     t = Table("abc")

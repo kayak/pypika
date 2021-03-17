@@ -1050,7 +1050,7 @@ class ArithmeticExpression(Term):
         return arithmetic_sql
 
 
-class Case(Term):
+class Case(Criterion):
     def __init__(self, alias: Optional[str] = None) -> None:
         super().__init__(alias=alias)
         self._cases = []
