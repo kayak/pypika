@@ -678,6 +678,7 @@ class QueryBuilder(Selectable, Term):
         self._orderbys = []
         self._joins = []
         self._unions = []
+        self._using = []
 
         self._limit = None
         self._offset = None
@@ -1264,6 +1265,9 @@ class QueryBuilder(Selectable, Term):
         if self._from:
             querystring += self._from_sql(**kwargs)
 
+        if self._using:
+            querystring += self._using_sql(**kwargs)
+
         if self._force_indexes:
             querystring += self._force_index_sql(**kwargs)
 
@@ -1386,6 +1390,11 @@ class QueryBuilder(Selectable, Term):
     def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
         return " FROM {selectable}".format(
             selectable=",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
+        )
+
+    def _using_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
+        return " USING {selectable}".format(
+            selectable=",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._using)
         )
 
     def _force_index_sql(self, **kwargs: Any) -> str:

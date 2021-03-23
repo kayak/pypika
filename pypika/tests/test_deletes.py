@@ -84,3 +84,14 @@ class PostgresDeleteTests(unittest.TestCase):
         )
 
         self.assertEqual('DELETE FROM "abc" WHERE "foo"="bar" RETURNING *', str(q1))
+
+    def test_delete_using(self):
+        table_trash = Table('trash')
+        q1 = (
+            PostgreSQLQuery.from_(self.table_abc)
+            .using(table_trash)
+            .where(self.table_abc.id == table_trash.abc_id)
+            .delete()
+        )
+
+        self.assertEqual('DELETE FROM "abc" USING "trash" WHERE "abc"."id"="trash"."abc_id"', str(q1))

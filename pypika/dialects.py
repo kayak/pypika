@@ -7,6 +7,7 @@ from pypika.queries import (
     CreateQueryBuilder,
     Query,
     QueryBuilder,
+    Selectable,
     Table,
     DropQueryBuilder,
 )
@@ -432,6 +433,10 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 self._on_conflict_wheres = criterion
         else:
             raise QueryException('Can not have fieldless ON CONFLICT WHERE')
+
+    @builder
+    def using(self, table: Union[Selectable, str]) -> "QueryBuilder":
+        self._using.append(table)
 
     def _distinct_sql(self, **kwargs: Any) -> str:
         if self._distinct_on:
