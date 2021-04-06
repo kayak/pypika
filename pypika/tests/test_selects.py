@@ -2,9 +2,12 @@ import unittest
 from datetime import date
 from enum import Enum
 
-from pypika import SYSTEM_TIME, AliasedQuery, Case, ClickHouseQuery, EmptyCriterion
-from pypika import Field as F
 from pypika import (
+    AliasedQuery,
+    Case,
+    ClickHouseQuery,
+    EmptyCriterion,
+    Field as F,
     Index,
     MSSQLQuery,
     MySQLQuery,
@@ -19,8 +22,9 @@ from pypika import (
     Table,
     Tables,
     VerticaQuery,
+    functions as fn,
+    SYSTEM_TIME,
 )
-from pypika import functions as fn
 from pypika.terms import ValueWrapper
 
 __author__ = "Timothy Heys"
