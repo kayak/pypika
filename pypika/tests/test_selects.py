@@ -1,4 +1,6 @@
 import unittest
+from datetime import date
+from enum import Enum
 
 from pypika import (
     AliasedQuery,
@@ -339,8 +341,29 @@ class SelectTests(unittest.TestCase):
             self.assertEqual('SELECT * FROM "abc" FOR "valid_period" ALL', str(q))
 
 
+class MyEnum(Enum):
+    STR = "foo"
+    INT = 0
+    BOOL = True
+    DATE = date(2020, 2, 2)
+    NONE = None
+
+
 class WhereTests(unittest.TestCase):
     t = Table("abc")
+
+    def test_where_enum(self):
+        q1 = Query.from_(self.t).select("*").where(self.t.foo == MyEnum.STR)
+        q2 = Query.from_(self.t).select("*").where(self.t.foo == MyEnum.INT)
+        q3 = Query.from_(self.t).select("*").where(self.t.foo == MyEnum.BOOL)
+        q4 = Query.from_(self.t).select("*").where(self.t.foo == MyEnum.DATE)
+        q5 = Query.from_(self.t).select("*").where(self.t.foo == MyEnum.NONE)
+
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"=\'foo\'', str(q1))
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"=0', str(q2))
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"=true', str(q3))
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"=\'2020-02-02\'', str(q4))
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"=null', str(q5))
 
     def test_where_field_equals(self):
         q1 = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar)
@@ -435,6 +458,11 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" REGEX \'^b\'', str(q))
 
+    def test_where_field_matches_rlike(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.rlike(r"^b"))
+
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo" RLIKE \'^b\'', str(q))
+
     def test_ignore_empty_criterion(self):
         q1 = Query.from_(self.t).select("*").where(EmptyCriterion())
 
@@ -444,6 +472,26 @@ class WhereTests(unittest.TestCase):
         q = Query.from_("abc").select("foo").where(self.t.foo == self.t.bar).force_index("egg")
 
         self.assertEqual('SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo"="bar"', str(q))
+
+    def test_where_with_multiple_wheres_using_and_case(self):
+        case_stmt = Case().when(self.t.foo == 'bar', 1).else_(0)
+        query = Query.from_(self.t).select(case_stmt).where(case_stmt & self.t.blah.isin(['test']))
+
+        self.assertEqual(
+            'SELECT CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 END FROM "abc" WHERE CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 '
+            'END AND "blah" IN (\'test\')',
+            str(query),
+        )
+
+    def test_where_with_multiple_wheres_using_or_case(self):
+        case_stmt = Case().when(self.t.foo == 'bar', 1).else_(0)
+        query = Query.from_(self.t).select(case_stmt).where(case_stmt | self.t.blah.isin(['test']))
+
+        self.assertEqual(
+            'SELECT CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 END FROM "abc" WHERE CASE WHEN "foo"=\'bar\' THEN 1 ELSE 0 '
+            'END OR "blah" IN (\'test\')',
+            str(query),
+        )
 
 
 class PreWhereTests(WhereTests):

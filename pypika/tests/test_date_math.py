@@ -124,9 +124,9 @@ class AddIntervalMultipleUnitsTests(unittest.TestCase):
 
 
 class DialectIntervalTests(unittest.TestCase):
-    def test_mysql_dialect_does_not_use_quotes_around_interval(self):
+    def test_mysql_dialect_uses_single_quotes_around_expression_in_an_interval(self):
         c = Interval(days=1).get_sql(dialect=Dialects.MYSQL)
-        self.assertEqual("INTERVAL 1 DAY", c)
+        self.assertEqual("INTERVAL '1' DAY", c)
 
     def test_oracle_dialect_uses_single_quotes_around_expression_in_an_interval(self):
         c = Interval(days=1).get_sql(dialect=Dialects.ORACLE)
@@ -143,6 +143,28 @@ class DialectIntervalTests(unittest.TestCase):
     def test_postgresql_dialect_uses_single_quotes_around_interval(self):
         c = Interval(days=1).get_sql(dialect=Dialects.POSTGRESQL)
         self.assertEqual("INTERVAL '1 DAY'", c)
+
+
+class TestNegativeIntervals(unittest.TestCase):
+    def test_day(self):
+        c = Interval(days=-1).get_sql()
+        self.assertEqual("INTERVAL '-1 DAY'", c)
+
+    def test_week(self):
+        c = Interval(weeks=-1).get_sql()
+        self.assertEqual("INTERVAL '-1 WEEK'", c)
+
+    def test_month(self):
+        c = Interval(months=-1).get_sql()
+        self.assertEqual("INTERVAL '-1 MONTH'", c)
+
+    def test_year(self):
+        c = Interval(years=-1).get_sql()
+        self.assertEqual("INTERVAL '-1 YEAR'", c)
+
+    def test_year_month(self):
+        c = Interval(years=-1, months=-4).get_sql()
+        self.assertEqual("INTERVAL '-1-4 YEAR_MONTH'", c)
 
 
 class TruncateTrailingZerosTests(unittest.TestCase):
