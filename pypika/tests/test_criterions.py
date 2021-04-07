@@ -12,7 +12,7 @@ from pypika import (
     functions as fn,
 )
 from pypika.queries import QueryBuilder
-from pypika.terms import Mod
+from pypika.terms import ExistsCriterion, Mod
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -588,6 +588,27 @@ class LikeTests(unittest.TestCase):
 
         self.assertEqual("\"foo\" GLOB 'a_b*'", str(c1))
         self.assertEqual('"like"."foo" GLOB \'a_b*\'', str(c2))
+
+
+class ExistsCriterionTests(unittest.TestCase):
+    t2 = Table("abc", alias="t2")
+    q2 = QueryBuilder().from_(t2).select(t2.field2)
+
+    def test_exists(self):
+        t1 = Table("def", alias="t1")
+        q1 = QueryBuilder().from_(t1).where(ExistsCriterion(self.q2)).select(t1.field1)
+
+        self.assertEqual(
+            'SELECT "t1"."field1" FROM "def" "t1" WHERE EXISTS (SELECT "t2"."field2" FROM "abc" "t2")', str(q1)
+        )
+
+    def test_not_exists(self):
+        t1 = Table("def", alias="t1")
+        q1 = QueryBuilder().from_(t1).where(ExistsCriterion(self.q2).negate()).select(t1.field1)
+
+        self.assertEqual(
+            'SELECT "t1"."field1" FROM "def" "t1" WHERE NOT EXISTS (SELECT "t2"."field2" FROM "abc" "t2")', str(q1)
+        )
 
 
 class ComplexCriterionTests(unittest.TestCase):

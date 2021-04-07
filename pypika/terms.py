@@ -804,6 +804,23 @@ class ContainsCriterion(Criterion):
         self._is_negated = True
 
 
+class ExistsCriterion(Criterion):
+    def __init__(self, container, alias=None):
+        super(ExistsCriterion, self).__init__(alias)
+        self.container = container
+        self._is_negated = False
+
+    def get_sql(self, **kwargs):
+        # FIXME escape
+        return "{not_}EXISTS {container}".format(
+            container=self.container.get_sql(**kwargs), not_='NOT ' if self._is_negated else ''
+        )
+
+    def negate(self):
+        self._is_negated = True
+        return self
+
+
 class RangeCriterion(Criterion):
     def __init__(self, term: Term, start: Any, end: Any, alias: Optional[str] = None) -> str:
         super().__init__(alias)
