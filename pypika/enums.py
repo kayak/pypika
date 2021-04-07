@@ -32,6 +32,7 @@ class Matching(Comparator):
     ilike = " ILIKE "
     rlike = " RLIKE "
     regex = " REGEX "
+    regexp = " REGEXP "
     bin_regex = " REGEX BINARY "
     as_of = " AS OF "
     glob = " GLOB "

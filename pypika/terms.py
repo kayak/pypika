@@ -3,7 +3,7 @@ import re
 import uuid
 from datetime import date
 from enum import Enum
-from typing import Any, Iterable, Iterator, List, Optional, Sequence, Set, TYPE_CHECKING, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
 from pypika.utils import (
@@ -17,7 +17,7 @@ from pypika.utils import (
 )
 
 if TYPE_CHECKING:
-    from pypika.queries import Table, QueryBuilder, Selectable
+    from pypika.queries import QueryBuilder, Selectable, Table
 
 
 __author__ = "Timothy Heys"
@@ -165,6 +165,9 @@ class Term(Node):
 
     def regex(self, pattern: str) -> "BasicCriterion":
         return BasicCriterion(Matching.regex, self, self.wrap_constant(pattern))
+
+    def regexp(self, pattern: str) -> "BasicCriterion":
+        return BasicCriterion(Matching.regexp, self, self.wrap_constant(pattern))
 
     def between(self, lower: Any, upper: Any) -> "BetweenCriterion":
         return BetweenCriterion(self, self.wrap_constant(lower), self.wrap_constant(upper))

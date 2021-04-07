@@ -458,6 +458,11 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" REGEX \'^b\'', str(q))
 
+    def test_where_field_matches_regexp(self):
+        q = Query.from_(self.t).select(self.t.star).where(self.t.foo.regexp(r"^b"))
+
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo" REGEXP \'^b\'', str(q))
+
     def test_where_field_matches_rlike(self):
         q = Query.from_(self.t).select(self.t.star).where(self.t.foo.rlike(r"^b"))
 
