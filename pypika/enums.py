@@ -34,6 +34,7 @@ class Matching(Comparator):
     bin_regex = " REGEX BINARY "
     as_of = " AS OF "
     glob = " GLOB "
+    not_glob = " NOT GLOB "
 
 
 class Boolean(Comparator):
