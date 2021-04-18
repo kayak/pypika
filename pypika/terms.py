@@ -941,7 +941,6 @@ class NullCriterion(Criterion):
 
 
 class NotNullCriterion(NullCriterion):
-
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         sql = "{term} IS NOT NULL".format(
             term=self.term.get_sql(**kwargs),
