@@ -127,6 +127,9 @@ class Term(Node):
     def notnull(self) -> "Not":
         return self.isnull().negate()
 
+    def isnotnull(self) -> 'NotNullCriterion':
+        return NotNullCriterion(self)
+
     def bitwiseand(self, value: int) -> "BitwiseAndCriterion":
         return BitwiseAndCriterion(self, self.wrap_constant(value))
 
@@ -932,6 +935,14 @@ class NullCriterion(Criterion):
 
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         sql = "{term} IS NULL".format(
+            term=self.term.get_sql(**kwargs),
+        )
+        return format_alias_sql(sql, self.alias, **kwargs)
+
+
+class NotNullCriterion(NullCriterion):
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
+        sql = "{term} IS NOT NULL".format(
             term=self.term.get_sql(**kwargs),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
