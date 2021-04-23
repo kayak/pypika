@@ -49,3 +49,10 @@ class AtTimezoneTests(TestCase):
             'FROM "customers" JOIN "accounts" ON "customers"."account_id"="accounts"."account_id"',
             query.get_sql(with_namespace=True),
         )
+
+    def test_tabled_fields_dict_has_no_collisions(self):
+        name_fields = {
+            Field(name="name", table="customers"): "Jason",
+            Field(name="name", table="clients"): "Jacob",
+        }
+        self.assertTrue(len(name_fields.keys()) == 2)
