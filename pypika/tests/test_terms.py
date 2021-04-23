@@ -15,6 +15,18 @@ class FieldAliasTests(TestCase):
         self.assertEqual('bar', str(c1.alias))
 
 
+class FieldHashingTests(TestCase):
+    def test_tabled_fields_dict_has_no_collisions(self):
+        customer_name = Field(name="name", table=Table("customers"))
+        client_name = Field(name="name", table=Table("clients"))
+        name_fields = {
+            customer_name: "Jason",
+            client_name: "Jacob",
+        }
+
+        self.assertTrue(len(name_fields.keys()) == 2)
+
+
 class AtTimezoneTests(TestCase):
     def test_when_interval_not_specified(self):
         query = Query.from_("customers").select(AtTimezone("date", "US/Eastern"))
