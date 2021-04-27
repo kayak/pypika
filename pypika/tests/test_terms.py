@@ -16,15 +16,27 @@ class FieldAliasTests(TestCase):
 
 
 class FieldHashingTests(TestCase):
-    def test_tabled_fields_dict_has_no_collisions(self):
+    def test_tabled_eq_fields_equally_hashed(self):
+        client_name1 = Field(name="name", table=Table("clients"))
+        client_name2 = Field(name="name", table=Table("clients"))
+        self.assertTrue(hash(client_name1) == hash(client_name2))
+
+    def test_tabled_ne_fields_differently_hashed(self):
         customer_name = Field(name="name", table=Table("customers"))
         client_name = Field(name="name", table=Table("clients"))
-        name_fields = {
-            customer_name: "Jason",
-            client_name: "Jacob",
-        }
+        self.assertTrue(hash(customer_name) != hash(client_name))
 
-        self.assertTrue(len(name_fields.keys()) == 2)
+    def test_non_tabled_aliased_eq_fields_equally_hashed(self):
+        self.assertTrue(hash(Field(name="A", alias="my_a")) == hash(Field(name="A", alias="my_a")))
+
+    def test_non_tabled_aliased_ne_fields_differently_hashed(self):
+        self.assertTrue(hash(Field(name="A", alias="my_a1")) != hash(Field(name="A", alias="my_a2")))
+
+    def test_non_tabled_eq_fields_equally_hashed(self):
+        self.assertTrue(hash(Field(name="A")) == hash(Field(name="A")))
+
+    def test_non_tabled_ne_fields_differently_hashed(self):
+        self.assertTrue(hash(Field(name="A")) != hash(Field(name="B")))
 
 
 class AtTimezoneTests(TestCase):
