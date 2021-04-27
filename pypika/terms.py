@@ -264,7 +264,7 @@ class Term(Node):
         return self.get_sql(quote_char='"', secondary_quote_char="'")
 
     def __hash__(self) -> int:
-        return hash(self.get_sql(with_alias=True))
+        return hash(self.get_sql(with_alias=True, with_namespace=True))
 
     def get_sql(self, **kwargs: Any) -> str:
         raise NotImplementedError()

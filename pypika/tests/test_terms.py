@@ -15,6 +15,30 @@ class FieldAliasTests(TestCase):
         self.assertEqual('bar', str(c1.alias))
 
 
+class FieldHashingTests(TestCase):
+    def test_tabled_eq_fields_equally_hashed(self):
+        client_name1 = Field(name="name", table=Table("clients"))
+        client_name2 = Field(name="name", table=Table("clients"))
+        self.assertTrue(hash(client_name1) == hash(client_name2))
+
+    def test_tabled_ne_fields_differently_hashed(self):
+        customer_name = Field(name="name", table=Table("customers"))
+        client_name = Field(name="name", table=Table("clients"))
+        self.assertTrue(hash(customer_name) != hash(client_name))
+
+    def test_non_tabled_aliased_eq_fields_equally_hashed(self):
+        self.assertTrue(hash(Field(name="A", alias="my_a")) == hash(Field(name="A", alias="my_a")))
+
+    def test_non_tabled_aliased_ne_fields_differently_hashed(self):
+        self.assertTrue(hash(Field(name="A", alias="my_a1")) != hash(Field(name="A", alias="my_a2")))
+
+    def test_non_tabled_eq_fields_equally_hashed(self):
+        self.assertTrue(hash(Field(name="A")) == hash(Field(name="A")))
+
+    def test_non_tabled_ne_fields_differently_hashed(self):
+        self.assertTrue(hash(Field(name="A")) != hash(Field(name="B")))
+
+
 class AtTimezoneTests(TestCase):
     def test_when_interval_not_specified(self):
         query = Query.from_("customers").select(AtTimezone("date", "US/Eastern"))
