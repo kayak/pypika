@@ -446,6 +446,23 @@ class IsInTests(unittest.TestCase):
         self.assertEqual("\"isin\".\"foo\" IN ('a','b')", str(c2))
 
 
+class ArithmeticExpressionTests(unittest.TestCase):
+
+    def test__lshift(self):
+        c1 = Field("foo").lshift("1")
+        c2 = Field("foo").lshift("2")
+
+        self.assertEqual("\"foo\"<<'1'", str(c1))
+        self.assertEqual("\"foo\"<<'2'", str(c2))
+
+    def test__rshift(self):
+        c1 = Field("foo").rshift("1")
+        c2 = Field("foo").rshift("2")
+
+        self.assertEqual("\"foo\">>'1'", str(c1))
+        self.assertEqual("\"foo\">>'2'", str(c2))
+
+
 class NotInTests(unittest.TestCase):
     t = Table("abc", alias="notin")
 

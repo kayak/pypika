@@ -176,6 +176,15 @@ class JSONBOperatorsTests(unittest.TestCase):
 
         self.assertEqual("SELECT * FROM \"abc\" WHERE \"json\"?|ARRAY['dates','imported']", str(q))
 
+    def test_subnet_contains_inet(self):
+        q = (
+            PostgreSQLQuery.from_(self.table_abc)
+            .select(self.table_abc.a.lshift(2))
+            .where(self.table_abc.cidr >> "1.1.1.1")
+        )
+
+        self.assertEqual("SELECT \"a\"<<2 FROM \"abc\" WHERE \"cidr\">>'1.1.1.1'", str(q))
+
 
 class DistinctOnTests(unittest.TestCase):
     table_abc = Table("abc")
