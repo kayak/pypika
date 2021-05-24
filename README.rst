@@ -862,25 +862,25 @@ MySQL
 
     customers = Table('customers')
 
-    q = Query.into(customers)\
-        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
+    q = MySQLQuery.into(customers) \
+        .insert(1, 'Jane', 'Doe', 'jane@example.com') \
         .on_duplicate_key_ignore())
 
 .. code-block:: sql
 
-    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com') ON DUPLICATE KEY IGNORE
+    INSERT INTO `customers` VALUES (1,'Jane','Doe','jane@example.com') ON DUPLICATE KEY IGNORE
 
 .. code-block:: python
 
     customers = Table('customers')
 
-    q = Query.into(customers)\
-        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
+    q = MySQLQuery.into(customers) \
+        .insert(1, 'Jane', 'Doe', 'jane@example.com') \
         .on_duplicate_key_update(customers.email, Values(customers.email))
 
 .. code-block:: sql
 
-    INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com') ON DUPLICATE KEY UPDATE `email`=VALUES(`email`)
+    INSERT INTO `customers` VALUES (1,'Jane','Doe','jane@example.com') ON DUPLICATE KEY UPDATE `email`=VALUES(`email`)
 
 ``.on_duplicate_key_update`` works similar to ``.set`` for updating rows, additionally it provides the ``Values``
 wrapper to update to the value specified in the ``INSERT`` clause.
@@ -892,22 +892,22 @@ PostgreSQL
 
     customers = Table('customers')
 
-    q = Query.into(customers)\
-        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
-        .on_conflict(customers.email)
+    q = PostgreSQLQuery.into(customers) \
+        .insert(1, 'Jane', 'Doe', 'jane@example.com') \
+        .on_conflict(customers.email) \
         .do_nothing()
 
 .. code-block:: sql
 
-    INSERT INTO "abc" VALUES (1,'Jane','Doe','jane@example.com') ON CONFLICT ("email") DO NOTHING
+    INSERT INTO "customers" VALUES (1,'Jane','Doe','jane@example.com') ON CONFLICT ("email") DO NOTHING
 
 .. code-block:: python
 
     customers = Table('customers')
 
-    q = Query.into(customers)\
-        .insert(1, 'Jane', 'Doe', 'jane@example.com')\
-        .on_conflict(customers.email)
+    q = PostgreSQLQuery.into(customers) \
+        .insert(1, 'Jane', 'Doe', 'jane@example.com') \
+        .on_conflict(customers.email) \
         .do_update(customers.email, 'bob@example.com')
 
 .. code-block:: sql
