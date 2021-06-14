@@ -607,21 +607,25 @@ class MSSQLQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.MSSQL, **kwargs)
-        self._top = None
+        self._top: Union[int, None] = None
+        self._top_with_ties: bool = False
+        self._top_percent: bool = False
 
     @builder
-    def top(self, value: Union[str, int]) -> "MSSQLQueryBuilder":
+    def top(self, value: Union[str, int], percent: bool = False, with_ties: bool = False) -> "MSSQLQueryBuilder":
         """
         Implements support for simple TOP clauses.
-
-        Does not include support for PERCENT or WITH TIES.
-
         https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql?view=sql-server-2017
         """
         try:
             self._top = int(value)
         except ValueError:
             raise QueryException("TOP value must be an integer")
+
+        if percent and not (0 <= int(value) <= 100):
+            raise QueryException("TOP value must be between 0 and 100 when `percent`" " is specified")
+        self._top_percent: bool = percent
+        self._top_with_ties: bool = with_ties
 
     @builder
     def fetch_next(self, limit: int) -> "MSSQLQueryBuilder":
@@ -652,10 +656,15 @@ class MSSQLQueryBuilder(QueryBuilder):
         return super().get_sql(*args, **kwargs)
 
     def _top_sql(self) -> str:
+        _top_statement: str = ""
         if self._top:
-            return "TOP ({}) ".format(self._top)
-        else:
-            return ""
+            _top_statement = f"TOP ({self._top}) "
+            if self._top_percent:
+                _top_statement = f"{_top_statement}PERCENT "
+            if self._top_with_ties:
+                _top_statement = f"{_top_statement}WITH TIES "
+
+        return _top_statement
 
     def _select_sql(self, **kwargs: Any) -> str:
         return "SELECT {distinct}{top}{select}".format(
@@ -705,10 +714,10 @@ class ClickHouseQueryBuilder(QueryBuilder):
 
 
 class SQLLiteValueWrapper(ValueWrapper):
-    def get_value_sql(self, *args: Any, **kwargs: Any) -> str:
+    def get_value_sql(self, **kwargs: Any) -> str:
         if isinstance(self.value, bool):
             return "1" if self.value else "0"
-        return super().get_value_sql(*args, **kwargs)
+        return super().get_value_sql(**kwargs)
 
 
 class SQLLiteQuery(Query):
@@ -718,8 +727,22 @@ class SQLLiteQuery(Query):
 
     @classmethod
     def _builder(cls, **kwargs: Any) -> "SQLLiteQueryBuilder":
-        return SQLLiteQueryBuilder(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+        return SQLLiteQueryBuilder(**kwargs)
 
 
 class SQLLiteQueryBuilder(QueryBuilder):
     QUERY_CLS = SQLLiteQuery
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+        self._insert_or_replace = False
+
+    @builder
+    def insert_or_replace(self, *terms: Any) -> "SQLLiteQueryBuilder":
+        self._apply_terms(*terms)
+        self._replace = True
+        self._insert_or_replace = True
+
+    def _replace_sql(self, **kwargs: Any) -> str:
+        prefix = "INSERT OR " if self._insert_or_replace else ""
+        return prefix + super()._replace_sql(**kwargs)

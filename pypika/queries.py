@@ -837,24 +837,12 @@ class QueryBuilder(Selectable, Term):
 
     @builder
     def insert(self, *terms: Any) -> "QueryBuilder":
-        if self._insert_table is None:
-            raise AttributeError("'Query' object has no attribute '%s'" % "insert")
-
-        if not terms:
-            return
-        else:
-            self._validate_terms_and_append(*terms)
+        self._apply_terms(*terms)
         self._replace = False
 
     @builder
     def replace(self, *terms: Any) -> "QueryBuilder":
-        if self._insert_table is None:
-            raise AttributeError("'Query' object has no attribute '%s'" % "insert")
-
-        if not terms:
-            return
-        else:
-            self._validate_terms_and_append(*terms)
+        self._apply_terms(*terms)
         self._replace = True
 
     @builder
@@ -1140,11 +1128,17 @@ class QueryBuilder(Selectable, Term):
         subquery.alias = "sq%d" % self._subquery_count
         self._subquery_count += 1
 
-    def _validate_terms_and_append(self, *terms: Any) -> None:
+    def _apply_terms(self, *terms: Any) -> None:
         """
         Handy function for INSERT and REPLACE statements in order to check if
         terms are introduced and how append them to `self._values`
         """
+        if self._insert_table is None:
+            raise AttributeError("'Query' object has no attribute '%s'" % "insert")
+
+        if not terms:
+            return
+
         if not isinstance(terms[0], (list, tuple, set)):
             terms = [terms]
 
