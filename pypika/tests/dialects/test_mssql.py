@@ -38,8 +38,10 @@ class SelectTests(unittest.TestCase):
         self.assertEqual('SELECT TOP (10) PERCENT "def" FROM "abc"', str(q))
 
     def test_top_percent_invalid_range(self):
-        for invalid_top in [-1,101]:
-            with self.assertRaisesRegex(QueryException, "TOP value must be between 0 and 100 when `percent` is specified"):
+        for invalid_top in [-1, 101]:
+            with self.assertRaisesRegex(
+                QueryException, "TOP value must be between 0 and 100 when `percent` is specified"
+            ):
                 MSSQLQuery.from_("abc").select("def").top(invalid_top, percent=True)
 
     def test_top_select_non_int(self):
