@@ -705,10 +705,10 @@ class ClickHouseQueryBuilder(QueryBuilder):
 
 
 class SQLLiteValueWrapper(ValueWrapper):
-    def get_value_sql(self, *args: Any, **kwargs: Any) -> str:
+    def get_value_sql(self, **kwargs: Any) -> str:
         if isinstance(self.value, bool):
             return "1" if self.value else "0"
-        return super().get_value_sql(*args, **kwargs)
+        return super().get_value_sql(**kwargs)
 
 
 class SQLLiteQuery(Query):
@@ -718,8 +718,22 @@ class SQLLiteQuery(Query):
 
     @classmethod
     def _builder(cls, **kwargs: Any) -> "SQLLiteQueryBuilder":
-        return SQLLiteQueryBuilder(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+        return SQLLiteQueryBuilder(**kwargs)
 
 
 class SQLLiteQueryBuilder(QueryBuilder):
     QUERY_CLS = SQLLiteQuery
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+        self._insert_or_replace = False
+
+    @builder
+    def insert_or_replace(self, *terms: Any) -> "SQLLiteQueryBuilder":
+        self._apply_terms(*terms)
+        self._replace = True
+        self._insert_or_replace = True
+
+    def _replace_sql(self, **kwargs: Any) -> str:
+        prefix = "INSERT OR " if self._insert_or_replace else ""
+        return prefix + super()._replace_sql(**kwargs)
