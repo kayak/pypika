@@ -498,7 +498,7 @@ class Criterion(Term):
         raise NotImplementedError()
 
 
-class EmptyCriterion:
+class EmptyCriterion(Criterion):
     is_aggregate = None
     tables_ = set()
 
