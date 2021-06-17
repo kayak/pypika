@@ -409,6 +409,18 @@ class Query:
         return DropQueryBuilder().drop_table(table)
 
     @classmethod
+    def drop_user(cls, user: str) -> "DropQueryBuilder":
+        """
+        Query builder entry point. Initializes query building and sets the table name to be dropped. When using this
+        function, the query becomes a DROP statement.
+
+        :param user: String user name.
+
+        :return: DropQueryBuilder
+        """
+        return DropQueryBuilder().drop_user(user)
+
+    @classmethod
     def drop_view(cls, view: str) -> "DropQueryBuilder":
         """
         Query builder entry point. Initializes query building and sets the table name to be dropped. When using this
@@ -1981,6 +1993,10 @@ class DropQueryBuilder:
     def drop_table(self, table: Union[Table, str]) -> "DropQueryBuilder":
         target = table if isinstance(table, Table) else Table(table)
         self._set_target('TABLE', target)
+
+    @builder
+    def drop_user(self, user: str) -> "DropQueryBuilder":
+        self._set_target('USER', user)
 
     @builder
     def drop_view(self, view: str) -> "DropQueryBuilder":

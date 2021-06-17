@@ -755,10 +755,6 @@ class ClickHouseDropQueryBuilder(DropQueryBuilder):
         super()._set_target('QUOTA', quota)
 
     @builder
-    def drop_user(self, user: str) -> "ClickHouseDropQueryBuilder":
-        super()._set_target('USER', user)
-
-    @builder
     def on_cluster(self, cluster: str) -> "ClickHouseDropQueryBuilder":
         if self._cluster_name:
             raise AttributeError("'DropQuery' object already has attribute cluster_name")

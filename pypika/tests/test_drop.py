@@ -27,6 +27,13 @@ class DropTableTests(unittest.TestCase):
         self.assertEqual('DROP TABLE "abc"', str(q1))
         self.assertEqual('DROP TABLE IF EXISTS "abc"', str(q2))
 
+    def test_drop_user(self):
+        q1 = Query.drop_user("myuser")
+        q2 = Query.drop_user("myuser").if_exists()
+
+        self.assertEqual('DROP USER "myuser"', str(q1))
+        self.assertEqual('DROP USER IF EXISTS "myuser"', str(q2))
+
     def test_drop_view(self):
         q1 = Query.drop_view("myview")
         q2 = Query.drop_view("myview").if_exists()
