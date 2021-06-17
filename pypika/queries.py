@@ -385,6 +385,18 @@ class Query:
         return CreateQueryBuilder().create_table(table)
 
     @classmethod
+    def drop_database(cls, database: Union[Database, Table]) -> "DropQueryBuilder":
+        """
+        Query builder entry point. Initializes query building and sets the table name to be dropped. When using this
+        function, the query becomes a DROP statement.
+
+        :param database: An instance of a Database object or a string database name.
+
+        :return: DropQueryBuilder
+        """
+        return DropQueryBuilder().drop_database(database)
+
+    @classmethod
     def drop_table(cls, table: Union[str, Table]) -> "DropQueryBuilder":
         """
         Query builder entry point. Initializes query building and sets the table name to be dropped. When using this
@@ -395,6 +407,18 @@ class Query:
         :return: DropQueryBuilder
         """
         return DropQueryBuilder().drop_table(table)
+
+    @classmethod
+    def drop_view(cls, view: str) -> "DropQueryBuilder":
+        """
+        Query builder entry point. Initializes query building and sets the table name to be dropped. When using this
+        function, the query becomes a DROP statement.
+
+        :param view: String view name.
+
+        :return: DropQueryBuilder
+        """
+        return DropQueryBuilder().drop_view(view)
 
     @classmethod
     def into(cls, table: Union[Table, str], **kwargs: Any) -> "QueryBuilder":
@@ -1938,7 +1962,8 @@ class DropQueryBuilder:
     QUERY_CLS = Query
 
     def __init__(self, dialect: Optional[Dialects] = None) -> None:
-        self._drop_table = None
+        self._drop_target_kind = None
+        self._drop_target: Union[Database, Table, str] = ""
         self._if_exists = None
         self.dialect = dialect
 
@@ -1947,35 +1972,49 @@ class DropQueryBuilder:
         kwargs.setdefault("secondary_quote_char", self.SECONDARY_QUOTE_CHAR)
         kwargs.setdefault("dialect", self.dialect)
 
-    def get_sql(self, **kwargs: Any) -> str:
-        self._set_kwargs_defaults(kwargs)
-
-        if not self._drop_table:
-            return ""
-
-        querystring = self._drop_table_sql(**kwargs)
-
-        return querystring
+    @builder
+    def drop_database(self, database: Union[Database, str]) -> "DropQueryBuilder":
+        target = database if isinstance(database, Database) else Database(database)
+        self._set_target('DATABASE', target)
 
     @builder
     def drop_table(self, table: Union[Table, str]) -> "DropQueryBuilder":
-        if self._drop_table:
-            raise AttributeError("'Query' object already has attribute drop_table")
+        target = table if isinstance(table, Table) else Table(table)
+        self._set_target('TABLE', target)
 
-        self._drop_table = table if isinstance(table, Table) else Table(table)
+    @builder
+    def drop_view(self, view: str) -> "DropQueryBuilder":
+        self._set_target('VIEW', view)
 
     @builder
     def if_exists(self) -> "DropQueryBuilder":
         self._if_exists = True
 
-    def _drop_table_sql(self, **kwargs: Any) -> str:
-        if_exists = ''
-        if self._if_exists:
-            if_exists = 'IF EXISTS '
+    def _set_target(self, kind: str, target: Union[Database, Table, str]) -> None:
+        if self._drop_target:
+            raise AttributeError("'DropQuery' object already has attribute drop_target")
+        self._drop_target_kind = kind
+        self._drop_target = target
 
-        return "DROP TABLE {if_exists}{table}".format(
+    def get_sql(self, **kwargs: Any) -> str:
+        self._set_kwargs_defaults(kwargs)
+
+        target_name: str = ""
+        if isinstance(self._drop_target, Database):
+            target_name = self._drop_target.get_sql(**kwargs)
+        elif isinstance(self._drop_target, Table):
+            target_name = self._drop_target.get_sql(**kwargs)
+        else:
+            target_name = format_quotes(self._drop_target, self.QUOTE_CHAR)
+
+        return self._drop_entity_sql(self._drop_target_kind, target_name)
+
+    def _drop_entity_sql(self, entity_kind: str, entity_name: str) -> str:
+        if_exists = 'IF EXISTS ' if self._if_exists else ''
+        return "DROP {kind} {if_exists}{name}".format(
+            kind=entity_kind,
             if_exists=if_exists,
-            table=self._drop_table.get_sql(**kwargs),
+            name=entity_name
         )
 
     def __str__(self) -> str:

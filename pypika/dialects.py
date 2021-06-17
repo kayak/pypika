@@ -5,16 +5,18 @@ from typing import Any, Optional, Union
 from pypika.enums import Dialects
 from pypika.queries import (
     CreateQueryBuilder,
-    Query,
-    QueryBuilder,
+    Database,
+    DropQueryBuilder,
     Selectable,
     Table,
-    DropQueryBuilder,
+    Query,
+    QueryBuilder,
 )
 from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
 from pypika.utils import (
     QueryException,
     builder,
+    format_quotes
 )
 
 
@@ -685,6 +687,30 @@ class ClickHouseQuery(Query):
             dialect=Dialects.CLICKHOUSE, wrap_set_operation_queries=False, as_keyword=True, **kwargs
         )
 
+    @classmethod
+    def drop_database(self, database: Union[Database, str]) -> "ClickHouseDropQueryBuilder":
+        return ClickHouseDropQueryBuilder().drop_database(database)
+
+    @classmethod
+    def drop_table(self, table: Union[Table, str]) -> "ClickHouseDropQueryBuilder":
+        return ClickHouseDropQueryBuilder().drop_table(table)
+
+    @classmethod
+    def drop_dictionary(self, dictionary: str) -> "ClickHouseDropQueryBuilder":
+        return ClickHouseDropQueryBuilder().drop_dictionary(dictionary)
+
+    @classmethod
+    def drop_quota(self, quota: str) -> "ClickHouseDropQueryBuilder":
+        return ClickHouseDropQueryBuilder().drop_quota(quota)
+
+    @classmethod
+    def drop_user(self, user: str) -> "ClickHouseDropQueryBuilder":
+        return ClickHouseDropQueryBuilder().drop_user(user)
+
+    @classmethod
+    def drop_view(self, view: str) -> "ClickHouseDropQueryBuilder":
+        return ClickHouseDropQueryBuilder().drop_view(view)
+
 
 class ClickHouseQueryBuilder(QueryBuilder):
     QUERY_CLS = ClickHouseQuery
@@ -711,6 +737,40 @@ class ClickHouseQueryBuilder(QueryBuilder):
                 for field, value in self._updates
             )
         )
+
+
+class ClickHouseDropQueryBuilder(DropQueryBuilder):
+    QUERY_CLS = ClickHouseQuery
+
+    def __init__(self):
+        super().__init__(dialect=Dialects.CLICKHOUSE)
+        self._cluster_name = None
+
+    @builder
+    def drop_dictionary(self, dictionary: str) -> "ClickHouseDropQueryBuilder":
+        super()._set_target('DICTIONARY', dictionary)
+
+    @builder
+    def drop_quota(self, quota: str) -> "ClickHouseDropQueryBuilder":
+        super()._set_target('QUOTA', quota)
+
+    @builder
+    def drop_user(self, user: str) -> "ClickHouseDropQueryBuilder":
+        super()._set_target('USER', user)
+
+    @builder
+    def on_cluster(self, cluster: str) -> "ClickHouseDropQueryBuilder":
+        if self._cluster_name:
+            raise AttributeError("'DropQuery' object already has attribute cluster_name")
+        self._cluster_name = cluster
+
+    def get_sql(self, **kwargs: Any) -> str:
+        query = super().get_sql(**kwargs)
+
+        if self._drop_target_kind != "DICTIONARY" and self._cluster_name is not None:
+            query += " ON CLUSTER " + format_quotes(self._cluster_name, super().QUOTE_CHAR)
+
+        return query
 
 
 class SQLLiteValueWrapper(ValueWrapper):
