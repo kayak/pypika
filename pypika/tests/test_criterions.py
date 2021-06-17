@@ -447,7 +447,6 @@ class IsInTests(unittest.TestCase):
 
 
 class ArithmeticExpressionTests(unittest.TestCase):
-
     def test__lshift(self):
         c1 = Field("foo").lshift("1")
         c2 = Field("foo").lshift("2")
