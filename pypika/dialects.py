@@ -13,11 +13,7 @@ from pypika.queries import (
     QueryBuilder,
 )
 from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
-from pypika.utils import (
-    QueryException,
-    builder,
-    format_quotes
-)
+from pypika.utils import QueryException, builder, format_quotes
 
 
 class SnowflakeQuery(Query):

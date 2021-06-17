@@ -58,7 +58,7 @@ class ClickHouseDropQuery(TestCase):
         self.assertEqual('DROP DATABASE "mydb" ON CLUSTER "mycluster"', str(q2))
         self.assertEqual('DROP DATABASE IF EXISTS "mydb" ON CLUSTER "mycluster"', str(q3))
 
-    def drop_table(self):
+    def test_drop_table(self):
         q1 = ClickHouseQuery.drop_table(self.table_abc)
         q2 = ClickHouseQuery.drop_table(self.table_abc).on_cluster(self.cluster_name)
         q3 = ClickHouseQuery.drop_table(self.table_abc).if_exists().on_cluster(self.cluster_name)
@@ -67,16 +67,16 @@ class ClickHouseDropQuery(TestCase):
         self.assertEqual('DROP TABLE "abc" ON CLUSTER "mycluster"', str(q2))
         self.assertEqual('DROP TABLE IF EXISTS "abc" ON CLUSTER "mycluster"', str(q3))
 
-    def drop_dictionary(self):
+    def test_drop_dictionary(self):
         q1 = ClickHouseQuery.drop_dictionary("dict")
         q2 = ClickHouseQuery.drop_dictionary("dict").on_cluster(self.cluster_name)
         q3 = ClickHouseQuery.drop_dictionary("dict").if_exists().on_cluster(self.cluster_name)
 
         self.assertEqual('DROP DICTIONARY "dict"', str(q1))
-        self.assertEqual('DROP DICTIONARY "dict"', str(q2)) # NO CLUSTER
-        self.assertEqual('DROP DICTIONARY IF EXISTS "dict"', str(q3)) # NO CLUSTER
+        self.assertEqual('DROP DICTIONARY "dict"', str(q2))  # NO CLUSTER
+        self.assertEqual('DROP DICTIONARY IF EXISTS "dict"', str(q3))  # NO CLUSTER
 
-    def drop_other(self):
+    def test_drop_other(self):
         q1 = ClickHouseQuery.drop_quota("myquota")
         q2 = ClickHouseQuery.drop_user("myuser")
         q3 = ClickHouseQuery.drop_view("myview")

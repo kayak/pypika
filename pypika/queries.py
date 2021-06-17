@@ -2026,9 +2026,7 @@ class DropQueryBuilder:
             target_name = format_quotes(self._drop_target, self.QUOTE_CHAR)
 
         return "DROP {kind} {if_exists}{name}".format(
-            kind=self._drop_target_kind,
-            if_exists=if_exists,
-            name=target_name
+            kind=self._drop_target_kind, if_exists=if_exists, name=target_name
         )
 
     def __str__(self) -> str:
