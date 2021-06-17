@@ -2015,7 +2015,9 @@ class DropQueryBuilder:
     def get_sql(self, **kwargs: Any) -> str:
         self._set_kwargs_defaults(kwargs)
 
+        if_exists = 'IF EXISTS ' if self._if_exists else ''
         target_name: str = ""
+
         if isinstance(self._drop_target, Database):
             target_name = self._drop_target.get_sql(**kwargs)
         elif isinstance(self._drop_target, Table):
@@ -2023,14 +2025,10 @@ class DropQueryBuilder:
         else:
             target_name = format_quotes(self._drop_target, self.QUOTE_CHAR)
 
-        return self._drop_entity_sql(self._drop_target_kind, target_name)
-
-    def _drop_entity_sql(self, entity_kind: str, entity_name: str) -> str:
-        if_exists = 'IF EXISTS ' if self._if_exists else ''
         return "DROP {kind} {if_exists}{name}".format(
-            kind=entity_kind,
+            kind=self._drop_target_kind,
             if_exists=if_exists,
-            name=entity_name
+            name=target_name
         )
 
     def __str__(self) -> str:
