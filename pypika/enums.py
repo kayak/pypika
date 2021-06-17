@@ -10,6 +10,8 @@ class Arithmetic(Enum):
     sub = "-"
     mul = "*"
     div = "/"
+    lshift = "<<"
+    rshift = ">>"
 
 
 class Comparator(Enum):

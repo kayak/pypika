@@ -161,6 +161,48 @@ class ArithmeticTests(unittest.TestCase):
         self.assertEqual('SELECT 1/"a" FROM "abc"', str(q1))
         self.assertEqual('SELECT 1/"a" FROM "abc"', str(q2))
 
+    def test__leftshift__fields(self):
+        q1 = Q.from_("abc").select(F("a") << F("b"))
+        q2 = Q.from_(self.t).select(self.t.a << self.t.b)
+
+        self.assertEqual('SELECT "a"<<"b" FROM "abc"', str(q1))
+        self.assertEqual('SELECT "a"<<"b" FROM "abc"', str(q2))
+
+    def test__leftshift__number(self):
+        q1 = Q.from_("abc").select(F('a') << 2)
+        q2 = Q.from_(self.t).select(self.t.a << 2)
+
+        self.assertEqual('SELECT "a"<<2 FROM "abc"', str(q1))
+        self.assertEqual('SELECT "a"<<2 FROM "abc"', str(q2))
+
+    def test__leftshift__right(self):
+        q1 = Q.from_("abc").select(1 << F("a"))
+        q2 = Q.from_(self.t).select(1 << self.t.a)
+
+        self.assertEqual('SELECT 1<<"a" FROM "abc"', str(q1))
+        self.assertEqual('SELECT 1<<"a" FROM "abc"', str(q2))
+
+    def test__rightshift__fields(self):
+        q1 = Q.from_("abc").select(F("a") >> F("b"))
+        q2 = Q.from_(self.t).select(self.t.a >> self.t.b)
+
+        self.assertEqual('SELECT "a">>"b" FROM "abc"', str(q1))
+        self.assertEqual('SELECT "a">>"b" FROM "abc"', str(q2))
+
+    def test__rightshift__number(self):
+        q1 = Q.from_("abc").select(F('a') >> 2)
+        q2 = Q.from_(self.t).select(self.t.a >> 2)
+
+        self.assertEqual('SELECT "a">>2 FROM "abc"', str(q1))
+        self.assertEqual('SELECT "a">>2 FROM "abc"', str(q2))
+
+    def test__rightshift__right(self):
+        q1 = Q.from_("abc").select(1 >> F("a"))
+        q2 = Q.from_(self.t).select(1 >> self.t.a)
+
+        self.assertEqual('SELECT 1>>"a" FROM "abc"', str(q1))
+        self.assertEqual('SELECT 1>>"a" FROM "abc"', str(q2))
+
     def test__complex_op(self):
         q1 = Q.from_("abc").select(2 + 1 / F("a") - 5)
         q2 = Q.from_(self.t).select(2 + 1 / self.t.a - 5)

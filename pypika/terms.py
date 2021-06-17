@@ -198,6 +198,12 @@ class Term(Node):
     def negate(self) -> "Not":
         return Not(self)
 
+    def lshift(self, other: Any) -> "ArithmeticExpression":
+        return self << other
+
+    def rshift(self, other: Any) -> "ArithmeticExpression":
+        return self >> other
+
     def __invert__(self) -> "Not":
         return Not(self)
 
@@ -236,6 +242,18 @@ class Term(Node):
 
     def __rtruediv__(self, other: Any) -> "ArithmeticExpression":
         return ArithmeticExpression(Arithmetic.div, self.wrap_constant(other), self)
+
+    def __lshift__(self, other: Any) -> "ArithmeticExpression":
+        return ArithmeticExpression(Arithmetic.lshift, self, self.wrap_constant(other))
+
+    def __rshift__(self, other: Any) -> "ArithmeticExpression":
+        return ArithmeticExpression(Arithmetic.rshift, self, self.wrap_constant(other))
+
+    def __rlshift__(self, other: Any) -> "ArithmeticExpression":
+        return ArithmeticExpression(Arithmetic.lshift, self.wrap_constant(other), self)
+
+    def __rrshift__(self, other: Any) -> "ArithmeticExpression":
+        return ArithmeticExpression(Arithmetic.rshift, self.wrap_constant(other), self)
 
     def __eq__(self, other: Any) -> "BasicCriterion":
         return BasicCriterion(Equality.eq, self, self.wrap_constant(other))
