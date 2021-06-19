@@ -66,34 +66,37 @@ class CreateTableTests(unittest.TestCase):
             q = (
                 Query.create_table(self.new_table)
                 .columns(self.foo, self.bar)
-                .foreign_key([self.foo, self.bar],
-                             self.existing_table,
-                             [cref, dref])
+                .foreign_key([self.foo, self.bar], self.existing_table, [cref, dref])
             )
 
-            self.assertEqual('CREATE TABLE "abc" ('
-                             '"a" INT,'
-                             '"b" VARCHAR(100),'
-                             'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d"))',
-                             str(q))
+            self.assertEqual(
+                'CREATE TABLE "abc" ('
+                '"a" INT,'
+                '"b" VARCHAR(100),'
+                'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d"))',
+                str(q)
+            )
 
         with self.subTest("with foreign key reference options"):
             cref, dref = Columns(("c", "INT"), ("d", "VARCHAR(100)"))
             q = (
                 Query.create_table(self.new_table)
                 .columns(self.foo, self.bar)
-                .foreign_key([self.foo, self.bar],
-                             self.existing_table,
-                             [cref, dref],
-                             on_delete=ReferenceOption.cascade,
-                             on_update=ReferenceOption.restrict)
+                .foreign_key(
+                    [self.foo, self.bar],
+                    self.existing_table,
+                    [cref, dref],
+                    on_delete=ReferenceOption.cascade,
+                    on_update=ReferenceOption.restrict)
             )
 
-            self.assertEqual('CREATE TABLE "abc" ('
-                             '"a" INT,'
-                             '"b" VARCHAR(100),'
-                             'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d") ON DELETE CASCADE ON UPDATE RESTRICT)',
-                             str(q))
+            self.assertEqual(
+                'CREATE TABLE "abc" ('
+                '"a" INT,'
+                '"b" VARCHAR(100),'
+                'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d") ON DELETE CASCADE ON UPDATE RESTRICT)',
+                str(q)
+            )
 
         with self.subTest("with unique keys"):
             q = (

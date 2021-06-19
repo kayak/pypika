@@ -1851,12 +1851,14 @@ class CreateQueryBuilder:
         self._primary_key = self._prepare_columns_input(columns)
 
     @builder
-    def foreign_key(self,
-                    columns: List[Union[str, Column]],
-                    reference_table: Union[str, Table],
-                    reference_columns: List[Union[str, Column]],
-                    on_delete: ReferenceOption = None,
-                    on_update: ReferenceOption = None) -> "CreateQueryBuilder":
+    def foreign_key(
+            self,
+            columns: List[Union[str, Column]],
+            reference_table: Union[str, Table],
+            reference_columns: List[Union[str, Column]],
+            on_delete: ReferenceOption = None,
+            on_update: ReferenceOption = None
+    ) -> "CreateQueryBuilder":
         """
         Adds a foreign key constraint.
 
@@ -1998,7 +2000,7 @@ class CreateQueryBuilder:
         clause = "FOREIGN KEY ({columns}) REFERENCES {table_name} ({reference_columns})".format(
             columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key),
             table_name=self._foreign_key_reference_table.get_sql(**kwargs),
-            reference_columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key_reference)
+            reference_columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key_reference),
         )
         if self._foreign_key_on_delete:
             clause += " ON DELETE " + self._foreign_key_on_delete.value
