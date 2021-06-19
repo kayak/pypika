@@ -1852,12 +1852,12 @@ class CreateQueryBuilder:
 
     @builder
     def foreign_key(
-            self,
-            columns: List[Union[str, Column]],
-            reference_table: Union[str, Table],
-            reference_columns: List[Union[str, Column]],
-            on_delete: ReferenceOption = None,
-            on_update: ReferenceOption = None
+        self,
+        columns: List[Union[str, Column]],
+        reference_table: Union[str, Table],
+        reference_columns: List[Union[str, Column]],
+        on_delete: ReferenceOption = None,
+        on_update: ReferenceOption = None
     ) -> "CreateQueryBuilder":
         """
         Adds a foreign key constraint.

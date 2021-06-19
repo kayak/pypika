@@ -74,7 +74,7 @@ class CreateTableTests(unittest.TestCase):
                 '"a" INT,'
                 '"b" VARCHAR(100),'
                 'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d"))',
-                str(q)
+                str(q),
             )
 
         with self.subTest("with foreign key reference options"):
@@ -87,7 +87,8 @@ class CreateTableTests(unittest.TestCase):
                     self.existing_table,
                     [cref, dref],
                     on_delete=ReferenceOption.cascade,
-                    on_update=ReferenceOption.restrict)
+                    on_update=ReferenceOption.restrict,
+                )
             )
 
             self.assertEqual(
@@ -95,7 +96,7 @@ class CreateTableTests(unittest.TestCase):
                 '"a" INT,'
                 '"b" VARCHAR(100),'
                 'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d") ON DELETE CASCADE ON UPDATE RESTRICT)',
-                str(q)
+                str(q),
             )
 
         with self.subTest("with unique keys"):
