@@ -2,7 +2,7 @@ from copy import copy
 from functools import reduce
 from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
 
-from pypika.enums import Dialects, JoinType, SetOperation
+from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
     ArithmeticExpression,
     Criterion,
@@ -1708,6 +1708,11 @@ class CreateQueryBuilder:
         self._uniques = []
         self._if_not_exists = False
         self.dialect = dialect
+        self._foreign_key = None
+        self._foreign_key_reference_table = None
+        self._foreign_key_reference = None
+        self._foreign_key_on_update: ReferenceOption = None
+        self._foreign_key_on_delete: ReferenceOption = None
 
     def _set_kwargs_defaults(self, kwargs: dict) -> None:
         kwargs.setdefault("quote_char", self.QUOTE_CHAR)
@@ -1816,14 +1821,14 @@ class CreateQueryBuilder:
         Adds a UNIQUE constraint.
 
         :param columns:
-            Type:  Union[str, TypedTuple[str, str], Column]
+            Type:  Union[str, Column]
 
             A list of columns.
 
         :return:
             CreateQueryBuilder.
         """
-        self._uniques.append([(column if isinstance(column, Column) else Column(column)) for column in columns])
+        self._uniques.append(self._prepare_columns_input(columns))
 
     @builder
     def primary_key(self, *columns: Union[str, Column]) -> "CreateQueryBuilder":
@@ -1831,7 +1836,7 @@ class CreateQueryBuilder:
         Adds a primary key constraint.
 
         :param columns:
-            Type:  Union[str, TypedTuple[str, str], Column]
+            Type:  Union[str, Column]
 
             A list of columns.
 
@@ -1843,7 +1848,56 @@ class CreateQueryBuilder:
         """
         if self._primary_key:
             raise AttributeError("'Query' object already has attribute primary_key")
-        self._primary_key = [(column if isinstance(column, Column) else Column(column)) for column in columns]
+        self._primary_key = self._prepare_columns_input(columns)
+
+    @builder
+    def foreign_key(self,
+                    columns: List[Union[str, Column]],
+                    reference_table: Union[str, Table],
+                    reference_columns: List[Union[str, Column]],
+                    on_delete: ReferenceOption = None,
+                    on_update: ReferenceOption = None) -> "CreateQueryBuilder":
+        """
+        Adds a foreign key constraint.
+
+        :param columns:
+            Type:  List[Union[str, Column]]
+
+            A list of foreign key columns.
+
+        :param reference_table:
+            Type: Union[str, Table]
+
+            The parent table name.
+
+        :param reference_columns:
+            Type: List[Union[str, Column]]
+
+            Parent key columns.
+
+        :param on_delete:
+            Type: ReferenceOption
+
+            Delete action.
+
+        :param on_update:
+            Type: ReferenceOption
+
+            Update option.
+
+        :raises AttributeError:
+            If the foreign key is already defined.
+
+        :return:
+            CreateQueryBuilder.
+        """
+        if self._foreign_key:
+            raise AttributeError("'Query' object already has attribute foreign_key")
+        self._foreign_key = self._prepare_columns_input(columns)
+        self._foreign_key_reference_table = reference_table
+        self._foreign_key_reference = self._prepare_columns_input(reference_columns)
+        self._foreign_key_on_delete = on_delete
+        self._foreign_key_on_update = on_update
 
     @builder
     def as_select(self, query_builder: QueryBuilder) -> "CreateQueryBuilder":
@@ -1940,14 +1994,28 @@ class CreateQueryBuilder:
             columns=",".join(column.get_name_sql(**kwargs) for column in self._primary_key)
         )
 
+    def _foreign_key_clause(self, **kwargs) -> str:
+        clause = "FOREIGN KEY ({columns}) REFERENCES {table_name} ({reference_columns})".format(
+            columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key),
+            table_name=self._foreign_key_reference_table.get_sql(**kwargs),
+            reference_columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key_reference)
+        )
+        if self._foreign_key_on_delete:
+            clause += " ON DELETE " + self._foreign_key_on_delete.value
+        if self._foreign_key_on_update:
+            clause += " ON UPDATE " + self._foreign_key_on_update.value
+
+        return clause
+
     def _body_sql(self, **kwargs) -> str:
         clauses = self._column_clauses(**kwargs)
         clauses += self._period_for_clauses(**kwargs)
         clauses += self._unique_key_clauses(**kwargs)
 
-        # Primary keys
         if self._primary_key:
             clauses.append(self._primary_key_clause(**kwargs))
+        if self._foreign_key:
+            clauses.append(self._foreign_key_clause(**kwargs))
 
         return ",".join(clauses)
 
@@ -1955,6 +2023,9 @@ class CreateQueryBuilder:
         return " AS ({query})".format(
             query=self._as_select.get_sql(**kwargs),
         )
+
+    def _prepare_columns_input(self, columns: List[Union[str, Column]]) -> List[Column]:
+        return [(column if isinstance(column, Column) else Column(column)) for column in columns]
 
     def __str__(self) -> str:
         return self.get_sql()

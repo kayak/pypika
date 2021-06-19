@@ -65,6 +65,14 @@ class JoinType(Enum):
     hash = "HASH"
 
 
+class ReferenceOption(Enum):
+    cascade = "CASCADE"
+    no_action = "NO ACTION"
+    restrict = "RESTRICT"
+    set_null = "SET NULL"
+    set_default = "SET DEFAULT"
+
+
 class SetOperation(Enum):
     union = "UNION"
     union_all = "UNION ALL"
