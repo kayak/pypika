@@ -158,9 +158,9 @@ class CreateTableTests(unittest.TestCase):
 
         with self.subTest("repeated foreign key"):
             with self.assertRaises(AttributeError):
-                Query.create_table(self.new_table) \
-                .foreign_key([self.foo], self.existing_table, [self.bar]) \
-                .foreign_key([self.foo], self.existing_table, [self.bar])
+                Query.create_table(self.new_table).foreign_key([self.foo], self.existing_table, [self.bar]).foreign_key(
+                    [self.foo], self.existing_table, [self.bar]
+                )
 
     def test_create_table_as_select_not_query_raises_error(self):
         with self.assertRaises(TypeError):
