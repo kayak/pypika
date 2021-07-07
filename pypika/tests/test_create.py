@@ -2,6 +2,7 @@ import unittest
 
 from pypika import Column, Columns, Query, Tables
 from pypika.terms import ValueWrapper
+from pypika.enums import ReferenceOption
 
 
 class CreateTableTests(unittest.TestCase):
@@ -60,6 +61,44 @@ class CreateTableTests(unittest.TestCase):
 
             self.assertEqual('CREATE TABLE "abc" ("a" INT,"b" VARCHAR(100),PRIMARY KEY ("a","b"))', str(q))
 
+        with self.subTest("with simple foreign key"):
+            cref, dref = Columns(("c", "INT"), ("d", "VARCHAR(100)"))
+            q = (
+                Query.create_table(self.new_table)
+                .columns(self.foo, self.bar)
+                .foreign_key([self.foo, self.bar], self.existing_table, [cref, dref])
+            )
+
+            self.assertEqual(
+                'CREATE TABLE "abc" ('
+                '"a" INT,'
+                '"b" VARCHAR(100),'
+                'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d"))',
+                str(q),
+            )
+
+        with self.subTest("with foreign key reference options"):
+            cref, dref = Columns(("c", "INT"), ("d", "VARCHAR(100)"))
+            q = (
+                Query.create_table(self.new_table)
+                .columns(self.foo, self.bar)
+                .foreign_key(
+                    [self.foo, self.bar],
+                    self.existing_table,
+                    [cref, dref],
+                    on_delete=ReferenceOption.cascade,
+                    on_update=ReferenceOption.restrict,
+                )
+            )
+
+            self.assertEqual(
+                'CREATE TABLE "abc" ('
+                '"a" INT,'
+                '"b" VARCHAR(100),'
+                'FOREIGN KEY ("a","b") REFERENCES "efg" ("c","d") ON DELETE CASCADE ON UPDATE RESTRICT)',
+                str(q),
+            )
+
         with self.subTest("with unique keys"):
             q = (
                 Query.create_table(self.new_table)
@@ -116,6 +155,12 @@ class CreateTableTests(unittest.TestCase):
         with self.subTest("for as_select before columns"):
             with self.assertRaises(AttributeError):
                 Query.create_table(self.new_table).as_select(select).columns(self.foo, self.bar)
+
+        with self.subTest("repeated foreign key"):
+            with self.assertRaises(AttributeError):
+                Query.create_table(self.new_table).foreign_key([self.foo], self.existing_table, [self.bar]).foreign_key(
+                    [self.foo], self.existing_table, [self.bar]
+                )
 
     def test_create_table_as_select_not_query_raises_error(self):
         with self.assertRaises(TypeError):
