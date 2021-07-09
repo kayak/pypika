@@ -933,7 +933,10 @@ class QueryBuilder(Selectable, Term):
             self._wheres = criterion
 
     @builder
-    def having(self, criterion: Term) -> "QueryBuilder":
+    def having(self, criterion: Union[Term, EmptyCriterion]) -> "QueryBuilder":
+        if isinstance(criterion, EmptyCriterion):
+            return
+
         if self._havings:
             self._havings &= criterion
         else:
