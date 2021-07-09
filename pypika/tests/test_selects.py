@@ -468,8 +468,13 @@ class WhereTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc" WHERE "foo" RLIKE \'^b\'', str(q))
 
-    def test_ignore_empty_criterion(self):
+    def test_ignore_empty_criterion_where(self):
         q1 = Query.from_(self.t).select("*").where(EmptyCriterion())
+
+        self.assertEqual('SELECT * FROM "abc"', str(q1))
+
+    def test_ignore_empty_criterion_having(self):
+        q1 = Query.from_(self.t).select("*").having(EmptyCriterion())
 
         self.assertEqual('SELECT * FROM "abc"', str(q1))
 
