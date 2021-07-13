@@ -1,6 +1,6 @@
 import itertools
 from copy import copy
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Tuple as TypedTuple
 
 from pypika.enums import Dialects
 from pypika.queries import (
@@ -84,11 +84,24 @@ class MySQLQueryBuilder(QueryBuilder):
         self._ignore_duplicates = False
         self._modifiers = []
 
+        self._for_update_nowait = False
+        self._for_update_skip_locked = False
+        self._for_update_of = set()
+
     def __copy__(self) -> "MySQLQueryBuilder":
         newone = super().__copy__()
         newone._duplicate_updates = copy(self._duplicate_updates)
         newone._ignore_duplicates = copy(self._ignore_duplicates)
         return newone
+
+    @builder
+    def for_update(
+        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+    ) -> "QueryBuilder":
+        self._for_update = True
+        self._for_update_skip_locked = skip_locked
+        self._for_update_nowait = nowait
+        self._for_update_of = set(of)
 
     @builder
     def on_duplicate_key_update(self, field: Union[Field, str], value: Any) -> "MySQLQueryBuilder":
@@ -114,6 +127,20 @@ class MySQLQueryBuilder(QueryBuilder):
             elif self._ignore_duplicates:
                 querystring += self._on_duplicate_key_ignore_sql()
         return querystring
+
+    def _for_update_sql(self, **kwargs) -> str:
+        if self._for_update:
+            for_update = ' FOR UPDATE'
+            if self._for_update_of:
+                for_update += f' OF {", ".join([Table(item).get_sql(**kwargs) for item in self._for_update_of])}'
+            if self._for_update_nowait:
+                for_update += ' NOWAIT'
+            elif self._for_update_skip_locked:
+                for_update += ' SKIP LOCKED'
+        else:
+            for_update = ''
+
+        return for_update
 
     def _on_duplicate_key_update_sql(self, **kwargs: Any) -> str:
         return " ON DUPLICATE KEY UPDATE {updates}".format(
@@ -356,6 +383,10 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
         self._distinct_on = []
 
+        self._for_update_nowait = False
+        self._for_update_skip_locked = False
+        self._for_update_of = set()
+
     def __copy__(self) -> "PostgreSQLQueryBuilder":
         newone = super().__copy__()
         newone._returns = copy(self._returns)
@@ -369,6 +400,15 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 self._distinct_on.append(Field(field))
             elif isinstance(field, Term):
                 self._distinct_on.append(field)
+
+    @builder
+    def for_update(
+        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+    ) -> "QueryBuilder":
+        self._for_update = True
+        self._for_update_skip_locked = skip_locked
+        self._for_update_nowait = nowait
+        self._for_update_of = set(of)
 
     @builder
     def on_conflict(self, *target_fields: Union[str, Term]) -> "PostgreSQLQueryBuilder":
@@ -465,6 +505,20 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             conflict_query += " WHERE {where}".format(where=self._on_conflict_wheres.get_sql(subquery=True, **kwargs))
 
         return conflict_query
+
+    def _for_update_sql(self, **kwargs) -> str:
+        if self._for_update:
+            for_update = ' FOR UPDATE'
+            if self._for_update_of:
+                for_update += f' OF {", ".join([Table(item).get_sql(**kwargs) for item in self._for_update_of])}'
+            if self._for_update_nowait:
+                for_update += ' NOWAIT'
+            elif self._for_update_skip_locked:
+                for_update += ' SKIP LOCKED'
+        else:
+            for_update = ''
+
+        return for_update
 
     def _on_conflict_action_sql(self, **kwargs: Any) -> str:
         if self._on_conflict_do_nothing:

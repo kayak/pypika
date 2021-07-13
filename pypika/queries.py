@@ -706,9 +706,6 @@ class QueryBuilder(Selectable, Term):
         self._ignore = False
 
         self._for_update = False
-        self._for_update_nowait = False
-        self._for_update_skip_locked = False
-        self._for_update_of = set()
 
         self._wheres = None
         self._prewheres = None
@@ -906,13 +903,8 @@ class QueryBuilder(Selectable, Term):
         self._distinct = True
 
     @builder
-    def for_update(
-        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
-    ) -> "QueryBuilder":
+    def for_update(self) -> "QueryBuilder":
         self._for_update = True
-        self._for_update_skip_locked = skip_locked
-        self._for_update_nowait = nowait
-        self._for_update_of = set(of)
 
     @builder
     def ignore(self) -> "QueryBuilder":
@@ -1378,12 +1370,6 @@ class QueryBuilder(Selectable, Term):
     def _for_update_sql(self, **kwargs) -> str:
         if self._for_update:
             for_update = ' FOR UPDATE'
-            if self._for_update_of:
-                for_update += f' OF {", ".join([Table(item).get_sql(**kwargs) for item in self._for_update_of])}'
-            if self._for_update_nowait:
-                for_update += ' NOWAIT'
-            elif self._for_update_skip_locked:
-                for_update += ' SKIP LOCKED'
         else:
             for_update = ''
 
