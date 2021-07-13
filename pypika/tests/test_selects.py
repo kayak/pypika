@@ -351,6 +351,7 @@ class MyEnum(Enum):
 
 class WhereTests(unittest.TestCase):
     t = Table("abc")
+    t2 = Table("cba")
 
     def test_where_enum(self):
         q1 = Query.from_(self.t).select("*").where(self.t.foo == MyEnum.STR)
@@ -377,6 +378,53 @@ class WhereTests(unittest.TestCase):
     def test_where_field_equals_for_update(self):
         q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update()
         self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE', str(q))
+
+    def test_where_field_equals_for_update_nowait(self):
+        q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(nowait=True)
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE NOWAIT', str(q))
+
+    def test_where_field_equals_for_update_skip_locked(self):
+        q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(skip_locked=True)
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE SKIP LOCKED', str(q))
+
+    def test_where_field_equals_for_update_of(self):
+        q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(of=("abc",))
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE OF "abc"', str(q))
+
+    def test_where_field_equals_for_update_of_multiple_tables(self):
+        q = (
+            Query.from_(self.t)
+            .join(self.t2)
+            .on(self.t.id == self.t2.abc_id)
+            .select("*")
+            .where(self.t.foo == self.t.bar)
+            .for_update(of=("abc", "cba"))
+        )
+        self.assertIn(
+            str(q),
+            [
+                'SELECT * FROM "abc" JOIN "cba" ON "abc"."id"="cba"."abc_id" WHERE "abc"."foo"="abc"."bar" FOR UPDATE OF "cba", "abc"',
+                'SELECT * FROM "abc" JOIN "cba" ON "abc"."id"="cba"."abc_id" WHERE "abc"."foo"="abc"."bar" FOR UPDATE OF "abc", "cba"',
+            ],
+        )
+
+    def test_where_field_equals_for_update_all(self):
+        q = (
+            Query.from_(self.t)
+            .select("*")
+            .where(self.t.foo == self.t.bar)
+            .for_update(nowait=True, skip_locked=True, of=("abc",))
+        )
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE OF "abc" NOWAIT', str(q))
+
+    def test_where_field_equals_for_update_skip_locked_and_of(self):
+        q = (
+            Query.from_(self.t)
+            .select("*")
+            .where(self.t.foo == self.t.bar)
+            .for_update(nowait=False, skip_locked=True, of=("abc",))
+        )
+        self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE OF "abc" SKIP LOCKED', str(q))
 
     def test_where_field_equals_where(self):
         q = Query.from_(self.t).select("*").where(self.t.foo == 1).where(self.t.bar == self.t.baz)

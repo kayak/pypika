@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
+from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -704,7 +704,11 @@ class QueryBuilder(Selectable, Term):
         self._values = []
         self._distinct = False
         self._ignore = False
+
         self._for_update = False
+        self._for_update_nowait = False
+        self._for_update_skip_locked = False
+        self._for_update_of = set()
 
         self._wheres = None
         self._prewheres = None
@@ -902,8 +906,13 @@ class QueryBuilder(Selectable, Term):
         self._distinct = True
 
     @builder
-    def for_update(self) -> "QueryBuilder":
+    def for_update(
+        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+    ) -> "QueryBuilder":
         self._for_update = True
+        self._for_update_skip_locked = skip_locked
+        self._for_update_nowait = nowait
+        self._for_update_of = set(of)
 
     @builder
     def ignore(self) -> "QueryBuilder":
@@ -1330,7 +1339,7 @@ class QueryBuilder(Selectable, Term):
         querystring = self._apply_pagination(querystring)
 
         if self._for_update:
-            querystring += self._for_update_sql()
+            querystring += self._for_update_sql(**kwargs)
 
         if subquery:
             querystring = "({query})".format(query=querystring)
@@ -1366,9 +1375,15 @@ class QueryBuilder(Selectable, Term):
 
         return distinct
 
-    def _for_update_sql(self) -> str:
+    def _for_update_sql(self, **kwargs) -> str:
         if self._for_update:
             for_update = ' FOR UPDATE'
+            if self._for_update_of:
+                for_update += f' OF {", ".join([Table(item).get_sql(**kwargs) for item in self._for_update_of])}'
+            if self._for_update_nowait:
+                for_update += ' NOWAIT'
+            elif self._for_update_skip_locked:
+                for_update += ' SKIP LOCKED'
         else:
             for_update = ''
 
