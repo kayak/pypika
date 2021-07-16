@@ -475,12 +475,7 @@ class WhereTests(unittest.TestCase):
             MySQLQuery,
             PostgreSQLQuery,
         ]:
-            q = (
-                query_cls.from_(self.t)
-                .select("*")
-                .where(self.t.foo == self.t.bar)
-                .for_update(of=("abc",), nowait=True)
-            )
+            q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(of=("abc",), nowait=True)
             quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
             self.assertEqual(
                 'SELECT * '
