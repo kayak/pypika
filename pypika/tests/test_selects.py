@@ -351,6 +351,7 @@ class MyEnum(Enum):
 
 class WhereTests(unittest.TestCase):
     t = Table("abc")
+    t2 = Table("cba")
 
     def test_where_enum(self):
         q1 = Query.from_(self.t).select("*").where(self.t.foo == MyEnum.STR)
@@ -377,6 +378,158 @@ class WhereTests(unittest.TestCase):
     def test_where_field_equals_for_update(self):
         q = Query.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update()
         self.assertEqual('SELECT * FROM "abc" WHERE "foo"="bar" FOR UPDATE', str(q))
+
+    def test_where_field_equals_for_update_nowait(self):
+        for query_cls in [
+            MySQLQuery,
+            PostgreSQLQuery,
+        ]:
+            quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(nowait=True)
+            self.assertEqual(
+                'SELECT * '
+                'FROM {quote_char}abc{quote_char} '
+                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE NOWAIT'.format(
+                    quote_char=quote_char,
+                ),
+                str(q),
+            )
+
+    def test_where_field_equals_for_update_skip_locked(self):
+        for query_cls in [
+            MySQLQuery,
+            PostgreSQLQuery,
+        ]:
+            quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(skip_locked=True)
+            self.assertEqual(
+                'SELECT * '
+                'FROM {quote_char}abc{quote_char} '
+                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE SKIP LOCKED'.format(
+                    quote_char=quote_char,
+                ),
+                str(q),
+            )
+
+    def test_where_field_equals_for_update_of(self):
+        for query_cls in [
+            MySQLQuery,
+            PostgreSQLQuery,
+        ]:
+            quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(of=("abc",))
+            self.assertEqual(
+                'SELECT * '
+                'FROM {quote_char}abc{quote_char} '
+                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE OF {quote_char}abc{quote_char}'.format(
+                    quote_char=quote_char,
+                ),
+                str(q),
+            )
+
+    def test_where_field_equals_for_update_of_multiple_tables(self):
+        for query_cls in [
+            MySQLQuery,
+            PostgreSQLQuery,
+        ]:
+            q = (
+                query_cls.from_(self.t)
+                .join(self.t2)
+                .on(self.t.id == self.t2.abc_id)
+                .select("*")
+                .where(self.t.foo == self.t.bar)
+                .for_update(of=("abc", "cba"))
+            )
+            quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            self.assertIn(
+                str(q),
+                [
+                    'SELECT * '
+                    'FROM {quote_char}abc{quote_char} '
+                    'JOIN {quote_char}cba{quote_char} '
+                    'ON {quote_char}abc{quote_char}.{quote_char}id{quote_char}='
+                    '{quote_char}cba{quote_char}.{quote_char}abc_id{quote_char} '
+                    'WHERE {quote_char}abc{quote_char}.{quote_char}foo{quote_char}='
+                    '{quote_char}abc{quote_char}.{quote_char}bar{quote_char} '
+                    'FOR UPDATE OF {quote_char}cba{quote_char}, {quote_char}abc{quote_char}'.format(
+                        quote_char=quote_char,
+                    ),
+                    'SELECT * '
+                    'FROM {quote_char}abc{quote_char} '
+                    'JOIN {quote_char}cba{quote_char} '
+                    'ON {quote_char}abc{quote_char}.{quote_char}id{quote_char}='
+                    '{quote_char}cba{quote_char}.{quote_char}abc_id{quote_char} '
+                    'WHERE {quote_char}abc{quote_char}.{quote_char}foo{quote_char}='
+                    '{quote_char}abc{quote_char}.{quote_char}bar{quote_char} '
+                    'FOR UPDATE OF {quote_char}abc{quote_char}, {quote_char}cba{quote_char}'.format(
+                        quote_char=quote_char,
+                    ),
+                ],
+            )
+
+    def test_where_field_equals_for_update_of_nowait(self):
+        for query_cls in [
+            MySQLQuery,
+            PostgreSQLQuery,
+        ]:
+            q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(of=("abc",), nowait=True)
+            quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            self.assertEqual(
+                'SELECT * '
+                'FROM {quote_char}abc{quote_char} '
+                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE OF {quote_char}abc{quote_char} NOWAIT'.format(
+                    quote_char=quote_char,
+                ),
+                str(q),
+            )
+
+    def test_where_field_equals_for_update_of_skip_locked(self):
+        for query_cls in [
+            MySQLQuery,
+            PostgreSQLQuery,
+        ]:
+            q = (
+                query_cls.from_(self.t)
+                .select("*")
+                .where(self.t.foo == self.t.bar)
+                .for_update(of=("abc",), skip_locked=True)
+            )
+            quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            self.assertEqual(
+                'SELECT * '
+                'FROM {quote_char}abc{quote_char} '
+                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE OF {quote_char}abc{quote_char} SKIP LOCKED'.format(
+                    quote_char=quote_char,
+                ),
+                str(q),
+            )
+
+    def test_where_field_equals_for_update_skip_locked_and_of(self):
+        for query_cls in [
+            MySQLQuery,
+            PostgreSQLQuery,
+        ]:
+            q = (
+                query_cls.from_(self.t)
+                .select("*")
+                .where(self.t.foo == self.t.bar)
+                .for_update(nowait=False, skip_locked=True, of=("abc",))
+            )
+            quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
+            self.assertEqual(
+                'SELECT * '
+                'FROM {quote_char}abc{quote_char} '
+                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE OF {quote_char}abc{quote_char} SKIP LOCKED'.format(
+                    quote_char=quote_char,
+                ),
+                str(q),
+            )
 
     def test_where_field_equals_where(self):
         q = Query.from_(self.t).select("*").where(self.t.foo == 1).where(self.t.bar == self.t.baz)
