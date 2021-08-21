@@ -104,7 +104,7 @@ An alias for the table can be given using the ``.as_`` function on ``pypika.Tabl
 
 .. code-block:: sql
 
-    Table('x_view_customers').as_('customers')
+    customers = Table('x_view_customers').as_('customers')
     q = Query.from_(customers).select(customers.id, customers.phone)
 
 .. code-block:: sql
@@ -512,7 +512,7 @@ Unions
 
 Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and |Brand| does not
 provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
-trying to cast a unioned query to string with through a ``SetOperationException`` if the column sizes are mismatched.
+trying to cast a unioned query to string will through a ``SetOperationException`` if the column sizes are mismatched.
 
 To create a union query, use either the ``Query.union()`` method or `+` operator with two query instances. For a
 union all, use ``Query.union_all()`` or the `*` operator.
