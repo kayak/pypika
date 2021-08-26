@@ -73,6 +73,18 @@ class MySQLQuery(Query):
     def load(cls, fp: str) -> "MySQLLoadQueryBuilder":
         return MySQLLoadQueryBuilder().load(fp)
 
+    @classmethod
+    def create_table(cls, table: Union[str, Table]) -> "MySQLCreateQueryBuilder":
+        return MySQLCreateQueryBuilder().create_table(table)
+
+    @classmethod
+    def create_table(cls, table: Union[str, Table]) -> "MySQLCreateQueryBuilder":
+        return MySQLCreateQueryBuilder().create_table(table)
+
+    @classmethod
+    def drop_table(cls, table: Union[str, Table]) -> "MySQLDropQueryBuilder":
+        return MySQLDropQueryBuilder().drop_table(table)
+
 
 class MySQLQueryBuilder(QueryBuilder):
     QUOTE_CHAR = "`"
@@ -210,6 +222,14 @@ class MySQLLoadQueryBuilder:
 
     def __str__(self) -> str:
         return self.get_sql()
+
+
+class MySQLCreateQueryBuilder(CreateQueryBuilder):
+    QUOTE_CHAR = "`"
+
+
+class MySQLDropQueryBuilder(DropQueryBuilder):
+    QUOTE_CHAR = "`"
 
 
 class VerticaQuery(Query):
