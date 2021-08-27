@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import MySQLQuery, QueryException, Table
+from pypika import MySQLQuery, QueryException, Table, Column
 
 
 class SelectTests(unittest.TestCase):
@@ -70,4 +70,22 @@ class LoadCSVTests(unittest.TestCase):
         self.assertEqual(
             "LOAD DATA LOCAL INFILE '/path/to/file' INTO TABLE `abc` FIELDS TERMINATED BY ','",
             str(q2),
+        )
+
+
+class TableTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_create_table(self):
+        q = MySQLQuery.create_table(self.table_abc).columns(Column("id", "INT"))
+        self.assertEqual(
+            'CREATE TABLE `abc` (`id` INT)',
+            str(q),
+        )
+
+    def test_drop_table(self):
+        q = MySQLQuery.drop_table(self.table_abc)
+        self.assertEqual(
+            'DROP TABLE `abc`',
+            str(q),
         )
