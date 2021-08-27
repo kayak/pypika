@@ -510,9 +510,9 @@ Example of a correlated subquery in the `SELECT`
 Unions
 """"""
 
-Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so and |Brand| does not
+Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonomous with "UNION`` so |Brand| does not
 provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
-trying to cast a unioned query to string will through a ``SetOperationException`` if the column sizes are mismatched.
+trying to cast a unioned query to string will throw a ``SetOperationException`` if the column sizes are mismatched.
 
 To create a union query, use either the ``Query.union()`` method or `+` operator with two query instances. For a
 union all, use ``Query.union_all()`` or the `*` operator.
@@ -534,7 +534,7 @@ Intersect
 """""""""
 
 ``INTERSECT`` is supported. Intersects require that queries have the same number of ``SELECT`` clauses so
-trying to cast a intersected query to string with through a ``SetOperationException`` if the column sizes are mismatched.
+trying to cast a intersected query to string will throw a ``SetOperationException`` if the column sizes are mismatched.
 
 To create a intersect query, use the ``Query.intersect()`` method.
 
@@ -557,7 +557,7 @@ Minus
 """""
 
 ``MINUS`` is supported. Minus require that queries have the same number of ``SELECT`` clauses so
-trying to cast a minus query to string with through a ``SetOperationException`` if the column sizes are mismatched.
+trying to cast a minus query to string will throw a ``SetOperationException`` if the column sizes are mismatched.
 
 To create a minus query, use either the ``Query.minus()`` method or `-` operator with two query instances.
 
@@ -588,7 +588,7 @@ EXCEPT
 """"""
 
 ``EXCEPT`` is supported. Minus require that queries have the same number of ``SELECT`` clauses so
-trying to cast a except query to string with through a ``SetOperationException`` if the column sizes are mismatched.
+trying to cast a except query to string will throw a ``SetOperationException`` if the column sizes are mismatched.
 
 To create a except query, use the ``Query.except_of()`` method.
 
