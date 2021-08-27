@@ -557,10 +557,10 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 self._return_field(term)
             elif isinstance(term, str):
                 self._return_field_str(term)
-            elif isinstance(term, ArithmeticExpression):
+            elif isinstance(term, (Function, ArithmeticExpression)):
+                if term.is_aggregate:
+                    raise QueryException("Aggregate functions are not allowed in returning")
                 self._return_other(term)
-            elif isinstance(term, Function):
-                raise QueryException("Aggregate functions are not allowed in returning")
             else:
                 self._return_other(self.wrap_constant(term, self._wrapper_cls))
 

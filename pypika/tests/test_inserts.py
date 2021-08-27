@@ -11,7 +11,10 @@ from pypika import (
     Tables,
     functions as fn,
 )
-from pypika.functions import Avg
+from pypika.functions import (
+    Avg,
+    Cast,
+)
 from pypika.terms import Values
 from pypika.utils import QueryException
 
@@ -549,6 +552,11 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
         query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(self.table_abc.f1 + self.table_abc.f2)
 
         self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING "f1"+"f2"', str(query))
+
+    def test_insert_returning_functions(self):
+        query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(Cast(self.table_abc.f1, "int"))
+
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING CAST("f1" AS INT)', str(query))
 
     def test_insert_returning_aggregate(self):
         with self.assertRaises(QueryException):
