@@ -78,10 +78,6 @@ class MySQLQuery(Query):
         return MySQLCreateQueryBuilder().create_table(table)
 
     @classmethod
-    def create_table(cls, table: Union[str, Table]) -> "MySQLCreateQueryBuilder":
-        return MySQLCreateQueryBuilder().create_table(table)
-
-    @classmethod
     def drop_table(cls, table: Union[str, Table]) -> "MySQLDropQueryBuilder":
         return MySQLDropQueryBuilder().drop_table(table)
 
