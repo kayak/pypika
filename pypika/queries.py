@@ -752,6 +752,8 @@ class QueryBuilder(Selectable, Term):
         newone._joins = copy(self._joins)
         newone._unions = copy(self._unions)
         newone._updates = copy(self._updates)
+        newone._force_indexes = copy(self._force_indexes)
+        newone._use_indexes = copy(self._use_indexes)
         return newone
 
     @builder
