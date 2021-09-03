@@ -170,6 +170,19 @@ class QueryTablesTests(unittest.TestCase):
             # the subquery count used to generate aliases did not increase.
             self.assertEqual(q2._subquery_count, 0)
 
+    def test_joined_query_reuse(self):
+        q1 = Query.from_(self.table_a).select(self.table_a.foo, self.table_a.bar)
+
+        q2 = Query.from_(self.table_b).select(self.table_b.bar, self.table_b.boo)
+        # When we derive a query from q2, we give it an alias of sq0 here.
+        Query.from_(q2).select(q2.bar, q2.boo)
+
+        # When we derive a query from q1, we also give it an alias of sq0 here.
+        with self.assertWarnsRegex(ReusedNestedQueryWarning, "^Query .* used as a nested subquery elsewhere."):
+            Query.from_(q1).join(q2).on(q1.b == q2.b).select(q1.a, q2.c)
+            self.assertEqual(q1.alias, "sq0")
+            self.assertEqual(q2.alias, "sq0")
+
 
 class QueryBuilderTests(unittest.TestCase):
     def test_query_builders_have_reference_to_correct_query_class(self):

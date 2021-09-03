@@ -760,6 +760,17 @@ class QueryBuilder(Selectable, Term):
         newone._updates = copy(self._updates)
         return newone
 
+    @staticmethod
+    def check_nested_query_used(selectable: Selectable) -> None:
+        """Issues a warning if a nested query is used.
+
+        A nested query is subject to alias changes, which if used in multiple contexts may lead to unexpected behavior.
+        """
+        if isinstance(selectable, Selectable) and selectable.is_nested:
+            assert selectable.alias is not None
+            warn(f"Query {selectable} is used as a nested subquery elsewhere. "
+                 "Consider deepcopying the query to avoid unexpected aliasing.", ReusedNestedQueryWarning, stacklevel=2)
+
     @builder
     def from_(self, selectable: Union[Selectable, Query, str]) -> "QueryBuilder":
         """
@@ -776,12 +787,7 @@ class QueryBuilder(Selectable, Term):
         """
 
         self._from.append(Table(selectable) if isinstance(selectable, str) else selectable)
-
-        if isinstance(selectable, Selectable) and selectable.is_nested:
-            assert selectable.alias is not None
-            warn(f"Query {selectable} is used as a nested subquery elsewhere. "
-                 "Consider deepcopying the query to avoid unexpected aliasing.", ReusedNestedQueryWarning)
-            return
+        self.check_nested_query_used(selectable)
 
         if isinstance(selectable, (QueryBuilder, _SetOperation)) and selectable.alias is None:
             if isinstance(selectable, QueryBuilder):
@@ -1008,6 +1014,7 @@ class QueryBuilder(Selectable, Term):
     def join(
         self, item: Union[Table, "QueryBuilder", AliasedQuery, Selectable], how: JoinType = JoinType.inner
     ) -> "Joiner":
+        self.check_nested_query_used(item)
         if isinstance(item, Table):
             return Joiner(self, item, how, type_label="table")
 
