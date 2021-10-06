@@ -8,6 +8,7 @@ from pypika import (
     Table,
     Tables,
     Tuple,
+    Struct,
 )
 from pypika.functions import Coalesce, NullIf, Sum
 from pypika.terms import Field
@@ -52,8 +53,7 @@ class TupleTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
-            str(q),
+            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))', str(q),
         )
 
     def test_tuple_in_using_pypika_tuples(self):
@@ -64,8 +64,7 @@ class TupleTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
-            str(q),
+            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))', str(q),
         )
 
     def test_tuple_in_using_mixed_tuples(self):
@@ -76,8 +75,7 @@ class TupleTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))',
-            str(q),
+            'SELECT "foo","bar" FROM "abc" ' 'WHERE ("foo","bar") IN ((1,1),(2,2),(3,3))', str(q),
         )
 
     def test_tuples_in_join(self):
@@ -146,6 +144,20 @@ class ArrayTests(unittest.TestCase):
 
         q = Query.from_(tb).select(Array(tb.col).as_("different_name"))
         self.assertEqual(str(q), 'SELECT ["col"] "different_name" FROM "tb"')
+
+
+class StructTests(unittest.TestCase):
+    table_abc, table_efg = Tables("abc", "efg")
+
+    def test_struct_general(self):
+        query = Query.from_(self.table_abc).select(Struct(1, "a", ["b", 2, 3]))
+
+        self.assertEqual("SELECT STRUCT(1,'a',['b',2,3]) FROM \"abc\"", str(query))
+
+    def test_struct_with_field_names(self):
+        query = Query.from_(self.table_abc).select(Struct(1, "a", ["b", 2, 3], field_names=["col1", "col2", "col3"]))
+
+        self.assertEqual("SELECT STRUCT(1 AS col1,'a' AS col2,['b',2,3] AS col3) FROM \"abc\"", str(query))
 
 
 class BracketTests(unittest.TestCase):
