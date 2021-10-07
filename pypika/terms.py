@@ -409,8 +409,7 @@ class JSON(Term):
     def _get_dict_sql(self, value: dict, **kwargs: Any) -> str:
         pairs = [
             "{key}:{value}".format(
-                key=self._recursive_get_sql(k, **kwargs),
-                value=self._recursive_get_sql(v, **kwargs),
+                key=self._recursive_get_sql(k, **kwargs), value=self._recursive_get_sql(v, **kwargs),
             )
             for k, v in value.items()
         ]
@@ -570,10 +569,7 @@ class Field(Criterion, JSON):
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
             table_name = self.table.get_table_name()
-            field_sql = "{namespace}.{name}".format(
-                namespace=format_quotes(table_name, quote_char),
-                name=field_sql,
-            )
+            field_sql = "{namespace}.{name}".format(namespace=format_quotes(table_name, quote_char), name=field_sql,)
 
         field_alias = getattr(self, "alias", None)
         if with_alias:
@@ -655,9 +651,8 @@ class Array(Tuple):
 
 
 class Bracket(Tuple):
-    def __init__(self, *values: Any) -> None:
-        super().__init__()
-        self.values = values
+    def __init__(self, term: Any) -> None:
+        super().__init__(term)
 
 
 class Struct(Criterion):
@@ -671,8 +666,9 @@ class Struct(Criterion):
             raise Exception("field_names must have the same length as the number of fields")
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = "STRUCT({})".format(",".join([term.get_sql(as_keyword = True) for term in self.terms]))
+        sql = "STRUCT({})".format(",".join([term.get_sql(as_keyword=True) for term in self.terms]))
         return format_alias_sql(sql, self.alias, **kwargs)
+
 
 class NestedCriterion(Criterion):
     def __init__(
@@ -893,9 +889,7 @@ class BetweenCriterion(RangeCriterion):
     def get_sql(self, **kwargs: Any) -> str:
         # FIXME escape
         sql = "{term} BETWEEN {start} AND {end}".format(
-            term=self.term.get_sql(**kwargs),
-            start=self.start.get_sql(**kwargs),
-            end=self.end.get_sql(**kwargs),
+            term=self.term.get_sql(**kwargs), start=self.start.get_sql(**kwargs), end=self.end.get_sql(**kwargs),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -903,9 +897,7 @@ class BetweenCriterion(RangeCriterion):
 class PeriodCriterion(RangeCriterion):
     def get_sql(self, **kwargs: Any) -> str:
         sql = "{term} FROM {start} TO {end}".format(
-            term=self.term.get_sql(**kwargs),
-            start=self.start.get_sql(**kwargs),
-            end=self.end.get_sql(**kwargs),
+            term=self.term.get_sql(**kwargs), start=self.start.get_sql(**kwargs), end=self.end.get_sql(**kwargs),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -936,10 +928,7 @@ class BitwiseAndCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = "({term} & {value})".format(
-            term=self.term.get_sql(**kwargs),
-            value=self.value,
-        )
+        sql = "({term} & {value})".format(term=self.term.get_sql(**kwargs), value=self.value,)
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
@@ -967,17 +956,13 @@ class NullCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
-        sql = "{term} IS NULL".format(
-            term=self.term.get_sql(**kwargs),
-        )
+        sql = "{term} IS NULL".format(term=self.term.get_sql(**kwargs),)
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class NotNullCriterion(NullCriterion):
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
-        sql = "{term} IS NOT NULL".format(
-            term=self.term.get_sql(**kwargs),
-        )
+        sql = "{term} IS NOT NULL".format(term=self.term.get_sql(**kwargs),)
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
@@ -1155,10 +1140,7 @@ class Case(Criterion):
             A copy of the term with the tables replaced.
         """
         self._cases = [
-            [
-                criterion.replace_table(current_table, new_table),
-                term.replace_table(current_table, new_table),
-            ]
+            [criterion.replace_table(current_table, new_table), term.replace_table(current_table, new_table),]
             for criterion, term in self._cases
         ]
         self._else = self._else.replace_table(current_table, new_table) if self._else else None
@@ -1260,9 +1242,7 @@ class CustomFunction:
         if not self._is_valid_function_call(*args):
             raise FunctionException(
                 "Function {name} require these arguments ({params}), ({args}) passed".format(
-                    name=self.name,
-                    params=", ".join(str(p) for p in self.params),
-                    args=", ".join(str(p) for p in args),
+                    name=self.name, params=", ".join(str(p) for p in self.params), args=", ".join(str(p) for p in args),
                 )
             )
 
@@ -1343,8 +1323,7 @@ class Function(Criterion):
 
         if self.schema is not None:
             function_sql = "{schema}.{function}".format(
-                schema=self.schema.get_sql(quote_char=quote_char, dialect=dialect, **kwargs),
-                function=function_sql,
+                schema=self.schema.get_sql(quote_char=quote_char, dialect=dialect, **kwargs), function=function_sql,
             )
 
         if with_alias:
@@ -1407,10 +1386,7 @@ class AnalyticFunction(AggregateFunction):
         if orient is None:
             return field.get_sql(**kwargs)
 
-        return "{field} {orient}".format(
-            field=field.get_sql(**kwargs),
-            orient=orient.value,
-        )
+        return "{field} {orient}".format(field=field.get_sql(**kwargs), orient=orient.value,)
 
     def get_partition_sql(self, **kwargs: Any) -> str:
         terms = []
@@ -1450,10 +1426,7 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
             self.value = value
 
         def __str__(self) -> str:
-            return "{value} {modifier}".format(
-                value=self.value or "UNBOUNDED",
-                modifier=self.modifier,
-            )
+            return "{value} {modifier}".format(value=self.value or "UNBOUNDED", modifier=self.modifier,)
 
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(name, *args, **kwargs)
@@ -1480,11 +1453,7 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
             return "{frame} {bound}".format(frame=self.frame, bound=self.bound)
 
         lower, upper = self.bound
-        return "{frame} BETWEEN {lower} AND {upper}".format(
-            frame=self.frame,
-            lower=lower,
-            upper=upper,
-        )
+        return "{frame} BETWEEN {lower} AND {upper}".format(frame=self.frame, lower=lower, upper=upper,)
 
     def get_partition_sql(self, **kwargs: Any) -> str:
         partition_sql = super(WindowFrameAnalyticFunction, self).get_partition_sql(**kwargs)
@@ -1555,9 +1524,7 @@ class Interval(Node):
             return
 
         for unit, label, value in zip(
-            self.units,
-            self.labels,
-            [years, months, days, hours, minutes, seconds, microseconds],
+            self.units, self.labels, [years, months, days, hours, minutes, seconds, microseconds],
         ):
             if value:
                 int_value = int(value)
@@ -1601,10 +1568,7 @@ class Interval(Node):
                 expr = "-" + expr
 
             unit = (
-                "{largest}_{smallest}".format(
-                    largest=self.largest,
-                    smallest=self.smallest,
-                )
+                "{largest}_{smallest}".format(largest=self.largest, smallest=self.smallest,)
                 if self.largest != self.smallest
                 else self.largest
             )
@@ -1663,8 +1627,6 @@ class AtTimezone(Term):
 
     def get_sql(self, **kwargs):
         sql = '{name} AT TIME ZONE {interval}\'{zone}\''.format(
-            name=self.field.get_sql(**kwargs),
-            interval='INTERVAL ' if self.interval else '',
-            zone=self.zone,
+            name=self.field.get_sql(**kwargs), interval='INTERVAL ' if self.interval else '', zone=self.zone,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
