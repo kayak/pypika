@@ -51,7 +51,8 @@ The pseudo-column can change from database to database, so here it's possible to
 
 .. code-block:: python
 
-    from pypika import Query, PseudoColumn
+    from pypika import Query
+    from pypika.terms import PseudoColumn
 
     CurrentDate = PseudoColumn('current_date')
 
