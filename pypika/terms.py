@@ -273,9 +273,9 @@ class Term(Node):
     def __le__(self, other: Any) -> "BasicCriterion":
         return BasicCriterion(Equality.lte, self, self.wrap_constant(other))
 
-    def __getitem__(self, item: slice) -> "BetweenCriterion":
+    def __getitem__(self, item: slice) -> Union["GetItem", "BetweenCriterion"]:
         if not isinstance(item, slice):
-            raise TypeError("Field' object is not subscriptable")
+            return GetItem(self, item)
         return self.between(item.start, item.stop)
 
     def __str__(self) -> str:
@@ -588,6 +588,24 @@ class Index(Term):
 
     def get_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
         return format_quotes(self.name, quote_char)
+
+
+class GetItem(Term):
+    def __init__(self, term: Term, item: Any, alias: Optional[str] = None) -> None:
+        super().__init__(alias)
+        self.term = term
+        self.item = self.wrap_constant(item)
+
+    def get_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
+        return format_alias_sql(
+            "{term}[{item}]".format(
+                term=self.term.get_sql(quote_char=quote_char, **kwargs),
+                item=self.item.get_sql(quote_char=quote_char, **kwargs),
+            ),
+            self.alias,
+            quote_char=quote_char,
+            **kwargs,
+        )
 
 
 class Star(Field):
