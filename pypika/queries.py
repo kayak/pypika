@@ -1070,7 +1070,9 @@ class QueryBuilder(Selectable, Term):
     @builder
     def set(self, field: Union[Field, str], value: Any) -> "QueryBuilder":
         field = Field(field) if not isinstance(field, Field) else field
-        self._updates.append((field, self._wrapper_cls(value)))
+        if not isinstance(value, Term):
+            value = self.wrap_constant(value, wrapper_cls=self._wrapper_cls)
+        self._updates.append((field, value))
 
     def __add__(self, other: "QueryBuilder") -> _SetOperation:
         return self.union(other)
