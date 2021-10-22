@@ -15,7 +15,7 @@ class ClickHouseQueryTests(TestCase):
     
     def test_use_FINAL_keyword(self):
         t = Table('abc')
-        query = ClickHouseQuery.from_(t).final_().select(t.foo, t.bar, t.baz)
+        query = ClickHouseQuery.from_(t).final().select(t.foo, t.bar, t.baz)
         self.assertEqual(str(query), 'SELECT "foo","bar","baz" FROM "abc" FINAL')
 
 
