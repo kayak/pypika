@@ -787,7 +787,7 @@ class ClickHouseQueryBuilder(QueryBuilder):
         self._final = False
     
     @builder
-    def final_(self) -> None:
+    def final(self) -> None:
         self._final = True
 
     @staticmethod
