@@ -781,6 +781,15 @@ class ClickHouseQuery(Query):
 class ClickHouseQueryBuilder(QueryBuilder):
     QUERY_CLS = ClickHouseQuery
 
+    
+    def __init__(self, **kwargs) -> None:
+        super().__init__(self, as_keyword=True)
+        self._final = False
+    
+    @builder
+    def final_(self) -> None:
+        self._final = True
+
     @staticmethod
     def _delete_sql(**kwargs: Any) -> str:
         return 'ALTER TABLE'
@@ -792,7 +801,8 @@ class ClickHouseQueryBuilder(QueryBuilder):
         selectable = ",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
         if self._delete_from:
             return " {selectable} DELETE".format(selectable=selectable)
-        return " FROM {selectable}".format(selectable=selectable)
+        return f" FROM {selectable} FINAL" if self._final else f" FROM {selectable}".format(selectable=selectable)
+
 
     def _set_sql(self, **kwargs: Any) -> str:
         return " UPDATE {set}".format(
