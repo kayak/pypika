@@ -801,7 +801,10 @@ class ClickHouseQueryBuilder(QueryBuilder):
         selectable = ",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
         if self._delete_from:
             return " {selectable} DELETE".format(selectable=selectable)
-        return f" FROM {selectable} FINAL" if self._final else f" FROM {selectable}".format(selectable=selectable)
+        elif self._final:
+            return f" FROM {selectable} FINAL"
+        else:
+            return f" FROM {selectable}"
 
 
     def _set_sql(self, **kwargs: Any) -> str:
