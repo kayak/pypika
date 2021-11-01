@@ -795,12 +795,13 @@ class ClickHouseQueryBuilder(QueryBuilder):
         return 'ALTER TABLE'
 
     def _update_sql(self, **kwargs: Any) -> str:
-        return "ALTER TABLE {table}".format(table=self._update_table.get_sql(**kwargs))
+        table = self._update_table.get_sql(**kwargs)
+        return f"ALTER TABLE {table}"
 
     def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
         selectable = ",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
         if self._delete_from:
-            return " {selectable} DELETE".format(selectable=selectable)
+            return f" {selectable} DELETE"
         elif self._final:
             return f" FROM {selectable} FINAL"
         else:
@@ -808,15 +809,13 @@ class ClickHouseQueryBuilder(QueryBuilder):
 
 
     def _set_sql(self, **kwargs: Any) -> str:
-        return " UPDATE {set}".format(
-            set=",".join(
+        set = ",".join(
                 "{field}={value}".format(
                     field=field.get_sql(**dict(kwargs, with_namespace=False)), value=value.get_sql(**kwargs)
                 )
                 for field, value in self._updates
             )
-        )
-
+        return f" UPDATE {set}"
 
 class ClickHouseDropQueryBuilder(DropQueryBuilder):
     QUERY_CLS = ClickHouseQuery
