@@ -608,7 +608,9 @@ class _SetOperation(Selectable, Term):
                 subquery=self.base_query.wrap_set_operation_queries, **kwargs
             )
 
-            if len(self.base_query._selects) != len(set_operation_query._selects):
+            if len(self.base_query._selects) != len(set_operation_query._selects)\
+                    and Star not in self.base_query._selects\
+                    and Star not in set_operation_query._selects:
                 raise SetOperationException(
                     "Queries must have an equal number of select statements in a set operation."
                     "\n\nMain Query:\n{query1}\n\nSet Operations Query:\n{query2}".format(
