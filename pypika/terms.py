@@ -151,11 +151,21 @@ class Term(Node):
     def glob(self, expr: str) -> "BasicCriterion":
         return BasicCriterion(Matching.glob, self, self.wrap_constant(expr))
 
-    def like(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.like, self, self.wrap_constant(expr))
+    def like(self, expr: str, escape_character: Optional[str] = None) -> "BasicCriterion":
+        return LikeCriterion(
+                Matching.like,
+                self,
+                self.wrap_constant(expr),
+                self.wrap_constant(escape_character) if escape_character else None
+            )
 
     def not_like(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.not_like, self, self.wrap_constant(expr))
+        return LikeCriterion(
+                Matching.not_like,
+                self,
+                self.wrap_constant(expr),
+                self.wrap_constant(escape_character) if escape_character else None
+            )
 
     def ilike(self, expr: str) -> "BasicCriterion":
         return BasicCriterion(Matching.ilike, self, self.wrap_constant(expr))
@@ -824,6 +834,59 @@ class ContainsCriterion(Criterion):
     def negate(self) -> "ContainsCriterion":
         self._is_negated = True
 
+class LikeCriterion(BasicCriterion):
+    def __init__(self, comparator: Comparator, left: Term, right: Term,
+            escape_character: Optional[Term] = None,
+            alias: Optional[str] = None
+        ) -> None:
+        """
+        A wrapper the LIKE operator allowing escape character to be
+        specified.
+
+        Contributed by Riccardo Gusmeroli in 2022
+
+        :param comparator:
+            Type: Comparator
+            This defines the type of comparison, such as {quote} LIKE {quote}
+            or {quote} NOT LIKE {quote}.
+        :param left:
+            The term on the left side of the expression.
+        :param right:
+            The term on the right side of the expression.
+        :param escape_character:
+            The escape_character term of the expression.
+        """
+        super().__init__(comparator,left,right,alias)
+
+        self.escape_character = escape_character
+
+    def nodes_(self) -> Iterator[NodeT]:
+        yield self
+        yield from self.right.nodes_()
+        yield from self.left.nodes_()
+        if self.escape_character is not None:
+            yield from self.escape_character.nodes_()
+
+    def get_sql(self, quote_char: str = '"', with_alias: bool = False, **kwargs: Any) -> str:
+        if self.escape_character is not None:
+            escape_stmt=' ESCAPE {escape_character}'.format(
+                    escape_character=self.escape_character.get_sql(quote_char=quote_char, **kwargs)
+                )
+        else:
+            escape_stmt=''
+
+
+        sql = "{left}{comparator}{right}{escape_stmt}".format(
+            comparator=self.comparator.value,
+            left=self.left.get_sql(quote_char=quote_char, **kwargs),
+            right=self.right.get_sql(quote_char=quote_char, **kwargs),
+            escape_stmt=escape_stmt
+        )
+
+
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
 class ExistsCriterion(Criterion):
     def __init__(self, container, alias=None):
