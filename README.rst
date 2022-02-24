@@ -416,6 +416,7 @@ All join types are supported by |Brand|.
         .full_outer_join(join_table) \
         .cross_join(join_table) \
         .hash_join(join_table) \
+        .asof_join(join_table) \
         ...
 
 See the list of join types here ``pypika.enums.JoinTypes``
