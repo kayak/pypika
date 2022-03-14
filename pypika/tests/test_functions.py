@@ -570,6 +570,14 @@ class StringTests(unittest.TestCase):
 
         self.assertEqual('SELECT SUBSTRING("foo",2,6) FROM "abc"', str(q))
 
+    def test__replace__str(self):
+        q = Q.select(fn.Replace("ABC_DEF", "_", " "))
+        self.assertEqual("SELECT REPLACE('ABC_DEF','_',' ')", str(q))
+
+    def test__replace__field(self):
+        q = Q.from_(self.t).select(fn.Replace(self.t.foobar, self.t.foo, self.t.bar))
+        self.assertEqual('SELECT REPLACE("foobar","foo","bar") FROM "abc"', str(q))
+
 
 class SplitPartFunctionTests(unittest.TestCase):
     t = T("abc")
