@@ -274,11 +274,11 @@ class ArithmeticTests(unittest.TestCase):
 
     def test__complex_op_exponent_parentheses(self):
         q1 = Q.from_("abc").select(F("a") / (F("b") ** 2))
-        q2 = Q.from_(self.t).select(self.t.a / (self.t.b ** 2))
+        q2 = Q.from_(self.t).select(self.t.a / (self.t.b**2))
         q3 = Q.from_("abc").select(F("a") ** (F("b") / 2))
         q4 = Q.from_(self.t).select(self.t.a ** (self.t.b / 2))
         q5 = Q.from_("abc").select((F("a") ** F("b")) ** 2)
-        q6 = Q.from_(self.t).select((self.t.a ** self.t.b) ** 2)
+        q6 = Q.from_(self.t).select((self.t.a**self.t.b) ** 2)
 
         self.assertEqual('SELECT "a"/POW("b",2) FROM "abc"', str(q1))
         self.assertEqual('SELECT "a"/POW("b",2) FROM "abc"', str(q2))
@@ -289,9 +289,9 @@ class ArithmeticTests(unittest.TestCase):
 
     def test__complex_op_exponent_no_parentheses(self):
         q1 = Q.from_("abc").select(F("a") ** F("b") ** 2)
-        q2 = Q.from_(self.t).select(self.t.a ** self.t.b ** 2)
+        q2 = Q.from_(self.t).select(self.t.a**self.t.b**2)
         q3 = Q.from_("abc").select(F("a") / F("b") ** 2)
-        q4 = Q.from_(self.t).select(self.t.a / self.t.b ** 2)
+        q4 = Q.from_(self.t).select(self.t.a / self.t.b**2)
 
         self.assertEqual('SELECT POW("a",POW("b",2)) FROM "abc"', str(q1))
         self.assertEqual('SELECT POW("a",POW("b",2)) FROM "abc"', str(q2))
@@ -369,14 +369,14 @@ class ArithmeticTests(unittest.TestCase):
 
     def test__exponent__number(self):
         q1 = Q.from_("abc").select(F("a") ** 2)
-        q2 = Q.from_(self.t).select(self.t.a ** 2)
+        q2 = Q.from_(self.t).select(self.t.a**2)
 
         self.assertEqual('SELECT POW("a",2) FROM "abc"', str(q1))
         self.assertEqual('SELECT POW("a",2) FROM "abc"', str(q2))
 
     def test__exponent__decimal(self):
         q1 = Q.from_("abc").select(F("a") ** 0.5)
-        q2 = Q.from_(self.t).select(self.t.a ** 0.5)
+        q2 = Q.from_(self.t).select(self.t.a**0.5)
 
         self.assertEqual('SELECT POW("a",0.5) FROM "abc"', str(q1))
         self.assertEqual('SELECT POW("a",0.5) FROM "abc"', str(q2))
@@ -569,6 +569,14 @@ class StringTests(unittest.TestCase):
         q = Q.from_(self.t).select(fn.Substring(self.t.foo, 2, 6))
 
         self.assertEqual('SELECT SUBSTRING("foo",2,6) FROM "abc"', str(q))
+
+    def test__replace__str(self):
+        q = Q.select(fn.Replace("ABC_DEF", "_", " "))
+        self.assertEqual("SELECT REPLACE('ABC_DEF','_',' ')", str(q))
+
+    def test__replace__field(self):
+        q = Q.from_(self.t).select(fn.Replace(self.t.foobar, self.t.foo, self.t.bar))
+        self.assertEqual('SELECT REPLACE("foobar","foo","bar") FROM "abc"', str(q))
 
 
 class SplitPartFunctionTests(unittest.TestCase):

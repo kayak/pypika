@@ -249,6 +249,11 @@ class RegexpLike(Function):
         super(RegexpLike, self).__init__("REGEXP_LIKE", term, pattern, modifiers, alias=alias)
 
 
+class Replace(Function):
+    def __init__(self, term, find_string, replace_with, alias=None):
+        super(Replace, self).__init__("REPLACE", term, find_string, replace_with, alias=alias)
+
+
 # Date/Time Functions
 class Now(Function):
     def __init__(self, alias=None):
