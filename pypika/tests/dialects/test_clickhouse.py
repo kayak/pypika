@@ -13,6 +13,11 @@ class ClickHouseQueryTests(TestCase):
         query = ClickHouseQuery.from_(t).select(t.foo.as_('f1'), t.bar.as_('f2'))
         self.assertEqual(str(query), 'SELECT "foo" AS "f1","bar" AS "f2" FROM "abc"')
 
+    def test_use_distinct_on(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).select(t.foo, t.bar).distinct_on('foo', t.bar)
+        self.assertEqual(str(query), 'SELECT DISTINCT ON("foo","bar") "foo","bar" FROM "abc"')
+
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")

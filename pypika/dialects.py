@@ -781,6 +781,25 @@ class ClickHouseQuery(Query):
 class ClickHouseQueryBuilder(QueryBuilder):
     QUERY_CLS = ClickHouseQuery
 
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._distinct_on = []
+
+    @builder
+    def distinct_on(self, *fields: Union[str, Term]) -> "ClickHouseQueryBuilder":
+        for field in fields:
+            if isinstance(field, str):
+                self._distinct_on.append(Field(field))
+            elif isinstance(field, Term):
+                self._distinct_on.append(field)
+
+    def _distinct_sql(self, **kwargs: Any) -> str:
+        if self._distinct_on:
+            return "DISTINCT ON({distinct_on}) ".format(
+                distinct_on=",".join(term.get_sql(with_alias=True, **kwargs) for term in self._distinct_on)
+            )
+        return super()._distinct_sql(**kwargs)
+
     @staticmethod
     def _delete_sql(**kwargs: Any) -> str:
         return 'ALTER TABLE'
