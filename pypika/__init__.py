@@ -98,6 +98,18 @@ from pypika.utils import (
     FunctionException,
 )
 
+# noinspection PyUnresolvedReferences
+from pypika.functions import (
+    Count,
+    Sum,
+    Avg,
+    Min,
+    Max,
+    Std,
+    StdDev,
+    Abs
+)
+
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 __version__ = "0.48.9"
