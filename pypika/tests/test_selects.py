@@ -1291,7 +1291,7 @@ class SubqueryTests(unittest.TestCase):
         test_query = Query.with_(sub_query, "an_alias").from_(AliasedQuery("an_alias")).select("*")
 
         self.assertEqual(
-            'WITH an_alias AS (SELECT "fizz" FROM "efg") SELECT * FROM an_alias',
+            'WITH "an_alias" AS (SELECT "fizz" FROM "efg") SELECT * FROM an_alias',
             str(test_query),
         )
 
@@ -1305,7 +1305,7 @@ class SubqueryTests(unittest.TestCase):
             .select("*")
         )
         self.assertEqual(
-            'WITH an_alias AS (SELECT "fizz" FROM "efg") '
+            'WITH "an_alias" AS (SELECT "fizz" FROM "efg") '
             'SELECT * FROM "abc" JOIN an_alias ON "an_alias"."fizz"="abc"."buzz"',
             str(test_query),
         )
@@ -1314,7 +1314,7 @@ class SubqueryTests(unittest.TestCase):
         sub_query = PostgreSQLQuery.into(self.table_abc).insert(1).returning('*')
         test_query = Query.with_(sub_query, "an_alias").from_(AliasedQuery("an_alias")).select("*")
         self.assertEqual(
-            'WITH an_alias AS (INSERT INTO "abc" VALUES (1) RETURNING *) SELECT * FROM an_alias', str(test_query)
+            'WITH "an_alias" AS (INSERT INTO "abc" VALUES (1) RETURNING *) SELECT * FROM an_alias', str(test_query)
         )
 
 

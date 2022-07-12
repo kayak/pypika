@@ -165,7 +165,7 @@ class InsertIntoTests(unittest.TestCase):
 
         q = Query().with_(sub_query, 'sub_qs').into(self.table_abc).select(aliased.id).from_(aliased)
         self.assertEqual(
-            'WITH sub_qs AS (SELECT "id" FROM "abc") INSERT INTO "abc" SELECT "sub_qs"."id" FROM sub_qs', str(q)
+            'WITH "sub_qs" AS (SELECT "id" FROM "abc") INSERT INTO "abc" SELECT "sub_qs"."id" FROM sub_qs', str(q)
         )
 
 
