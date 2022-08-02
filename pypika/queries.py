@@ -1564,8 +1564,8 @@ class Joiner:
 
         criterion = None
         for field in fields:
-            consituent = Field(field, table=self.query._from[0]) == Field(field, table=self.item)
-            criterion = consituent if criterion is None else criterion & consituent
+            constituent = Field(field, table=self.query._from[0]) == Field(field, table=self.item)
+            criterion = constituent if criterion is None else criterion & constituent
 
         self.query.do_join(JoinOn(self.item, self.how, criterion))
         return self.query
