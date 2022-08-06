@@ -105,14 +105,14 @@ class MySQLQueryBuilder(QueryBuilder):
     @builder
     def for_update(
         self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
-    ) -> "QueryBuilder":
+    ):
         self._for_update = True
         self._for_update_skip_locked = skip_locked
         self._for_update_nowait = nowait
         self._for_update_of = set(of)
 
     @builder
-    def on_duplicate_key_update(self, field: Union[Field, str], value: Any) -> "MySQLQueryBuilder":
+    def on_duplicate_key_update(self, field: Union[Field, str], value: Any):
         if self._ignore_duplicates:
             raise QueryException("Can not have two conflict handlers")
 
@@ -120,7 +120,7 @@ class MySQLQueryBuilder(QueryBuilder):
         self._duplicate_updates.append((field, ValueWrapper(value)))
 
     @builder
-    def on_duplicate_key_ignore(self) -> "MySQLQueryBuilder":
+    def on_duplicate_key_ignore(self):
         if self._duplicate_updates:
             raise QueryException("Can not have two conflict handlers")
 
@@ -162,7 +162,7 @@ class MySQLQueryBuilder(QueryBuilder):
         return " ON DUPLICATE KEY IGNORE"
 
     @builder
-    def modifier(self, value: str) -> "MySQLQueryBuilder":
+    def modifier(self, value: str):
         """
         Adds a modifier such as SQL_CALC_FOUND_ROWS to the query.
         https://dev.mysql.com/doc/refman/5.7/en/select.html
@@ -191,11 +191,11 @@ class MySQLLoadQueryBuilder:
         self._into_table = None
 
     @builder
-    def load(self, fp: str) -> "MySQLLoadQueryBuilder":
+    def load(self, fp: str):
         self._load_file = fp
 
     @builder
-    def into(self, table: Union[str, Table]) -> "MySQLLoadQueryBuilder":
+    def into(self, table: Union[str, Table]):
         self._into_table = table if isinstance(table, Table) else Table(table)
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
@@ -254,7 +254,7 @@ class VerticaQueryBuilder(QueryBuilder):
         self._hint = None
 
     @builder
-    def hint(self, label: str) -> "VerticaQueryBuilder":
+    def hint(self, label: str):
         self._hint = label
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
@@ -275,14 +275,14 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
         self._preserve_rows = False
 
     @builder
-    def local(self) -> "VerticaCreateQueryBuilder":
+    def local(self):
         if not self._temporary:
             raise AttributeError("'Query' object has no attribute temporary")
 
         self._local = True
 
     @builder
-    def preserve_rows(self) -> "VerticaCreateQueryBuilder":
+    def preserve_rows(self):
         if not self._temporary:
             raise AttributeError("'Query' object has no attribute temporary")
 
@@ -318,11 +318,11 @@ class VerticaCopyQueryBuilder:
         self._from_file = None
 
     @builder
-    def from_file(self, fp: str) -> "VerticaCopyQueryBuilder":
+    def from_file(self, fp: str):
         self._from_file = fp
 
     @builder
-    def copy_(self, table: Union[str, Table]) -> "VerticaCopyQueryBuilder":
+    def copy_(self, table: Union[str, Table]):
         self._copy_table = table if isinstance(table, Table) else Table(table)
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
@@ -410,7 +410,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
         return newone
 
     @builder
-    def distinct_on(self, *fields: Union[str, Term]) -> "PostgreSQLQueryBuilder":
+    def distinct_on(self, *fields: Union[str, Term]):
         for field in fields:
             if isinstance(field, str):
                 self._distinct_on.append(Field(field))
@@ -420,7 +420,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
     @builder
     def for_update(
         self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
-    ) -> "QueryBuilder":
+    ):
         self._for_update = True
         self._for_update_skip_locked = skip_locked
         self._for_update_nowait = nowait
@@ -440,7 +440,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 self._on_conflict_fields.append(target_field)
 
     @builder
-    def do_nothing(self) -> "PostgreSQLQueryBuilder":
+    def do_nothing(self):
         if len(self._on_conflict_do_updates) > 0:
             raise QueryException("Can not have two conflict handlers")
         self._on_conflict_do_nothing = True
@@ -448,7 +448,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
     @builder
     def do_update(
         self, update_field: Union[str, Field], update_value: Optional[Any] = None
-    ) -> "PostgreSQLQueryBuilder":
+    ):
         if self._on_conflict_do_nothing:
             raise QueryException("Can not have two conflict handlers")
 
@@ -465,7 +465,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             self._on_conflict_do_updates.append((field, None))
 
     @builder
-    def where(self, criterion: Criterion) -> "PostgreSQLQueryBuilder":
+    def where(self, criterion: Criterion):
         if not self._on_conflict:
             return super().where(criterion)
 
@@ -489,7 +489,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             raise QueryException('Can not have fieldless ON CONFLICT WHERE')
 
     @builder
-    def using(self, table: Union[Selectable, str]) -> "QueryBuilder":
+    def using(self, table: Union[Selectable, str]):
         self._using.append(table)
 
     def _distinct_sql(self, **kwargs: Any) -> str:
@@ -567,7 +567,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
         return ''
 
     @builder
-    def returning(self, *terms: Any) -> "PostgreSQLQueryBuilder":
+    def returning(self, *terms: Any):
         for term in terms:
             if isinstance(term, Field):
                 self._return_field(term)
@@ -680,7 +680,7 @@ class MSSQLQueryBuilder(QueryBuilder):
         self._top_percent: bool = False
 
     @builder
-    def top(self, value: Union[str, int], percent: bool = False, with_ties: bool = False) -> "MSSQLQueryBuilder":
+    def top(self, value: Union[str, int], percent: bool = False, with_ties: bool = False):
         """
         Implements support for simple TOP clauses.
         https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql?view=sql-server-2017
@@ -696,7 +696,7 @@ class MSSQLQueryBuilder(QueryBuilder):
         self._top_with_ties: bool = with_ties
 
     @builder
-    def fetch_next(self, limit: int) -> "MSSQLQueryBuilder":
+    def fetch_next(self, limit: int):
         # Overridden to provide a more domain-specific API for T-SQL users
         self._limit = limit
 
@@ -813,15 +813,15 @@ class ClickHouseDropQueryBuilder(DropQueryBuilder):
         self._cluster_name = None
 
     @builder
-    def drop_dictionary(self, dictionary: str) -> "ClickHouseDropQueryBuilder":
+    def drop_dictionary(self, dictionary: str):
         super()._set_target('DICTIONARY', dictionary)
 
     @builder
-    def drop_quota(self, quota: str) -> "ClickHouseDropQueryBuilder":
+    def drop_quota(self, quota: str):
         super()._set_target('QUOTA', quota)
 
     @builder
-    def on_cluster(self, cluster: str) -> "ClickHouseDropQueryBuilder":
+    def on_cluster(self, cluster: str):
         if self._cluster_name:
             raise AttributeError("'DropQuery' object already has attribute cluster_name")
         self._cluster_name = cluster
@@ -860,7 +860,7 @@ class SQLLiteQueryBuilder(QueryBuilder):
         self._insert_or_replace = False
 
     @builder
-    def insert_or_replace(self, *terms: Any) -> "SQLLiteQueryBuilder":
+    def insert_or_replace(self, *terms: Any):
         self._apply_terms(*terms)
         self._replace = True
         self._insert_or_replace = True
