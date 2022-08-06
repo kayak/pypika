@@ -145,7 +145,7 @@ class Dialects(Enum):
     SNOWFLAKE = "snowflake"
 
 
-class JSONOperators(Enum):
+class JSONOperators(Comparator):
     HAS_KEY = "?"
     CONTAINS = "@>"
     CONTAINED_BY = "<@"

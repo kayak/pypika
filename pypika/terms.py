@@ -1,9 +1,10 @@
 import inspect
 import re
+import typing
 import uuid
 from datetime import date
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
 from pypika.utils import (
@@ -28,20 +29,25 @@ NodeT = TypeVar("NodeT", bound="Node")
 
 
 class Node:
-    is_aggregate = None
+    @property
+    def is_aggregate(self) -> Optional[bool]:
+        return None
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator["Node"]:
         yield self
 
     def find_(self, type: Type[NodeT]) -> List[NodeT]:
         return [node for node in self.nodes_() if isinstance(node, type)]
 
+WrappedConstant = Union[Node, "LiteralValue", "Array", "Tuple", "ValueWrapper"]
 
 class Term(Node):
-    is_aggregate = False
-
     def __init__(self, alias: Optional[str] = None) -> None:
         self.alias = alias
+    
+    @property
+    def is_aggregate(self) -> Optional[bool]:
+        return False
 
     @builder
     def as_(self, alias: str):
@@ -59,7 +65,7 @@ class Term(Node):
     @staticmethod
     def wrap_constant(
         val, wrapper_cls: Optional[Type["Term"]] = None
-    ) -> Union[ValueError, NodeT, "LiteralValue", "Array", "Tuple", "ValueWrapper"]:
+    ) -> WrappedConstant:
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
@@ -149,28 +155,28 @@ class Term(Node):
         return self != other
 
     def glob(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.glob, self, self.wrap_constant(expr))
+        return BasicCriterion(Matching.glob, self, Term._assert_guard(self.wrap_constant(expr)))
 
     def like(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.like, self, self.wrap_constant(expr))
+        return BasicCriterion(Matching.like, self, Term._assert_guard(self.wrap_constant(expr)))
 
     def not_like(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.not_like, self, self.wrap_constant(expr))
+        return BasicCriterion(Matching.not_like, self, Term._assert_guard(self.wrap_constant(expr)))
 
     def ilike(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.ilike, self, self.wrap_constant(expr))
+        return BasicCriterion(Matching.ilike, self, Term._assert_guard(self.wrap_constant(expr)))
 
     def not_ilike(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.not_ilike, self, self.wrap_constant(expr))
+        return BasicCriterion(Matching.not_ilike, self, Term._assert_guard(self.wrap_constant(expr)))
 
     def rlike(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.rlike, self, self.wrap_constant(expr))
+        return BasicCriterion(Matching.rlike, self, Term._assert_guard(self.wrap_constant(expr)))
 
     def regex(self, pattern: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.regex, self, self.wrap_constant(pattern))
+        return BasicCriterion(Matching.regex, self, Term._assert_guard(self.wrap_constant(pattern)))
 
     def regexp(self, pattern: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.regexp, self, self.wrap_constant(pattern))
+        return BasicCriterion(Matching.regexp, self, Term._assert_guard(self.wrap_constant(pattern)))
 
     def between(self, lower: Any, upper: Any) -> "BetweenCriterion":
         return BetweenCriterion(self, self.wrap_constant(lower), self.wrap_constant(upper))
@@ -179,7 +185,7 @@ class Term(Node):
         return PeriodCriterion(self, self.wrap_constant(start), self.wrap_constant(end))
 
     def as_of(self, expr: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.as_of, self, self.wrap_constant(expr))
+        return BasicCriterion(Matching.as_of, self, Term._assert_guard(self.wrap_constant(expr)))
 
     def all_(self) -> "All":
         return All(self)
@@ -193,7 +199,7 @@ class Term(Node):
         return self.isin(arg).negate()
 
     def bin_regex(self, pattern: str) -> "BasicCriterion":
-        return BasicCriterion(Matching.bin_regex, self, self.wrap_constant(pattern))
+        return BasicCriterion(Matching.bin_regex, self, Term._assert_guard(self.wrap_constant(pattern)))
 
     def negate(self) -> "Not":
         return Not(self)
@@ -255,23 +261,23 @@ class Term(Node):
     def __rrshift__(self, other: Any) -> "ArithmeticExpression":
         return ArithmeticExpression(Arithmetic.rshift, self.wrap_constant(other), self)
 
-    def __eq__(self, other: Any) -> "BasicCriterion":
-        return BasicCriterion(Equality.eq, self, self.wrap_constant(other))
+    def __eq__(self, other: Any) -> "BasicCriterion": # type: ignore
+        return BasicCriterion(Equality.eq, self, Term._assert_guard(self.wrap_constant(other)))
 
-    def __ne__(self, other: Any) -> "BasicCriterion":
-        return BasicCriterion(Equality.ne, self, self.wrap_constant(other))
+    def __ne__(self, other: Any) -> "BasicCriterion": # type: ignore
+        return BasicCriterion(Equality.ne, self, Term._assert_guard(self.wrap_constant(other)))
 
     def __gt__(self, other: Any) -> "BasicCriterion":
-        return BasicCriterion(Equality.gt, self, self.wrap_constant(other))
+        return BasicCriterion(Equality.gt, self, Term._assert_guard(self.wrap_constant(other)))
 
     def __ge__(self, other: Any) -> "BasicCriterion":
-        return BasicCriterion(Equality.gte, self, self.wrap_constant(other))
+        return BasicCriterion(Equality.gte, self, Term._assert_guard(self.wrap_constant(other)))
 
     def __lt__(self, other: Any) -> "BasicCriterion":
-        return BasicCriterion(Equality.lt, self, self.wrap_constant(other))
+        return BasicCriterion(Equality.lt, self, Term._assert_guard(self.wrap_constant(other)))
 
     def __le__(self, other: Any) -> "BasicCriterion":
-        return BasicCriterion(Equality.lte, self, self.wrap_constant(other))
+        return BasicCriterion(Equality.lte, self, Term._assert_guard(self.wrap_constant(other)))
 
     def __getitem__(self, item: slice) -> "BetweenCriterion":
         if not isinstance(item, slice):
@@ -286,17 +292,26 @@ class Term(Node):
 
     def get_sql(self, **kwargs: Any) -> str:
         raise NotImplementedError()
+    
+    @classmethod
+    def _assert_guard(cls, v: Any) -> "Term":
+        if isinstance(v, cls):
+            return v
+        else:
+            raise TypeError("expect Term object, got {}".format(type(v).__name__))
 
 
 class Parameter(Term):
-    is_aggregate = None
-
     def __init__(self, placeholder: Union[str, int]) -> None:
         super().__init__()
         self.placeholder = placeholder
 
     def get_sql(self, **kwargs: Any) -> str:
         return str(self.placeholder)
+    
+    @property
+    def is_aggregate(self) -> Optional[bool]:
+        return None
 
 
 class QmarkParameter(Parameter):
@@ -344,7 +359,7 @@ class Negative(Term):
     def __init__(self, term: Term) -> None:
         super().__init__()
         self.term = term
-
+    
     @property
     def is_aggregate(self) -> Optional[bool]:
         return self.term.is_aggregate
@@ -354,11 +369,13 @@ class Negative(Term):
 
 
 class ValueWrapper(Term):
-    is_aggregate = None
-
     def __init__(self, value: Any, alias: Optional[str] = None) -> None:
         super().__init__(alias)
         self.value = value
+    
+    @property
+    def is_aggregate(self) -> Optional[bool]:
+        return None
 
     def get_value_sql(self, **kwargs: Any) -> str:
         return self.get_formatted_value(self.value, **kwargs)
@@ -391,11 +408,10 @@ class ValueWrapper(Term):
 
 
 class JSON(Term):
-    table = None
-
     def __init__(self, value: Any = None, alias: Optional[str] = None) -> None:
         super().__init__(alias)
         self.value = value
+        self.table: Optional[Union[str, "Selectable"]] = None
 
     def _recursive_get_sql(self, value: Any, **kwargs: Any) -> str:
         if isinstance(value, dict):
@@ -429,10 +445,10 @@ class JSON(Term):
         return format_alias_sql(sql, self.alias, **kwargs)
 
     def get_json_value(self, key_or_index: Union[str, int]) -> "BasicCriterion":
-        return BasicCriterion(JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index))
+        return BasicCriterion(JSONOperators.GET_JSON_VALUE, self, Term._assert_guard(self.wrap_constant(key_or_index)))
 
     def get_text_value(self, key_or_index: Union[str, int]) -> "BasicCriterion":
-        return BasicCriterion(JSONOperators.GET_TEXT_VALUE, self, self.wrap_constant(key_or_index))
+        return BasicCriterion(JSONOperators.GET_TEXT_VALUE, self, Term._assert_guard(self.wrap_constant(key_or_index)))
 
     def get_path_json_value(self, path_json: str) -> "BasicCriterion":
         return BasicCriterion(JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json))
@@ -512,14 +528,11 @@ class Criterion(Term):
 
         return crit
 
-    def get_sql(self) -> str:
+    def get_sql(self, **kwargs: Any) -> str:
         raise NotImplementedError()
 
 
 class EmptyCriterion(Criterion):
-    is_aggregate = None
-    tables_ = set()
-
     def fields_(self) -> Set["Field"]:
         return set()
 
@@ -531,6 +544,14 @@ class EmptyCriterion(Criterion):
 
     def __xor__(self, other: Any) -> Any:
         return other
+    
+    @property
+    def is_aggregate(self) -> Optional[bool]:
+        return None
+    
+    @property
+    def tables_(self) -> Set:
+        return set()
 
 
 class Field(Criterion, JSON):
@@ -541,9 +562,9 @@ class Field(Criterion, JSON):
         self.name = name
         self.table = table
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
-        if self.table is not None:
+        if self.table is not None and not isinstance(self.table, str):
             yield from self.table.nodes_()
 
     @builder
@@ -560,7 +581,7 @@ class Field(Criterion, JSON):
         """
         self.table = new_table if self.table == current_table else self.table
 
-    def get_sql(self, **kwargs: Any) -> str:
+    def get_sql(self, **kwargs: Any) -> str: # type: ignore
         with_alias = kwargs.pop("with_alias", False)
         with_namespace = kwargs.pop("with_namespace", False)
         quote_char = kwargs.pop("quote_char", None)
@@ -568,8 +589,8 @@ class Field(Criterion, JSON):
         field_sql = format_quotes(self.name, quote_char)
 
         # Need to add namespace if the table has an alias
-        if self.table and (with_namespace or self.table.alias):
-            table_name = self.table.get_table_name()
+        if self.table and (with_namespace or (not isinstance(self.table, str) and self.table.alias)):
+            table_name = self.table.get_table_name() if not isinstance(self.table, str) else self.table
             field_sql = "{namespace}.{name}".format(
                 namespace=format_quotes(table_name, quote_char),
                 name=field_sql,
@@ -594,16 +615,16 @@ class Star(Field):
     def __init__(self, table: Optional[Union[str, "Selectable"]] = None) -> None:
         super().__init__("*", table=table)
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
-        if self.table is not None:
+        if self.table is not None and not isinstance(self.table, str):
             yield from self.table.nodes_()
 
-    def get_sql(
+    def get_sql( # type: ignore
         self, with_alias: bool = False, with_namespace: bool = False, quote_char: Optional[str] = None, **kwargs: Any
     ) -> str:
-        if self.table and (with_namespace or self.table.alias):
-            namespace = self.table.alias or getattr(self.table, "_table_name")
+        if self.table and (with_namespace or (not isinstance(self.table, str) and self.table.alias)):
+            namespace = (self.table.alias if not isinstance(self.table, str) else self.table) or getattr(self.table, "_table_name")
             return "{}.*".format(format_quotes(namespace, quote_char))
 
         return "*"
@@ -614,17 +635,17 @@ class Tuple(Criterion):
         super().__init__()
         self.values = [self.wrap_constant(value) for value in values]
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         for value in self.values:
             yield from value.nodes_()
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = "({})".format(",".join(term.get_sql(**kwargs) for term in self.values))
+        sql = "({})".format(",".join(Term._assert_guard(term).get_sql(**kwargs) for term in self.values))
         return format_alias_sql(sql, self.alias, **kwargs)
 
     @property
-    def is_aggregate(self) -> bool:
+    def is_aggregate(self) -> Optional[bool]:
         return resolve_is_aggregate([val.is_aggregate for val in self.values])
 
     @builder
@@ -639,13 +660,13 @@ class Tuple(Criterion):
         :return:
             A copy of the field with the tables replaced.
         """
-        self.values = [value.replace_table(current_table, new_table) for value in self.values]
+        self.values = [Term._assert_guard(value).replace_table(current_table, new_table) for value in self.values]
 
 
 class Array(Tuple):
     def get_sql(self, **kwargs: Any) -> str:
         dialect = kwargs.get("dialect", None)
-        values = ",".join(term.get_sql(**kwargs) for term in self.values)
+        values = ",".join(Term._assert_guard(term).get_sql(**kwargs) for term in self.values)
 
         sql = "[{}]".format(values)
         if dialect in (Dialects.POSTGRESQL, Dialects.REDSHIFT):
@@ -676,7 +697,7 @@ class NestedCriterion(Criterion):
         self.right = right
         self.nested = nested
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.right.nodes_()
         yield from self.left.nodes_()
@@ -707,7 +728,7 @@ class NestedCriterion(Criterion):
             left=self.left.get_sql(**kwargs),
             comparator=self.comparator.value,
             right=self.right.get_sql(**kwargs),
-            nested_comparator=self.nested_comparator.value,
+            nested_comparator=self.nested_comparator.comparator.value,
             nested=self.nested.get_sql(**kwargs),
         )
 
@@ -737,7 +758,7 @@ class BasicCriterion(Criterion):
         self.left = left
         self.right = right
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.right.nodes_()
         yield from self.left.nodes_()
@@ -789,7 +810,7 @@ class ContainsCriterion(Criterion):
         self.container = container
         self._is_negated = False
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.term.nodes_()
         yield from self.container.nodes_()
@@ -849,7 +870,7 @@ class RangeCriterion(Criterion):
         self.start = start
         self.end = end
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.term.nodes_()
         yield from self.start.nodes_()
@@ -901,7 +922,7 @@ class BitwiseAndCriterion(Criterion):
         self.term = term
         self.value = value
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.term.nodes_()
         yield from self.value.nodes_()
@@ -933,7 +954,7 @@ class NullCriterion(Criterion):
         super().__init__(alias)
         self.term = term
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.term.nodes_()
 
@@ -967,7 +988,7 @@ class NotNullCriterion(NullCriterion):
 
 
 class ComplexCriterion(BasicCriterion):
-    def get_sql(self, subcriterion: bool = False, **kwargs: Any) -> str:
+    def get_sql(self, subcriterion: bool = False, **kwargs: Any) -> str: # type: ignore
         sql = "{left} {comparator} {right}".format(
             comparator=self.comparator.value,
             left=self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs),
@@ -1012,7 +1033,7 @@ class ArithmeticExpression(Term):
         self.left = left
         self.right = right
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.left.nodes_()
         yield from self.right.nodes_()
@@ -1102,10 +1123,10 @@ class ArithmeticExpression(Term):
 class Case(Criterion):
     def __init__(self, alias: Optional[str] = None) -> None:
         super().__init__(alias=alias)
-        self._cases = []
-        self._else = None
+        self._cases: List[typing.Tuple[Any, Any]] = []
+        self._else: WrappedConstant| None = None
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
 
         for criterion, term in self._cases:
@@ -1140,13 +1161,13 @@ class Case(Criterion):
             A copy of the term with the tables replaced.
         """
         self._cases = [
-            [
+            (
                 criterion.replace_table(current_table, new_table),
                 term.replace_table(current_table, new_table),
-            ]
+            )
             for criterion, term in self._cases
         ]
-        self._else = self._else.replace_table(current_table, new_table) if self._else else None
+        self._else = Term._assert_guard(self._else).replace_table(current_table, new_table) if self._else else None
 
     @builder
     def else_(self, term: Any) -> "Case":
@@ -1161,7 +1182,7 @@ class Case(Criterion):
             "WHEN {when} THEN {then}".format(when=criterion.get_sql(**kwargs), then=term.get_sql(**kwargs))
             for criterion, term in self._cases
         )
-        else_ = " ELSE {}".format(self._else.get_sql(**kwargs)) if self._else else ""
+        else_ = " ELSE {}".format(Term._assert_guard(self._else).get_sql(**kwargs)) if self._else else ""
 
         case_sql = "CASE {cases}{else_} END".format(cases=cases, else_=else_)
 
@@ -1176,7 +1197,7 @@ class Not(Criterion):
         super().__init__(alias=alias)
         self.term = term
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.term.nodes_()
 
@@ -1224,7 +1245,7 @@ class All(Criterion):
         super().__init__(alias=alias)
         self.term = term
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         yield from self.term.nodes_()
 
@@ -1246,7 +1267,7 @@ class CustomFunction:
             raise FunctionException(
                 "Function {name} require these arguments ({params}), ({args}) passed".format(
                     name=self.name,
-                    params=", ".join(str(p) for p in self.params),
+                    params=", ".join(str(p) for p in self.params) if self.params else "",
                     args=", ".join(str(p) for p in args),
                 )
             )
@@ -1259,7 +1280,6 @@ class CustomFunction:
     def _is_valid_function_call(self, *args):
         return len(args) == len(self.params)
 
-
 class Function(Criterion):
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(kwargs.get("alias"))
@@ -1267,7 +1287,7 @@ class Function(Criterion):
         self.args = [self.wrap_constant(param) for param in args]
         self.schema = kwargs.get("schema")
 
-    def nodes_(self) -> Iterator[NodeT]:
+    def nodes_(self) -> Iterator[Node]:
         yield self
         for arg in self.args:
             yield from arg.nodes_()
@@ -1294,7 +1314,7 @@ class Function(Criterion):
         :return:
             A copy of the criterion with the tables replaced.
         """
-        self.args = [param.replace_table(current_table, new_table) for param in self.args]
+        self.args = [Term._assert_guard(param).replace_table(current_table, new_table) for param in self.args]
 
     def get_special_params_sql(self, **kwargs: Any) -> Any:
         pass
@@ -1309,7 +1329,7 @@ class Function(Criterion):
         return "{name}({args}{special})".format(
             name=self.name,
             args=",".join(
-                p.get_sql(with_alias=False, subquery=True, **kwargs)
+                Term._assert_guard(p).get_sql(with_alias=False, subquery=True, **kwargs)
                 if hasattr(p, "get_sql")
                 else self.get_arg_sql(p, **kwargs)
                 for p in self.args
@@ -1352,9 +1372,10 @@ class AggregateFunction(Function):
         self._include_filter = True
         self._filters += filters
 
-    def get_filter_sql(self, **kwargs: Any) -> str:
+    def get_filter_sql(self, **kwargs: Any) -> Optional[str]:
         if self._include_filter:
             return "WHERE {criterions}".format(criterions=Criterion.all(self._filters).get_sql(**kwargs))
+        return None
 
     def get_function_sql(self, **kwargs: Any):
         sql = super(AggregateFunction, self).get_function_sql(**kwargs)
@@ -1373,8 +1394,8 @@ class AnalyticFunction(AggregateFunction):
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(name, *args, **kwargs)
         self._filters = []
-        self._partition = []
-        self._orderbys = []
+        self._partition: List[Any] = []
+        self._orderbys: List[Any] = []
         self._include_filter = False
         self._include_over = False
 
@@ -1428,24 +1449,26 @@ class AnalyticFunction(AggregateFunction):
 
 EdgeT = TypeVar("EdgeT", bound="WindowFrameAnalyticFunction.Edge")
 
+AnyEdge = Union[str, "WindowFrameAnalyticFunction.Edge"]
 
 class WindowFrameAnalyticFunction(AnalyticFunction):
     class Edge:
+        modifier: ClassVar[Optional[str]] = None
         def __init__(self, value: Optional[Union[str, int]] = None) -> None:
             self.value = value
 
         def __str__(self) -> str:
             return "{value} {modifier}".format(
                 value=self.value or "UNBOUNDED",
-                modifier=self.modifier,
+                modifier=self.modifier or "",
             )
 
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(name, *args, **kwargs)
-        self.frame = None
-        self.bound = None
+        self.frame: Optional[str] = None
+        self.bound: Optional[Union[typing.Tuple[AnyEdge, AnyEdge], AnyEdge]] = None
 
-    def _set_frame_and_bounds(self, frame: str, bound: str, and_bound: Optional[EdgeT]) -> None:
+    def _set_frame_and_bounds(self, frame: str, bound: AnyEdge, and_bound: Optional[AnyEdge]) -> None:
         if self.frame or self.bound:
             raise AttributeError()
 
@@ -1453,11 +1476,11 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
         self.bound = (bound, and_bound) if and_bound else bound
 
     @builder
-    def rows(self, bound: Union[str, EdgeT], and_bound: Optional[EdgeT] = None):
+    def rows(self, bound: AnyEdge, and_bound: Optional[AnyEdge] = None):
         self._set_frame_and_bounds("ROWS", bound, and_bound)
 
     @builder
-    def range(self, bound: Union[str, EdgeT], and_bound: Optional[EdgeT] = None):
+    def range(self, bound: AnyEdge, and_bound: Optional[AnyEdge] = None):
         self._set_frame_and_bounds("RANGE", bound, and_bound)
 
     def get_frame_sql(self) -> str:
@@ -1497,7 +1520,7 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
         return None
 
 
-class Interval(Node):
+class Interval(Term):
     templates = {
         # PostgreSQL, Redshift and Vertica require quotes around the expr and unit e.g. INTERVAL '1 week'
         Dialects.POSTGRESQL: "INTERVAL '{expr} {unit}'",
@@ -1558,6 +1581,7 @@ class Interval(Node):
     def get_sql(self, **kwargs: Any) -> str:
         dialect = self.dialect or kwargs.get("dialect")
 
+        unit: Optional[str]
         if self.largest == "MICROSECOND":
             expr = getattr(self, "microseconds")
             unit = "MICROSECOND"
@@ -1598,7 +1622,7 @@ class Interval(Node):
             if unit is None:
                 unit = "DAY"
 
-        return self.templates.get(dialect, "INTERVAL '{expr} {unit}'").format(expr=expr, unit=unit)
+        return self.templates.get(dialect, "INTERVAL '{expr} {unit}'").format(expr=expr, unit=unit) # type: ignore
 
 
 class Pow(Function):
