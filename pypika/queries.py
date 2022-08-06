@@ -72,7 +72,7 @@ class AliasedQuery(Selectable):
             return self.name
         return self.query.get_sql(**kwargs)
 
-    def __eq__(self, other: "AliasedQuery") -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, AliasedQuery) and self.name == other.name
 
     def __hash__(self) -> int:
@@ -84,10 +84,10 @@ class Schema:
         self._name = name
         self._parent = parent
 
-    def __eq__(self, other: "Schema") -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, Schema) and self._name == other._name and self._parent == other._parent
 
-    def __ne__(self, other: "Schema") -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     @ignore_copy
@@ -181,7 +181,7 @@ class Table(Selectable):
     def __str__(self) -> str:
         return self.get_sql(quote_char='"')
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Table):
             return False
 
@@ -1193,7 +1193,7 @@ class QueryBuilder(Selectable, Term):
     def __repr__(self) -> str:
         return self.__str__()
 
-    def __eq__(self, other: "QueryBuilder") -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, QueryBuilder):
             return False
 
@@ -1202,7 +1202,7 @@ class QueryBuilder(Selectable, Term):
 
         return True
 
-    def __ne__(self, other: "QueryBuilder") -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     def __hash__(self) -> int:
