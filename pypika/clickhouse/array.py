@@ -1,4 +1,5 @@
 import abc
+from typing import Union
 
 from pypika.terms import (
     Field,
@@ -32,8 +33,8 @@ class Array(Term):
 class HasAny(Function):
     def __init__(
         self,
-        left_array: Array or Field,
-        right_array: Array or Field,
+        left_array: Union[Array, Field],
+        right_array: Union[Array, Field],
         alias: str = None,
         schema: str = None,
     ):
@@ -56,7 +57,7 @@ class HasAny(Function):
 
 
 class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
-    def __init__(self, array: Array or Field, alias: str = None, schema: str = None):
+    def __init__(self, array: Union[Array, Field], alias: str = None, schema: str = None):
         self.schema = schema
         self.alias = alias
         self.name = self.clickhouse_function()
