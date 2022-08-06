@@ -136,7 +136,7 @@ def format_alias_sql(
     )
 
 
-def validate(*args: Any, exc: Optional[Exception] = None, type: Optional[Type] = None) -> None:
+def validate(*args: Any, exc: Exception, type: Optional[Type] = None) -> None:
     if type is not None:
         for arg in args:
             if not isinstance(arg, type):
