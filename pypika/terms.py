@@ -843,7 +843,7 @@ class ExistsCriterion(Criterion):
 
 
 class RangeCriterion(Criterion):
-    def __init__(self, term: Term, start: Any, end: Any, alias: Optional[str] = None) -> str:
+    def __init__(self, term: Term, start: Any, end: Any, alias: Optional[str] = None) -> None:
         super().__init__(alias)
         self.term = term
         self.start = start
