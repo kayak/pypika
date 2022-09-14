@@ -12,7 +12,8 @@ from pypika.queries import (
     Query,
     QueryBuilder,
 )
-from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
+from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper, \
+    Values
 from pypika.utils import QueryException, builder, format_quotes
 
 
@@ -118,6 +119,14 @@ class MySQLQueryBuilder(QueryBuilder):
 
         field = Field(field) if not isinstance(field, Field) else field
         self._duplicate_updates.append((field, ValueWrapper(value)))
+
+    @builder
+    def on_duplicate_key_update_all(self) -> "MySQLQueryBuilder":
+        if self._ignore_duplicates:
+            raise QueryException("Can not have two conflict handlers")
+
+        for field in self._columns:
+            self._duplicate_updates.append((field, ValueWrapper(Values(field))))
 
     @builder
     def on_duplicate_key_ignore(self) -> "MySQLQueryBuilder":
