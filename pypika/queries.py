@@ -880,6 +880,19 @@ class QueryBuilder(Selectable, Term):
         self._replace = False
 
     @builder
+    def insert_dict(self, terms: dict) -> "QueryBuilder":
+        if self._insert_table is None:
+            raise AttributeError("'Query' object has no attribute '%s'" % "insert")
+
+        for term in terms:
+            if isinstance(term, str):
+                term = Field(term, table=self._insert_table)
+            self._columns.append(term)
+
+        self._apply_terms(*terms.values())
+        self._replace = False
+
+    @builder
     def replace(self, *terms: Any) -> "QueryBuilder":
         self._apply_terms(*terms)
         self._replace = True
