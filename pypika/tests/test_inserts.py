@@ -763,6 +763,20 @@ class InsertIntoOnDuplicateTests(unittest.TestCase):
             str(query),
         )
 
+    def test_on_duplicate_key_ignore(self):
+        query = (
+            MySQLQuery.into(self.table_abc)
+                .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz)
+                .insert(1, "a", True)
+                .on_duplicate_key_ignore()
+        )
+
+        self.assertEqual(
+            "INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,'a',true) ON DUPLICATE KEY "
+            "UPDATE `foo`=`foo`",
+            str(query),
+        )
+
 
 class InsertSelectFromTests(unittest.TestCase):
     table_abc, table_efg, table_hij = Tables("abc", "efg", "hij")

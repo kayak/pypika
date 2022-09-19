@@ -142,7 +142,7 @@ class MySQLQueryBuilder(QueryBuilder):
             if self._duplicate_updates:
                 querystring += self._on_duplicate_key_update_sql(**kwargs)
             elif self._ignore_duplicates:
-                querystring += self._on_duplicate_key_ignore_sql()
+                querystring += self._on_duplicate_key_ignore_sql(**kwargs)
         return querystring
 
     def _for_update_sql(self, **kwargs) -> str:
@@ -167,8 +167,10 @@ class MySQLQueryBuilder(QueryBuilder):
             )
         )
 
-    def _on_duplicate_key_ignore_sql(self) -> str:
-        return " ON DUPLICATE KEY IGNORE"
+    def _on_duplicate_key_ignore_sql(self, **kwargs: Any) -> str:
+        # This feature isn't available in MySQL. This is a workaround where a field is set to itself on a duplicate key.
+        field_sql = self._columns[0].get_sql(**kwargs)
+        return f" ON DUPLICATE KEY UPDATE {field_sql}={field_sql}"
 
     @builder
     def modifier(self, value: str) -> "MySQLQueryBuilder":
