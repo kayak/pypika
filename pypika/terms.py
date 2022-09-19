@@ -1284,7 +1284,7 @@ class Function(Criterion):
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(kwargs.get("alias"))
         self.name = name
-        self.args = [self.wrap_constant(param) for param in args]
+        self.args: Iterable[WrappedConstant] = [self.wrap_constant(param) for param in args]
         self.schema = kwargs.get("schema")
 
     def nodes_(self) -> Iterator[Node]:
