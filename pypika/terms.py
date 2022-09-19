@@ -768,7 +768,7 @@ class BasicCriterion(Criterion):
         return resolve_is_aggregate([term.is_aggregate for term in [self.left, self.right]])
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]):
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
