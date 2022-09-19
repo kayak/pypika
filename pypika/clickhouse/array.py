@@ -42,7 +42,7 @@ class HasAny(Function):
         self._right_array = right_array
         self.alias = alias
         self.schema = schema
-        self.args = ()
+        self.args = tuple()
         self.name = "hasAny"
 
     def get_sql(self, with_alias=False, with_namespace=False, quote_char=None, dialect=None, **kwargs):
