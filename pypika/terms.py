@@ -4,7 +4,7 @@ import typing
 import uuid
 from datetime import date
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Iterator, List, MutableSequence, Optional, Sequence, Set, Type, TypeVar, Union
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
 from pypika.utils import (
@@ -15,10 +15,12 @@ from pypika.utils import (
     format_quotes,
     ignore_copy,
     resolve_is_aggregate,
+    SQLPart,
 )
 
 if TYPE_CHECKING:
     from pypika.queries import QueryBuilder, Selectable, Table
+    from _typeshed import Self
 
 
 __author__ = "Timothy Heys"
@@ -39,9 +41,13 @@ class Node:
     def find_(self, type: Type[NodeT]) -> List[NodeT]:
         return [node for node in self.nodes_() if isinstance(node, type)]
 
-WrappedConstant = Union[Node, "LiteralValue", "Array", "Tuple", "ValueWrapper"]
 
-class Term(Node):
+WrappedConstantStrict = Union["LiteralValue", "Array", "Tuple", "ValueWrapper"]
+
+
+WrappedConstant = Union[Node, WrappedConstantStrict]
+
+class Term(Node, SQLPart):
     def __init__(self, alias: Optional[str] = None) -> None:
         self.alias = alias
     
@@ -110,7 +116,7 @@ class Term(Node):
 
         return JSON(val)
 
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "Term":
+    def replace_table(self: "Self", current_table: Optional["Table"], new_table: Optional["Table"]) -> "Self":
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
         The base implementation returns self because not all terms have a table property.
@@ -123,6 +129,10 @@ class Term(Node):
             Self.
         """
         return self
+    
+    # FIXME: separate all operator override to another class,
+    # some term does not have these operators overrides, for example Table,
+    # cause inconsistent behaviour
 
     def eq(self, other: Any) -> "BasicCriterion":
         return self == other
@@ -596,7 +606,7 @@ class Field(Criterion, JSON):
                 name=field_sql,
             )
 
-        field_alias = getattr(self, "alias", None)
+        field_alias = self.alias
         if with_alias:
             return format_alias_sql(field_sql, field_alias, quote_char=quote_char, **kwargs)
         return field_sql
@@ -1284,7 +1294,7 @@ class Function(Criterion):
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(kwargs.get("alias"))
         self.name = name
-        self.args: Iterable[WrappedConstant] = [self.wrap_constant(param) for param in args]
+        self.args: MutableSequence[WrappedConstant] = [self.wrap_constant(param) for param in args]
         self.schema = kwargs.get("schema")
 
     def nodes_(self) -> Iterator[Node]:
@@ -1654,7 +1664,7 @@ class PseudoColumn(Term):
         return self.name
 
 
-class AtTimezone(Term):
+class AtTimezone(Term, SQLPart):
     """
     Generates AT TIME ZONE SQL.
     Examples:
