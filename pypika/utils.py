@@ -1,7 +1,9 @@
 from typing import Any, Callable, List, Optional, Protocol, Type, TYPE_CHECKING, runtime_checkable
+
 if TYPE_CHECKING:
     import sys
     from typing import overload, TypeVar
+
     if sys.version_info >= (3, 10):
         from typing import ParamSpec, Concatenate
     else:
@@ -49,10 +51,15 @@ if TYPE_CHECKING:
     _P = ParamSpec('_P')
 
 if TYPE_CHECKING:
+
     @overload
-    def builder(func: Callable[Concatenate[_S, _P], None]) -> Callable[Concatenate[_S, _P], _S]: ...
+    def builder(func: Callable[Concatenate[_S, _P], None]) -> Callable[Concatenate[_S, _P], _S]:
+        ...
+
     @overload
-    def builder(func: Callable[Concatenate[_S, _P], _T]) -> Callable[Concatenate[_S, _P], _T]: ...
+    def builder(func: Callable[Concatenate[_S, _P], _T]) -> Callable[Concatenate[_S, _P], _T]:
+        ...
+
 
 def builder(func):
     """
@@ -146,5 +153,6 @@ def validate(*args: Any, exc: Exception, type: Optional[Type] = None) -> None:
 @runtime_checkable
 class SQLPart(Protocol):
     """This protocol indicates the class can generate a part of SQL"""
+
     def get_sql(self, **kwargs) -> str:
         ...

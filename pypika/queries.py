@@ -2,7 +2,21 @@ from copy import copy
 from functools import reduce
 from itertools import chain
 import operator
-from typing import Any, Callable, Generic, Iterable, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set, cast, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple as TypedTuple,
+    Type,
+    Union,
+    Set,
+    cast,
+    TypeVar,
+)
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation, Order
 from pypika.terms import (
@@ -548,7 +562,9 @@ class _SetOperation(Selectable, Term, SQLPart):
     ):
         super().__init__(alias)
         self.base_query = base_query
-        self._set_operation: List[TypedTuple[SetOperation, Union[QueryBuilder, Selectable]]] = [(set_operation, set_operation_query)]
+        self._set_operation: List[TypedTuple[SetOperation, Union[QueryBuilder, Selectable]]] = [
+            (set_operation, set_operation_query)
+        ]
         self._orderbys: List[TypedTuple[Union[Field, WrappedConstant, None], Optional[Order]]] = []
 
         self._limit: Optional[int] = None
@@ -564,7 +580,9 @@ class _SetOperation(Selectable, Term, SQLPart):
             if isinstance(field_val, str):
                 table = self.base_query._from[0]
                 if not isinstance(table, Table):
-                    raise TypeError("expect the first \"from\" selectable is table, got {}".format(type(table).__name__))
+                    raise TypeError(
+                        "expect the first \"from\" selectable is table, got {}".format(type(table).__name__)
+                    )
                 field = Field(field_val, table=table)
             else:
                 field = self.base_query.wrap_constant(field_val)
@@ -600,13 +618,13 @@ class _SetOperation(Selectable, Term, SQLPart):
     def minus(self, other: Selectable):
         self._set_operation.append((SetOperation.minus, other))
 
-    def __add__(self, other: Selectable) -> "_SetOperation": # type: ignore
+    def __add__(self, other: Selectable) -> "_SetOperation":  # type: ignore
         return self.union(other)
 
-    def __mul__(self, other: Selectable) -> "_SetOperation": # type: ignore
+    def __mul__(self, other: Selectable) -> "_SetOperation":  # type: ignore
         return self.union_all(other)
 
-    def __sub__(self, other: "QueryBuilder") -> "_SetOperation": # type: ignore
+    def __sub__(self, other: "QueryBuilder") -> "_SetOperation":  # type: ignore
         return self.minus(other)
 
     def __str__(self) -> str:
@@ -670,9 +688,9 @@ class _SetOperation(Selectable, Term, SQLPart):
         selected_aliases = {s.alias for s in self.base_query._selects if isinstance(s, Term)}
         for field, directionality in self._orderbys:
             term = (
-                format_quotes(field.alias, quote_char) # type: ignore
-                if field.alias and (field.alias in selected_aliases) # type: ignore
-                else field.get_sql(quote_char=quote_char, **kwargs) # type: ignore
+                format_quotes(field.alias, quote_char)  # type: ignore
+                if field.alias and (field.alias in selected_aliases)  # type: ignore
+                else field.get_sql(quote_char=quote_char, **kwargs)  # type: ignore
             )
 
             clauses.append(
@@ -821,18 +839,31 @@ class QueryBuilder(Selectable, Term, SQLPart):
         self._update_table = new_table if self._update_table == current_table else self._update_table
 
         self._with = [alias_query.replace_table(current_table, new_table) for alias_query in self._with]
-        self._selects = [select.replace_table(current_table, new_table) if isinstance(select, Term) else select for select in self._selects]
+        self._selects = [
+            select.replace_table(current_table, new_table) if isinstance(select, Term) else select
+            for select in self._selects
+        ]
         self._columns = [column.replace_table(current_table, new_table) for column in self._columns]
         self._values = [
-            [(value.replace_table(current_table, new_table) if isinstance(value, Term) else value) for value in value_list] for value_list in self._values
+            [
+                (value.replace_table(current_table, new_table) if isinstance(value, Term) else value)
+                for value in value_list
+            ]
+            for value_list in self._values
         ]
 
         self._wheres = self._wheres.replace_table(current_table, new_table) if self._wheres else None
         self._prewheres = self._prewheres.replace_table(current_table, new_table) if self._prewheres else None
-        self._groupbys = [groupby.replace_table(current_table, new_table) if isinstance(groupby, Term) else groupby for groupby in self._groupbys]
+        self._groupbys = [
+            groupby.replace_table(current_table, new_table) if isinstance(groupby, Term) else groupby
+            for groupby in self._groupbys
+        ]
         self._havings = self._havings.replace_table(current_table, new_table) if self._havings else None
         self._orderbys = [
-            (orderby[0].replace_table(current_table, new_table), orderby[1]) if isinstance(orderby[0], Term) else orderby for orderby in self._orderbys
+            (orderby[0].replace_table(current_table, new_table), orderby[1])
+            if isinstance(orderby[0], Term)
+            else orderby
+            for orderby in self._orderbys
         ]
         self._joins = [join.replace_table(current_table, new_table) for join in self._joins]
 
@@ -889,7 +920,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
 
         columns: Iterable[Union[str, Field]]
         if terms and isinstance(terms[0], (list, tuple)):
-            columns = terms[0] # FIXME: should not sliently ignore rest arguments
+            columns = terms[0]  # FIXME: should not sliently ignore rest arguments
             # Alternative solution: fix the type comment to tell use here only accepts one sequence.
         else:
             columns = cast(TypedTuple[Union[str, Field]], terms)
@@ -956,7 +987,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
             self._foreign_table = True
 
         if self._wheres:
-            self._wheres &= criterion # type: ignore
+            self._wheres &= criterion  # type: ignore
         else:
             self._wheres = criterion
 
@@ -966,7 +997,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
             return
 
         if self._havings:
-            self._havings &= criterion # type: ignore
+            self._havings &= criterion  # type: ignore
         else:
             self._havings = criterion
 
@@ -1103,13 +1134,13 @@ class QueryBuilder(Selectable, Term, SQLPart):
         field = Field(field) if not isinstance(field, Field) else field
         self._updates.append((field, self._wrapper_cls(value)))
 
-    def __add__(self, other: "QueryBuilder") -> _SetOperation: # type: ignore
+    def __add__(self, other: "QueryBuilder") -> _SetOperation:  # type: ignore
         return self.union(other)
 
-    def __mul__(self, other: "QueryBuilder") -> _SetOperation: # type: ignore
+    def __mul__(self, other: "QueryBuilder") -> _SetOperation:  # type: ignore
         return self.union_all(other)
 
-    def __sub__(self, other: "QueryBuilder") -> _SetOperation: # type: ignore
+    def __sub__(self, other: "QueryBuilder") -> _SetOperation:  # type: ignore
         return self.minus(other)
 
     @builder
@@ -1117,7 +1148,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
         self._offset = slice.start
         self._limit = slice.stop
 
-    def __getitem__(self, item: Any) -> Union["QueryBuilder", Field]: # type: ignore
+    def __getitem__(self, item: Any) -> Union["QueryBuilder", Field]:  # type: ignore
         if not isinstance(item, slice):
             return super().__getitem__(item)
         return self.slice(item)
@@ -1150,7 +1181,9 @@ class QueryBuilder(Selectable, Term, SQLPart):
 
         if isinstance(term, Star):
             self._selects = [
-                select for select in self._selects if (not hasattr(select, "table")) or (isinstance(select, Field) and term.table != select.table)
+                select
+                for select in self._selects
+                if (not hasattr(select, "table")) or (isinstance(select, Field) and term.table != select.table)
             ]
             self._select_star_tables.add(term.table)
 
@@ -1169,23 +1202,20 @@ class QueryBuilder(Selectable, Term, SQLPart):
                 return v
             else:
                 raise TypeError("expect Selectable, got None")
+
         base_tables = tuple(
-                map(_assert_not_none, chain(
-                    self._from,
-                    (self._update_table, ) if self._update_table else tuple(),
-                    self._with
-                ))
+            map(
+                _assert_not_none,
+                chain(self._from, (self._update_table,) if self._update_table else tuple(), self._with),
             )
+        )
         join.validate(base_tables, self._joins)
 
         table_in_query = reduce(
             operator.add,
-            (
-                clause._table_name == join.item._table_name
-                for clause in base_tables if isinstance(clause, Table)
-            ),
-            0
-            )
+            (clause._table_name == join.item._table_name for clause in base_tables if isinstance(clause, Table)),
+            0,
+        )
         if isinstance(join.item, Table) and (join.item.alias is None) and (table_in_query > 0):
             # On the odd chance that we join the same table as the FROM table and don't set an alias
             # FIXME only works once
@@ -1233,7 +1263,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
             return
 
         if not isinstance(terms[0], (list, tuple, set)):
-            terms = (terms, )
+            terms = (terms,)
 
         for values in terms:
             self._values.append([(value if isinstance(value, Term) else self.wrap_constant(value)) for value in values])
@@ -1244,7 +1274,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
     def __repr__(self) -> str:
         return self.__str__()
 
-    def __eq__(self, other: Any) -> bool: # type: ignore
+    def __eq__(self, other: Any) -> bool:  # type: ignore
         if not isinstance(other, QueryBuilder):
             return False
 
@@ -1253,7 +1283,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
 
         return True
 
-    def __ne__(self, other: Any) -> bool: # type: ignore
+    def __ne__(self, other: Any) -> bool:  # type: ignore
         return not self.__eq__(other)
 
     def __hash__(self) -> int:
@@ -1464,18 +1494,23 @@ class QueryBuilder(Selectable, Term, SQLPart):
         return " ({columns})".format(
             columns=",".join(term.get_sql(with_namespace=False, **kwargs) for term in self._columns)
         )
-    
+
     @classmethod
     def _assert_type_fn(cls, klass: Type[_T]) -> Callable[[Any], _T]:
         def _assert_type(val: Any):
             assert isinstance(val, klass)
             return val
+
         return _assert_type
 
     def _values_sql(self, **kwargs: Any) -> str:
         return " VALUES ({values})".format(
             values="),(".join(
-                ",".join(term.get_sql(with_alias=True, subquery=True, **kwargs) for term in map(self._assert_type_fn(Term), row)) for row in self._values
+                ",".join(
+                    term.get_sql(with_alias=True, subquery=True, **kwargs)
+                    for term in map(self._assert_type_fn(Term), row)
+                )
+                for row in self._values
             )
         )
 
@@ -1487,12 +1522,15 @@ class QueryBuilder(Selectable, Term, SQLPart):
 
     def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
         return " FROM {selectable}".format(
-            selectable=",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from) # type: ignore
+            selectable=",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)  # type: ignore
         )
 
     def _using_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
         return " USING {selectable}".format(
-            selectable=",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) if isinstance(clause, SQLPart) else clause for clause in self._using)
+            selectable=",".join(
+                clause.get_sql(subquery=True, with_alias=True, **kwargs) if isinstance(clause, SQLPart) else clause
+                for clause in self._using
+            )
         )
 
     def _force_index_sql(self, **kwargs: Any) -> str:
@@ -1584,7 +1622,7 @@ class QueryBuilder(Selectable, Term, SQLPart):
         return " WITH ROLLUP"
 
     def _having_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
-        return " HAVING {having}".format(having=self._havings.get_sql(quote_char=quote_char, **kwargs)) # type: ignore
+        return " HAVING {having}".format(having=self._havings.get_sql(quote_char=quote_char, **kwargs))  # type: ignore
 
     def _offset_sql(self) -> str:
         return " OFFSET {offset}".format(offset=self._offset)
@@ -1607,9 +1645,7 @@ JoinableTerm = Union[Table, "QueryBuilder", AliasedQuery, _SetOperation]
 
 
 class Joiner:
-    def __init__(
-        self, query: QueryBuilder, item: JoinableTerm, how: JoinType, type_label: str
-    ) -> None:
+    def __init__(self, query: QueryBuilder, item: JoinableTerm, how: JoinType, type_label: str) -> None:
         self.query = query
         self.item = item
         self.how = how
@@ -1876,9 +1912,7 @@ class CreateQueryBuilder(SQLPart):
             self._columns.append(column)
 
     @builder
-    def period_for(
-        self, name, start_column: Union[str, Column], end_column: Union[str, Column]
-    ):
+    def period_for(self, name, start_column: Union[str, Column], end_column: Union[str, Column]):
         """
         Adds a PERIOD FOR clause.
 
@@ -2049,7 +2083,7 @@ class CreateQueryBuilder(SQLPart):
         return "CREATE {table_type}TABLE {if_not_exists}{table}".format(
             table_type=table_type,
             if_not_exists=if_not_exists,
-            table=self._create_table.get_sql(**kwargs), # type: ignore
+            table=self._create_table.get_sql(**kwargs),  # type: ignore
         )
 
     def _table_options_sql(self, **kwargs) -> str:
@@ -2074,17 +2108,18 @@ class CreateQueryBuilder(SQLPart):
 
     def _primary_key_clause(self, **kwargs) -> str:
         return "PRIMARY KEY ({columns})".format(
-            columns=",".join(column.get_name_sql(**kwargs) for column in self._primary_key) # type: ignore
+            columns=",".join(column.get_name_sql(**kwargs) for column in self._primary_key)  # type: ignore
         )
 
     def _foreign_key_clause(self, **kwargs) -> str:
         clause = "FOREIGN KEY ({columns}) REFERENCES {table_name} ({reference_columns})".format(
-            columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key), # type: ignore
+            columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key),  # type: ignore
             table_name=(
                 self._foreign_key_reference_table.get_sql(**kwargs)
                 if isinstance(self._foreign_key_reference_table, Table)
-                else Table(self._foreign_key_reference_table).get_sql()), # type: ignore
-            reference_columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key_reference), # type: ignore
+                else Table(self._foreign_key_reference_table).get_sql()
+            ),  # type: ignore
+            reference_columns=",".join(column.get_name_sql(**kwargs) for column in self._foreign_key_reference),  # type: ignore
         )
         if self._foreign_key_on_delete:
             clause += " ON DELETE " + self._foreign_key_on_delete.value
@@ -2107,7 +2142,7 @@ class CreateQueryBuilder(SQLPart):
 
     def _as_select_sql(self, **kwargs: Any) -> str:
         return " AS ({query})".format(
-            query=self._as_select.get_sql(**kwargs), # type: ignore
+            query=self._as_select.get_sql(**kwargs),  # type: ignore
         )
 
     def _prepare_columns_input(self, columns: Iterable[Union[str, Column]]) -> List[Column]:

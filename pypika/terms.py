@@ -4,7 +4,21 @@ import typing
 import uuid
 from datetime import date
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Iterator, List, MutableSequence, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Iterable,
+    Iterator,
+    List,
+    MutableSequence,
+    Optional,
+    Sequence,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
 from pypika.utils import (
@@ -47,10 +61,11 @@ WrappedConstantStrict = Union["LiteralValue", "Array", "Tuple", "ValueWrapper"]
 
 WrappedConstant = Union[Node, WrappedConstantStrict]
 
+
 class Term(Node, SQLPart):
     def __init__(self, alias: Optional[str] = None) -> None:
         self.alias = alias
-    
+
     @property
     def is_aggregate(self) -> Optional[bool]:
         return False
@@ -69,9 +84,7 @@ class Term(Node, SQLPart):
         return set(self.find_(Field))
 
     @staticmethod
-    def wrap_constant(
-        val, wrapper_cls: Optional[Type["Term"]] = None
-    ) -> WrappedConstant:
+    def wrap_constant(val, wrapper_cls: Optional[Type["Term"]] = None) -> WrappedConstant:
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
@@ -129,7 +142,7 @@ class Term(Node, SQLPart):
             Self.
         """
         return self
-    
+
     # FIXME: separate all operator override to another class,
     # some term does not have these operators overrides, for example Table,
     # cause inconsistent behaviour
@@ -271,10 +284,10 @@ class Term(Node, SQLPart):
     def __rrshift__(self, other: Any) -> "ArithmeticExpression":
         return ArithmeticExpression(Arithmetic.rshift, self.wrap_constant(other), self)
 
-    def __eq__(self, other: Any) -> "BasicCriterion": # type: ignore
+    def __eq__(self, other: Any) -> "BasicCriterion":  # type: ignore
         return BasicCriterion(Equality.eq, self, Term._assert_guard(self.wrap_constant(other)))
 
-    def __ne__(self, other: Any) -> "BasicCriterion": # type: ignore
+    def __ne__(self, other: Any) -> "BasicCriterion":  # type: ignore
         return BasicCriterion(Equality.ne, self, Term._assert_guard(self.wrap_constant(other)))
 
     def __gt__(self, other: Any) -> "BasicCriterion":
@@ -302,7 +315,7 @@ class Term(Node, SQLPart):
 
     def get_sql(self, **kwargs: Any) -> str:
         raise NotImplementedError()
-    
+
     @classmethod
     def _assert_guard(cls, v: Any) -> "Term":
         if isinstance(v, cls):
@@ -318,7 +331,7 @@ class Parameter(Term):
 
     def get_sql(self, **kwargs: Any) -> str:
         return str(self.placeholder)
-    
+
     @property
     def is_aggregate(self) -> Optional[bool]:
         return None
@@ -369,7 +382,7 @@ class Negative(Term):
     def __init__(self, term: Term) -> None:
         super().__init__()
         self.term = term
-    
+
     @property
     def is_aggregate(self) -> Optional[bool]:
         return self.term.is_aggregate
@@ -382,7 +395,7 @@ class ValueWrapper(Term):
     def __init__(self, value: Any, alias: Optional[str] = None) -> None:
         super().__init__(alias)
         self.value = value
-    
+
     @property
     def is_aggregate(self) -> Optional[bool]:
         return None
@@ -554,11 +567,11 @@ class EmptyCriterion(Criterion):
 
     def __xor__(self, other: Any) -> Any:
         return other
-    
+
     @property
     def is_aggregate(self) -> Optional[bool]:
         return None
-    
+
     @property
     def tables_(self) -> Set:
         return set()
@@ -591,7 +604,7 @@ class Field(Criterion, JSON):
         """
         self.table = new_table if self.table == current_table else self.table
 
-    def get_sql(self, **kwargs: Any) -> str: # type: ignore
+    def get_sql(self, **kwargs: Any) -> str:  # type: ignore
         with_alias = kwargs.pop("with_alias", False)
         with_namespace = kwargs.pop("with_namespace", False)
         quote_char = kwargs.pop("quote_char", None)
@@ -630,11 +643,13 @@ class Star(Field):
         if self.table is not None and not isinstance(self.table, str):
             yield from self.table.nodes_()
 
-    def get_sql( # type: ignore
+    def get_sql(  # type: ignore
         self, with_alias: bool = False, with_namespace: bool = False, quote_char: Optional[str] = None, **kwargs: Any
     ) -> str:
         if self.table and (with_namespace or (not isinstance(self.table, str) and self.table.alias)):
-            namespace = (self.table.alias if not isinstance(self.table, str) else self.table) or getattr(self.table, "_table_name")
+            namespace = (self.table.alias if not isinstance(self.table, str) else self.table) or getattr(
+                self.table, "_table_name"
+            )
             return "{}.*".format(format_quotes(namespace, quote_char))
 
         return "*"
@@ -998,7 +1013,7 @@ class NotNullCriterion(NullCriterion):
 
 
 class ComplexCriterion(BasicCriterion):
-    def get_sql(self, subcriterion: bool = False, **kwargs: Any) -> str: # type: ignore
+    def get_sql(self, subcriterion: bool = False, **kwargs: Any) -> str:  # type: ignore
         sql = "{left} {comparator} {right}".format(
             comparator=self.comparator.value,
             left=self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs),
@@ -1134,7 +1149,7 @@ class Case(Criterion):
     def __init__(self, alias: Optional[str] = None) -> None:
         super().__init__(alias=alias)
         self._cases: List[typing.Tuple[Any, Any]] = []
-        self._else: WrappedConstant| None = None
+        self._else: WrappedConstant | None = None
 
     def nodes_(self) -> Iterator[Node]:
         yield self
@@ -1289,6 +1304,7 @@ class CustomFunction:
 
     def _is_valid_function_call(self, *args):
         return len(args) == len(self.params)
+
 
 class Function(Criterion):
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
@@ -1461,9 +1477,11 @@ EdgeT = TypeVar("EdgeT", bound="WindowFrameAnalyticFunction.Edge")
 
 AnyEdge = Union[str, "WindowFrameAnalyticFunction.Edge"]
 
+
 class WindowFrameAnalyticFunction(AnalyticFunction):
     class Edge:
         modifier: ClassVar[Optional[str]] = None
+
         def __init__(self, value: Optional[Union[str, int]] = None) -> None:
             self.value = value
 
@@ -1632,7 +1650,7 @@ class Interval(Term):
             if unit is None:
                 unit = "DAY"
 
-        return self.templates.get(dialect, "INTERVAL '{expr} {unit}'").format(expr=expr, unit=unit) # type: ignore
+        return self.templates.get(dialect, "INTERVAL '{expr} {unit}'").format(expr=expr, unit=unit)  # type: ignore
 
 
 class Pow(Function):

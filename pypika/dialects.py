@@ -104,9 +104,7 @@ class MySQLQueryBuilder(QueryBuilder):
         return newone
 
     @builder
-    def for_update(
-        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = tuple()
-    ):
+    def for_update(self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = tuple()):
         self._for_update = True
         self._for_update_skip_locked = skip_locked
         self._for_update_nowait = nowait
@@ -127,7 +125,7 @@ class MySQLQueryBuilder(QueryBuilder):
 
         self._ignore_duplicates = True
 
-    def get_sql(self, **kwargs: Any) -> str: # type: ignore
+    def get_sql(self, **kwargs: Any) -> str:  # type: ignore
         self._set_kwargs_defaults(kwargs)
         querystring = super(MySQLQueryBuilder, self).get_sql(**kwargs)
         if querystring:
@@ -423,9 +421,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 self._distinct_on.append(field)
 
     @builder
-    def for_update(
-        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = tuple()
-    ):
+    def for_update(self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = tuple()):
         self._for_update = True
         self._for_update_skip_locked = skip_locked
         self._for_update_nowait = nowait
@@ -453,9 +449,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
         self._on_conflict_do_nothing = True
 
     @builder
-    def do_update(
-        self, update_field: Union[str, Field], update_value: Optional[Any] = None
-    ):
+    def do_update(self, update_field: Union[str, Field], update_value: Optional[Any] = None):
         if self._on_conflict_do_nothing:
             raise QueryException("Can not have two conflict handlers")
 
@@ -597,8 +591,12 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 raise QueryException("Returning can't be used in this query")
 
             table_is_insert_or_update_table = field.table in {self._insert_table, self._update_table}
-            join_tables = set(itertools.chain.from_iterable([j.criterion.tables_ for j in self._joins if isinstance(j, JoinOn)]))
-            join_and_base_tables = set(cast(Iterable[Table], filter(lambda v: isinstance(v, Table), self._from))) | join_tables
+            join_tables = set(
+                itertools.chain.from_iterable([j.criterion.tables_ for j in self._joins if isinstance(j, JoinOn)])
+            )
+            join_and_base_tables = (
+                set(cast(Iterable[Table], filter(lambda v: isinstance(v, Table), self._from))) | join_tables
+            )
             table_not_base_or_join = bool(term.tables_ - join_and_base_tables)
             if not table_is_insert_or_update_table and table_not_base_or_join:
                 raise QueryException("You can't return from other tables")
@@ -803,7 +801,11 @@ class ClickHouseQueryBuilder(QueryBuilder):
     def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
         def _error_none(v) -> NoReturn:
             raise TypeError("expect Selectable or QueryBuilder, got {}".format(type(v).__name__))
-        selectable = ",".join((clause.get_sql(subquery=True, with_alias=True, **kwargs) if clause is not None else _error_none(clause)) for clause in self._from)
+
+        selectable = ",".join(
+            (clause.get_sql(subquery=True, with_alias=True, **kwargs) if clause is not None else _error_none(clause))
+            for clause in self._from
+        )
         if self._delete_from:
             return " {selectable} DELETE".format(selectable=selectable)
         return " FROM {selectable}".format(selectable=selectable)
