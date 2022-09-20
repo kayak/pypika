@@ -2,7 +2,7 @@ from copy import copy
 from functools import reduce
 from itertools import chain
 import operator
-from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set, cast, TypeVar
+from typing import Any, Callable, Generic, Iterable, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set, cast, TypeVar
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation, Order
 from pypika.terms import (

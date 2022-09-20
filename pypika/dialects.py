@@ -1,6 +1,6 @@
 import itertools
 from copy import copy
-from typing import Any, List, Optional, Set, Union, Tuple as TypedTuple, cast
+from typing import Any, Iterable, List, NoReturn, Optional, Set, Union, Tuple as TypedTuple, cast
 
 from pypika.enums import Dialects
 from pypika.queries import (
@@ -11,6 +11,7 @@ from pypika.queries import (
     Table,
     Query,
     QueryBuilder,
+    JoinOn,
 )
 from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
 from pypika.utils import QueryException, builder, format_quotes
@@ -431,7 +432,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
         self._for_update_of = set(of)
 
     @builder
-    def on_conflict(self, *target_fields: Union[str, Term]) -> "PostgreSQLQueryBuilder":
+    def on_conflict(self, *target_fields: Union[str, Term]) -> None:
         if not self._insert_table:
             raise QueryException("On conflict only applies to insert query")
 
@@ -439,7 +440,9 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
         for target_field in target_fields:
             if isinstance(target_field, str):
-                self._on_conflict_fields.append(self._conflict_field_str(target_field))
+                field = self._conflict_field_str(target_field)
+                assert field is not None
+                self._on_conflict_fields.append(field)
             elif isinstance(target_field, Term):
                 self._on_conflict_fields.append(target_field)
 
@@ -594,8 +597,8 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 raise QueryException("Returning can't be used in this query")
 
             table_is_insert_or_update_table = field.table in {self._insert_table, self._update_table}
-            join_tables = set(itertools.chain.from_iterable([j.criterion.tables_ for j in self._joins]))
-            join_and_base_tables = set(self._from) | join_tables
+            join_tables = set(itertools.chain.from_iterable([j.criterion.tables_ for j in self._joins if isinstance(j, JoinOn)]))
+            join_and_base_tables = set(cast(Iterable[Table], filter(lambda v: isinstance(v, Table), self._from))) | join_tables
             table_not_base_or_join = bool(term.tables_ - join_and_base_tables)
             if not table_is_insert_or_update_table and table_not_base_or_join:
                 raise QueryException("You can't return from other tables")
@@ -798,7 +801,9 @@ class ClickHouseQueryBuilder(QueryBuilder):
         return "ALTER TABLE {table}".format(table=self._update_table.get_sql(**kwargs))
 
     def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
-        selectable = ",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
+        def _error_none(v) -> NoReturn:
+            raise TypeError("expect Selectable or QueryBuilder, got {}".format(type(v).__name__))
+        selectable = ",".join((clause.get_sql(subquery=True, with_alias=True, **kwargs) if clause is not None else _error_none(clause)) for clause in self._from)
         if self._delete_from:
             return " {selectable} DELETE".format(selectable=selectable)
         return " FROM {selectable}".format(selectable=selectable)
