@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional, Protocol, Type, TYPE_CHECKING
+from typing import Any, Callable, List, Optional, Protocol, Type, TYPE_CHECKING, runtime_checkable
 if TYPE_CHECKING:
     import sys
     from typing import overload, TypeVar
@@ -141,3 +141,10 @@ def validate(*args: Any, exc: Exception, type: Optional[Type] = None) -> None:
         for arg in args:
             if not isinstance(arg, type):
                 raise exc
+
+
+@runtime_checkable
+class SQLPart(Protocol):
+    """This protocol indicates the class can generate a part of SQL"""
+    def get_sql(self, **kwargs) -> str:
+        ...
