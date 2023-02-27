@@ -1,0 +1,23 @@
+name: "Type Checking"
+
+on: push
+
+jobs:
+  typechecking:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v4.5.0
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install mypy
+      
+      - name: Run type checking
+        run: |
+          mypy -p pypika --python-version ${{ matrix.python-version }}
