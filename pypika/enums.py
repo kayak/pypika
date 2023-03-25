@@ -136,6 +136,7 @@ class SqlTypes:
 class Dialects(Enum):
     VERTICA = "vertica"
     CLICKHOUSE = "clickhouse"
+    JIRA = "jira"
     ORACLE = "oracle"
     MSSQL = "mssql"
     MYSQL = "mysql"
