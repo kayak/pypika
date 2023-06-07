@@ -550,7 +550,7 @@ class _SetOperation(Selectable, Term):
                 else self.base_query.wrap_constant(field)
             )
 
-            self._orderbys.append((field, kwargs.get("order")))
+            self._orderbys.append((field, kwargs.get("order"), kwargs.get("null_order")))
 
     @builder
     def limit(self, limit: int) -> "_SetOperation":
@@ -640,24 +640,27 @@ class _SetOperation(Selectable, Term):
     def _orderby_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
         """
         Produces the ORDER BY part of the query.  This is a list of fields and possibly their directionality, ASC or
-        DESC. The clauses are stored in the query under self._orderbys as a list of tuples containing the field and
-        directionality (which can be None).
+        DESC. The clauses are stored in the query under self._orderbys as a list of tuples containing the field,
+        directionality (which can be None) and null ordering (which can also be None).
 
         If an order by field is used in the select clause, determined by a matching , then the ORDER BY clause will use
         the alias, otherwise the field will be rendered as SQL.
         """
         clauses = []
         selected_aliases = {s.alias for s in self.base_query._selects}
-        for field, directionality in self._orderbys:
+        for field, directionality, null_order in self._orderbys:
             term = (
                 format_quotes(field.alias, quote_char)
                 if field.alias and field.alias in selected_aliases
                 else field.get_sql(quote_char=quote_char, **kwargs)
             )
 
-            clauses.append(
-                "{term} {orient}".format(term=term, orient=directionality.value) if directionality is not None else term
-            )
+            current_clause = term
+            if directionality is not None:
+                current_clause += f" {directionality.value}"
+            if null_order is not None:
+                current_clause += f" {null_order.value}"
+            clauses.append(current_clause)
 
         return " ORDER BY {orderby}".format(orderby=",".join(clauses))
 
@@ -812,7 +815,7 @@ class QueryBuilder(Selectable, Term):
         self._groupbys = [groupby.replace_table(current_table, new_table) for groupby in self._groupbys]
         self._havings = self._havings.replace_table(current_table, new_table) if self._havings else None
         self._orderbys = [
-            (orderby[0].replace_table(current_table, new_table), orderby[1]) for orderby in self._orderbys
+            (orderby[0].replace_table(current_table, new_table), orderby[1], orderby[2]) for orderby in self._orderbys
         ]
         self._joins = [join.replace_table(current_table, new_table) for join in self._joins]
 
@@ -990,7 +993,7 @@ class QueryBuilder(Selectable, Term):
         for field in fields:
             field = Field(field, table=self._from[0]) if isinstance(field, str) else self.wrap_constant(field)
 
-            self._orderbys.append((field, kwargs.get("order")))
+            self._orderbys.append((field, kwargs.get("order"), kwargs.get("null_order")))
 
     @builder
     def join(
@@ -1491,8 +1494,8 @@ class QueryBuilder(Selectable, Term):
     ) -> str:
         """
         Produces the ORDER BY part of the query.  This is a list of fields and possibly their directionality, ASC or
-        DESC. The clauses are stored in the query under self._orderbys as a list of tuples containing the field and
-        directionality (which can be None).
+        DESC. The clauses are stored in the query under self._orderbys as a list of tuples containing the field,
+        directionality (which can be None) and null ordering (which can also be None).
 
         If an order by field is used in the select clause,
         determined by a matching, and the orderby_alias
@@ -1501,16 +1504,19 @@ class QueryBuilder(Selectable, Term):
         """
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
-        for field, directionality in self._orderbys:
+        for field, directionality, null_order in self._orderbys:
             term = (
                 format_quotes(field.alias, alias_quote_char or quote_char)
                 if orderby_alias and field.alias and field.alias in selected_aliases
                 else field.get_sql(quote_char=quote_char, alias_quote_char=alias_quote_char, **kwargs)
             )
 
-            clauses.append(
-                "{term} {orient}".format(term=term, orient=directionality.value) if directionality is not None else term
-            )
+            current_clause = term
+            if directionality is not None:
+                current_clause += f" {directionality.value}"
+            if null_order is not None:
+                current_clause += f" {null_order.value}"
+            clauses.append(current_clause)
 
         return " ORDER BY {orderby}".format(orderby=",".join(clauses))
 

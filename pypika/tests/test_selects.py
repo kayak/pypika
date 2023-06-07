@@ -25,6 +25,7 @@ from pypika import (
     functions as fn,
     SYSTEM_TIME,
 )
+from pypika.enums import NullOrder
 from pypika.terms import ValueWrapper
 
 __author__ = "Timothy Heys"
@@ -996,6 +997,33 @@ class OrderByTests(unittest.TestCase):
         q = Query.from_(self.t).select(fn.Sum(self.t.foo), bar).orderby(bar)
 
         self.assertEqual('SELECT SUM("foo"),"bar" "bar01" FROM "abc" ORDER BY "bar01"', q.get_sql())
+
+    def test_order_by_nulls_first(self):
+        q = Query.from_(self.t).orderby(self.t.foo, null_order=NullOrder.first).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" ORDER BY "foo" NULLS FIRST', str(q))
+
+    def test_order_by_nulls_last(self):
+        q = Query.from_(self.t).orderby(self.t.foo, null_order=NullOrder.last).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" ORDER BY "foo" NULLS LAST', str(q))
+
+    def test_order_by_asc_nulls_first(self):
+        q = Query.from_(self.t).orderby(self.t.foo, order=Order.asc, null_order=NullOrder.first).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" ORDER BY "foo" ASC NULLS FIRST', str(q))
+
+    def test_order_by_desc_nulls_first(self):
+        q = Query.from_(self.t).orderby(self.t.foo, order=Order.desc, null_order=NullOrder.first).select(self.t.foo)
+
+        self.assertEqual('SELECT "foo" FROM "abc" ORDER BY "foo" DESC NULLS FIRST', str(q))
+
+    def test_orderby_multi_fields_null_order(self):
+        q = Query.from_(self.t).orderby(
+            self.t.foo, self.t.bar, null_order=NullOrder.last
+        ).select(self.t.foo, self.t.bar)
+
+        self.assertEqual('SELECT "foo","bar" FROM "abc" ORDER BY "foo" NULLS LAST,"bar" NULLS LAST', str(q))
 
 
 class AliasTests(unittest.TestCase):
