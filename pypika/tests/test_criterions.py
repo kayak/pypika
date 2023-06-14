@@ -791,6 +791,62 @@ class EmptyCriterionTests(unittest.TestCase):
 
         self.assertEqual(len(empty_criterion.fields_()), 0)
 
+    def test_empty_criterion_on_the_left(self):
+        t = Table("test1")
+        q = EmptyCriterion() & t.f1 == "v1"
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_empty_criterion_on_the_right(self):
+        t = Table("test1")
+        q = (t.f1 == "v1") & EmptyCriterion()
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_invertion_of_the_empty_criterion(self):
+        t = Table("test1")
+        q = (t.f1 == "v1") & ~EmptyCriterion()
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_different_operations_with_empty_criterion(self):
+        t = Table("test1")
+        q1 = (t.f1 == "v1") & EmptyCriterion()
+        q2 = (t.f1 == "v1") | EmptyCriterion()
+        q3 = (t.f1 == "v1") ^ EmptyCriterion()
+
+        expected_sql = '"test1"."f1"=\'v1\''
+        self.assertEqual(
+            expected_sql,
+            q1.get_sql(with_namespace=True),
+        )
+        self.assertEqual(
+            expected_sql,
+            q2.get_sql(with_namespace=True),
+        )
+        self.assertEqual(
+            expected_sql,
+            q3.get_sql(with_namespace=True),
+        )
+
+    def test_more_than_one_empty_criterions(self):
+        t = Table("test1")
+        q = EmptyCriterion() & ~(EmptyCriterion() | EmptyCriterion()) & (t.f1 == "v1") & ~EmptyCriterion()
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
+
 
 class AllTests(unittest.TestCase):
     def test_zero_args_returns_empty_criterion(self):

@@ -486,12 +486,18 @@ class SystemTimeValue(LiteralValue):
 
 class Criterion(Term):
     def __and__(self, other: Any) -> "ComplexCriterion":
+        if isinstance(other, EmptyCriterion):
+            return self
         return ComplexCriterion(Boolean.and_, self, other)
 
     def __or__(self, other: Any) -> "ComplexCriterion":
+        if isinstance(other, EmptyCriterion):
+            return self
         return ComplexCriterion(Boolean.or_, self, other)
 
     def __xor__(self, other: Any) -> "ComplexCriterion":
+        if isinstance(other, EmptyCriterion):
+            return self
         return ComplexCriterion(Boolean.xor_, self, other)
 
     @staticmethod
@@ -531,6 +537,9 @@ class EmptyCriterion(Criterion):
 
     def __xor__(self, other: Any) -> Any:
         return other
+
+    def __invert__(self) -> Any:
+        return self
 
 
 class Field(Criterion, JSON):
