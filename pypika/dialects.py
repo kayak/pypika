@@ -258,6 +258,8 @@ class VerticaQueryBuilder(QueryBuilder):
         self._hint = label
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
+        kwargs['groupby_alias'] = False
+        kwargs['orderby_alias'] = False
         sql = super().get_sql(*args, **kwargs)
 
         if self._hint is not None:
