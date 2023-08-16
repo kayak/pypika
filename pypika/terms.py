@@ -539,6 +539,8 @@ class Field(Criterion, JSON):
     ) -> None:
         super().__init__(alias=alias)
         self.name = name
+        if isinstance(table, str):
+            table = Table(table)
         self.table = table
 
     def nodes_(self) -> Iterator[NodeT]:
