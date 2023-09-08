@@ -38,6 +38,7 @@ class FunctionException(Exception):
 
 C = TypeVar("C")
 
+
 def builder(func: C) -> C:
     """
     Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
