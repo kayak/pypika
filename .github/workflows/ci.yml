@@ -1,14 +1,21 @@
-name: Unit Tests
+name: CI
 
 on:
   push:
-    branches: ["master"]
   pull_request:
-    branches: ["master"]
+  workflow_dispatch:
 
 jobs:
-  test:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: psf/black@21.5b1
 
+  test:
+    name: Unit Tests
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
