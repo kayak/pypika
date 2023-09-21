@@ -40,3 +40,10 @@ class DropTableTests(unittest.TestCase):
 
         self.assertEqual('DROP VIEW "myview"', str(q1))
         self.assertEqual('DROP VIEW IF EXISTS "myview"', str(q2))
+
+    def test_drop_index(self):
+        q1 = Query.drop_index("myindex")
+        q2 = Query.drop_index("myindex").if_exists()
+
+        self.assertEqual('DROP INDEX "myindex"', str(q1))
+        self.assertEqual('DROP INDEX IF EXISTS "myindex"', str(q2))

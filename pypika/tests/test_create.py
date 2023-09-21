@@ -1,7 +1,7 @@
 import unittest
 
-from pypika import Column, Columns, Query, Tables
-from pypika.terms import ValueWrapper
+from pypika import Column, Columns, Query, Tables, Table
+from pypika.terms import ValueWrapper, Index
 from pypika.enums import ReferenceOption
 
 
@@ -165,3 +165,42 @@ class CreateTableTests(unittest.TestCase):
     def test_create_table_as_select_not_query_raises_error(self):
         with self.assertRaises(TypeError):
             Query.create_table(self.new_table).as_select("abc")
+
+
+class CreateIndexTests(unittest.TestCase):
+    new_index = Index("abc")
+    new_table = Table("my_table")
+    columns = (new_table.a, new_table.b)
+    where = new_table.a > 1
+
+    def test_create_index_simple(self) -> None:
+        q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns)
+        self.assertEqual(
+            f'CREATE INDEX "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])})',
+            str(q.get_sql()))
+
+    def test_create_index_where(self) -> None:
+        q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns).where(self.where)
+        self.assertEqual(
+            f'CREATE INDEX "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])}) WHERE {self.where.get_sql()}',
+            str(q.get_sql()))
+
+    def test_create_index_unique(self) -> None:
+        q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns).unique()
+        self.assertEqual(
+            f'CREATE UNIQUE INDEX "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])})',
+            str(q.get_sql()))
+
+    def test_create_index_if_not_exists(self) -> None:
+        q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns).if_not_exists()
+        self.assertEqual(
+            f'CREATE INDEX IF NOT EXISTS "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])})',
+            str(q.get_sql()))
+
+    def test_create_index_without_columns_raises_error(self) -> None:
+        with self.assertRaises(AttributeError):
+            Query.create_index(self.new_index).on(self.new_table).get_sql()
+
+    def test_create_index_without_table_raises_error(self) -> None:
+        with self.assertRaises(AttributeError):
+            Query.create_index(self.new_index).columns(*self.columns).get_sql()
