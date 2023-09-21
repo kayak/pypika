@@ -2123,6 +2123,12 @@ class CreateIndexBuilder:
             base_sql += f" WHERE {self._wheres}"
         return base_sql.replace("  ", " ")
 
+    def __str__(self) -> str:
+        return self.get_sql()
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 class DropQueryBuilder:
     """
     Query builder used to build DROP queries.
