@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set
+from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set, Dict
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -207,7 +207,8 @@ class Table(Selectable):
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def select(self, *terms: Sequence[Union[int, float, str, bool, Term, Field]]) -> "QueryBuilder":
+    def select(self, *terms: Sequence[Union[int, float, str, bool, Term, Field]],
+               **kterms:Dict[str,Union[int, float, str, bool, Term, Field]]) -> "QueryBuilder":
         """
         Perform a SELECT operation on the current table
 
@@ -218,7 +219,7 @@ class Table(Selectable):
 
         :return:  QueryBuilder
         """
-        return self._query_cls.from_(self).select(*terms)
+        return self._query_cls.from_(self).select(*terms, **kterms)
 
     def update(self) -> "QueryBuilder":
         """
@@ -836,7 +837,7 @@ class QueryBuilder(Selectable, Term):
         self._insert_table = table if isinstance(table, Table) else Table(table)
 
     @builder
-    def select(self, *terms: Any) -> "QueryBuilder":
+    def select(self, *terms: Any, **kterms:Dict[str,Union[int, float, str, bool, Term, Field]]) -> "QueryBuilder":
         for term in terms:
             if isinstance(term, Field):
                 self._select_field(term)
@@ -846,6 +847,13 @@ class QueryBuilder(Selectable, Term):
                 self._select_other(term)
             else:
                 self._select_other(self.wrap_constant(term, wrapper_cls=self._wrapper_cls))
+        for term_alias, term in kterms.items():
+            if isinstance(term, Field):
+                self._select_field(term.as_(term_alias))
+            elif isinstance(term, (Function, ArithmeticExpression)):
+                self._select_other(term.as_(term_alias))
+            else:
+                self._select_other(self.wrap_constant(term, wrapper_cls=self._wrapper_cls).as_(term_alias))
 
     @builder
     def delete(self) -> "QueryBuilder":

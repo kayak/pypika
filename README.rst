@@ -194,6 +194,18 @@ An alias can also be used for fields and expressions.
 
     SELECT revenue-cost profit FROM accounts
 
+An alias can be writtern as a function parameter name.
+
+.. code-block:: sql
+
+    q = Query.from_(accounts).select(
+        profit=accounts.revenue - accounts.cost
+    )
+
+.. code-block:: sql
+
+    SELECT revenue-cost profit FROM accounts
+
 More arithmetic examples
 
 .. code-block:: python

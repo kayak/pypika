@@ -1006,8 +1006,18 @@ class AliasTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo" "bar" FROM "abc"', str(q))
 
+    def test_table_field_kwargs_select(self):
+        q = Query.from_(self.t).select(bar=self.t.foo)
+
+        self.assertEqual('SELECT "foo" "bar" FROM "abc"', str(q))
+
     def test_table_field__multi(self):
         q = Query.from_(self.t).select(self.t.foo.as_("bar"), self.t.fiz.as_("buz"))
+
+        self.assertEqual('SELECT "foo" "bar","fiz" "buz" FROM "abc"', str(q))
+
+    def test_table_field_kwargs__multi(self):
+        q = Query.from_(self.t).select(bar=self.t.foo, buz= self.t.fiz)
 
         self.assertEqual('SELECT "foo" "bar","fiz" "buz" FROM "abc"', str(q))
 
@@ -1016,8 +1026,18 @@ class AliasTests(unittest.TestCase):
 
         self.assertEqual('SELECT "foo"+"bar" "biz" FROM "abc"', str(q))
 
+    def test_arithmetic_function_kwargs(self):
+        q = Query.from_(self.t).select(biz=self.t.foo + self.t.bar)
+
+        self.assertEqual('SELECT "foo"+"bar" "biz" FROM "abc"', str(q))
+
     def test_functions_using_as(self):
         q = Query.from_(self.t).select(fn.Count("*").as_("foo"))
+
+        self.assertEqual('SELECT COUNT(*) "foo" FROM "abc"', str(q))
+
+    def test_functions_using_kwargs(self):
+        q = Query.from_(self.t).select(foo=fn.Count("*"))
 
         self.assertEqual('SELECT COUNT(*) "foo" FROM "abc"', str(q))
 
