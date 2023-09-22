@@ -177,25 +177,25 @@ class CreateIndexTests(unittest.TestCase):
         q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns)
         self.assertEqual(
             f'CREATE INDEX "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])})',
-            str(q.get_sql()))
+            q.get_sql())
 
     def test_create_index_where(self) -> None:
         q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns).where(self.where)
         self.assertEqual(
             f'CREATE INDEX "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])}) WHERE {self.where.get_sql()}',
-            str(q.get_sql()))
+            q.get_sql())
 
     def test_create_index_unique(self) -> None:
         q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns).unique()
         self.assertEqual(
             f'CREATE UNIQUE INDEX "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])})',
-            str(q.get_sql()))
+            q.get_sql())
 
     def test_create_index_if_not_exists(self) -> None:
         q = Query.create_index(self.new_index).on(self.new_table).columns(*self.columns).if_not_exists()
         self.assertEqual(
             f'CREATE INDEX IF NOT EXISTS "{self.new_index.name}" ON "{self.new_table.get_table_name()}"({", ".join([c.name for c in self.columns])})',
-            str(q.get_sql()))
+            q.get_sql())
 
     def test_create_index_without_columns_raises_error(self) -> None:
         with self.assertRaises(AttributeError):

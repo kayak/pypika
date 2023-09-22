@@ -1280,7 +1280,7 @@ Managing Table Indices
 Create Indices
 """"""""""""""""
 
-The entry point for creating tables is ``pypika.Query.create_index``.
+The entry point for creating indices is ``pypika.Query.create_index``.
 An index name (as ``str``) or a ``pypika.terms.Index`` a table (as ``str`` or ``pypika.Table``) and
 columns (as ``pypika.Column``) must be specified.
 
