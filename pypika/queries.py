@@ -2060,8 +2060,7 @@ class CreateQueryBuilder:
 
 class CreateIndexBuilder:
 
-    def __init__(self, dialect: Optional[Dialects] = None) -> None:
-        self._dialect = dialect
+    def __init__(self) -> None:
         self._index = None
         self._columns = []
         self._table = None
@@ -2091,24 +2090,18 @@ class CreateIndexBuilder:
         """
         Partial index where clause.
         """
-        if isinstance(criterion, EmptyCriterion):
-            return self
-
         if self._wheres:
             self._wheres &= criterion
         else:
             self._wheres = criterion
-        return self
 
     @builder
     def unique(self) -> "CreateIndexBuilder":
         self._is_unique = True
-        return self
 
     @builder
     def if_not_exists(self) -> "CreateIndexBuilder":
         self._if_not_exists = True
-        return self
 
     def get_sql(self) -> str:
         if not self._columns or len(self._columns) == 0:
