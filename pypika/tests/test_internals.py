@@ -13,7 +13,7 @@ class TablesTests(unittest.TestCase):
         table = Table("a")
 
         c = (Field("foo") > 1).replace_table(None, table)
-        self.assertEqual(c.left, table)
+        self.assertEqual(c.left.tables_, {table})
         self.assertEqual(c.tables_, {table})
 
     def test__case_tables(self):

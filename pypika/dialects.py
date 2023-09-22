@@ -1,6 +1,6 @@
 import itertools
 from copy import copy
-from typing import Any, Optional, Union, Tuple as TypedTuple
+from typing import Any, Iterable, List, NoReturn, Optional, Set, Union, Tuple as TypedTuple, cast
 
 from pypika.enums import Dialects
 from pypika.queries import (
@@ -11,6 +11,7 @@ from pypika.queries import (
     Table,
     Query,
     QueryBuilder,
+    JoinOn,
 )
 from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
 from pypika.utils import QueryException, builder, format_quotes
@@ -88,31 +89,29 @@ class MySQLQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.MYSQL, wrap_set_operation_queries=False, **kwargs)
-        self._duplicate_updates = []
+        self._duplicate_updates: List[TypedTuple[Field, ValueWrapper]] = []
         self._ignore_duplicates = False
-        self._modifiers = []
+        self._modifiers: List[str] = []
 
         self._for_update_nowait = False
         self._for_update_skip_locked = False
-        self._for_update_of = set()
+        self._for_update_of: Set[str] = set()
 
     def __copy__(self) -> "MySQLQueryBuilder":
-        newone = super().__copy__()
+        newone = cast(MySQLQueryBuilder, super().__copy__())
         newone._duplicate_updates = copy(self._duplicate_updates)
         newone._ignore_duplicates = copy(self._ignore_duplicates)
         return newone
 
     @builder
-    def for_update(
-        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
-    ) -> "QueryBuilder":
+    def for_update(self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = tuple()):
         self._for_update = True
         self._for_update_skip_locked = skip_locked
         self._for_update_nowait = nowait
         self._for_update_of = set(of)
 
     @builder
-    def on_duplicate_key_update(self, field: Union[Field, str], value: Any) -> "MySQLQueryBuilder":
+    def on_duplicate_key_update(self, field: Union[Field, str], value: Any):
         if self._ignore_duplicates:
             raise QueryException("Can not have two conflict handlers")
 
@@ -120,13 +119,13 @@ class MySQLQueryBuilder(QueryBuilder):
         self._duplicate_updates.append((field, ValueWrapper(value)))
 
     @builder
-    def on_duplicate_key_ignore(self) -> "MySQLQueryBuilder":
+    def on_duplicate_key_ignore(self):
         if self._duplicate_updates:
             raise QueryException("Can not have two conflict handlers")
 
         self._ignore_duplicates = True
 
-    def get_sql(self, **kwargs: Any) -> str:
+    def get_sql(self, **kwargs: Any) -> str:  # type: ignore
         self._set_kwargs_defaults(kwargs)
         querystring = super(MySQLQueryBuilder, self).get_sql(**kwargs)
         if querystring:
@@ -162,7 +161,7 @@ class MySQLQueryBuilder(QueryBuilder):
         return " ON DUPLICATE KEY IGNORE"
 
     @builder
-    def modifier(self, value: str) -> "MySQLQueryBuilder":
+    def modifier(self, value: str):
         """
         Adds a modifier such as SQL_CALC_FOUND_ROWS to the query.
         https://dev.mysql.com/doc/refman/5.7/en/select.html
@@ -187,15 +186,15 @@ class MySQLLoadQueryBuilder:
     QUERY_CLS = MySQLQuery
 
     def __init__(self) -> None:
-        self._load_file = None
-        self._into_table = None
+        self._load_file: Optional[str] = None
+        self._into_table: Optional[Table] = None
 
     @builder
-    def load(self, fp: str) -> "MySQLLoadQueryBuilder":
+    def load(self, fp: str):
         self._load_file = fp
 
     @builder
-    def into(self, table: Union[str, Table]) -> "MySQLLoadQueryBuilder":
+    def into(self, table: Union[str, Table]):
         self._into_table = table if isinstance(table, Table) else Table(table)
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
@@ -211,6 +210,7 @@ class MySQLLoadQueryBuilder:
         return "LOAD DATA LOCAL INFILE '{}'".format(self._load_file)
 
     def _into_table_sql(self, **kwargs: Any) -> str:
+        assert self._into_table is not None
         return " INTO TABLE `{}`".format(self._into_table.get_sql(**kwargs))
 
     def _options_sql(self, **kwargs: Any) -> str:
@@ -251,10 +251,10 @@ class VerticaQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.VERTICA, **kwargs)
-        self._hint = None
+        self._hint: Optional[str] = None
 
     @builder
-    def hint(self, label: str) -> "VerticaQueryBuilder":
+    def hint(self, label: str):
         self._hint = label
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
@@ -275,20 +275,21 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
         self._preserve_rows = False
 
     @builder
-    def local(self) -> "VerticaCreateQueryBuilder":
+    def local(self):
         if not self._temporary:
             raise AttributeError("'Query' object has no attribute temporary")
 
         self._local = True
 
     @builder
-    def preserve_rows(self) -> "VerticaCreateQueryBuilder":
+    def preserve_rows(self):
         if not self._temporary:
             raise AttributeError("'Query' object has no attribute temporary")
 
         self._preserve_rows = True
 
     def _create_table_sql(self, **kwargs: Any) -> str:
+        assert self._create_table is not None
         return "CREATE {local}{temporary}TABLE {table}".format(
             local="LOCAL " if self._local else "",
             temporary="TEMPORARY " if self._temporary else "",
@@ -301,6 +302,7 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
         return table_options
 
     def _as_select_sql(self, **kwargs: Any) -> str:
+        assert self._as_select is not None
         return "{preserve_rows} AS ({query})".format(
             preserve_rows=self._preserve_rows_sql(),
             query=self._as_select.get_sql(**kwargs),
@@ -314,15 +316,15 @@ class VerticaCopyQueryBuilder:
     QUERY_CLS = VerticaQuery
 
     def __init__(self) -> None:
-        self._copy_table = None
-        self._from_file = None
+        self._copy_table: Optional[Table] = None
+        self._from_file: Optional[str] = None
 
     @builder
-    def from_file(self, fp: str) -> "VerticaCopyQueryBuilder":
+    def from_file(self, fp: str):
         self._from_file = fp
 
     @builder
-    def copy_(self, table: Union[str, Table]) -> "VerticaCopyQueryBuilder":
+    def copy_(self, table: Union[str, Table]):
         self._copy_table = table if isinstance(table, Table) else Table(table)
 
     def get_sql(self, *args: Any, **kwargs: Any) -> str:
@@ -335,6 +337,7 @@ class VerticaCopyQueryBuilder:
         return querystring
 
     def _copy_table_sql(self, **kwargs: Any) -> str:
+        assert self._copy_table
         return 'COPY "{}"'.format(self._copy_table.get_sql(**kwargs))
 
     def _from_file_sql(self, **kwargs: Any) -> str:
@@ -387,30 +390,30 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(dialect=Dialects.POSTGRESQL, **kwargs)
-        self._returns = []
+        self._returns: List[Term] = []
         self._return_star = False
 
         self._on_conflict = False
-        self._on_conflict_fields = []
+        self._on_conflict_fields: List[Term] = []
         self._on_conflict_do_nothing = False
-        self._on_conflict_do_updates = []
-        self._on_conflict_wheres = None
-        self._on_conflict_do_update_wheres = None
+        self._on_conflict_do_updates: List[TypedTuple[Field, Optional[ValueWrapper]]] = []
+        self._on_conflict_wheres: Optional[Criterion] = None
+        self._on_conflict_do_update_wheres: Optional[Criterion] = None
 
-        self._distinct_on = []
+        self._distinct_on: List[Term] = []
 
         self._for_update_nowait = False
         self._for_update_skip_locked = False
-        self._for_update_of = set()
+        self._for_update_of: Set[str] = set()
 
     def __copy__(self) -> "PostgreSQLQueryBuilder":
-        newone = super().__copy__()
+        newone = cast(PostgreSQLQueryBuilder, super().__copy__())
         newone._returns = copy(self._returns)
         newone._on_conflict_do_updates = copy(self._on_conflict_do_updates)
         return newone
 
     @builder
-    def distinct_on(self, *fields: Union[str, Term]) -> "PostgreSQLQueryBuilder":
+    def distinct_on(self, *fields: Union[str, Term]):
         for field in fields:
             if isinstance(field, str):
                 self._distinct_on.append(Field(field))
@@ -418,16 +421,14 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 self._distinct_on.append(field)
 
     @builder
-    def for_update(
-        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
-    ) -> "QueryBuilder":
+    def for_update(self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = tuple()):
         self._for_update = True
         self._for_update_skip_locked = skip_locked
         self._for_update_nowait = nowait
         self._for_update_of = set(of)
 
     @builder
-    def on_conflict(self, *target_fields: Union[str, Term]) -> "PostgreSQLQueryBuilder":
+    def on_conflict(self, *target_fields: Union[str, Term]) -> None:
         if not self._insert_table:
             raise QueryException("On conflict only applies to insert query")
 
@@ -435,25 +436,26 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
         for target_field in target_fields:
             if isinstance(target_field, str):
-                self._on_conflict_fields.append(self._conflict_field_str(target_field))
+                field = self._conflict_field_str(target_field)
+                assert field is not None
+                self._on_conflict_fields.append(field)
             elif isinstance(target_field, Term):
                 self._on_conflict_fields.append(target_field)
 
     @builder
-    def do_nothing(self) -> "PostgreSQLQueryBuilder":
+    def do_nothing(self):
         if len(self._on_conflict_do_updates) > 0:
             raise QueryException("Can not have two conflict handlers")
         self._on_conflict_do_nothing = True
 
     @builder
-    def do_update(
-        self, update_field: Union[str, Field], update_value: Optional[Any] = None
-    ) -> "PostgreSQLQueryBuilder":
+    def do_update(self, update_field: Union[str, Field], update_value: Optional[Any] = None):
         if self._on_conflict_do_nothing:
             raise QueryException("Can not have two conflict handlers")
 
         if isinstance(update_field, str):
             field = self._conflict_field_str(update_field)
+            assert field is not None
         elif isinstance(update_field, Field):
             field = update_field
         else:
@@ -465,7 +467,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             self._on_conflict_do_updates.append((field, None))
 
     @builder
-    def where(self, criterion: Criterion) -> "PostgreSQLQueryBuilder":
+    def where(self, criterion: Criterion):
         if not self._on_conflict:
             return super().where(criterion)
 
@@ -489,7 +491,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             raise QueryException('Can not have fieldless ON CONFLICT WHERE')
 
     @builder
-    def using(self, table: Union[Selectable, str]) -> "QueryBuilder":
+    def using(self, table: Union[Selectable, str]):
         self._using.append(table)
 
     def _distinct_sql(self, **kwargs: Any) -> str:
@@ -502,6 +504,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
     def _conflict_field_str(self, term: str) -> Optional[Field]:
         if self._insert_table:
             return Field(term, table=self._insert_table)
+        return None
 
     def _on_conflict_sql(self, **kwargs: Any) -> str:
         if not self._on_conflict_do_nothing and len(self._on_conflict_do_updates) == 0:
@@ -567,7 +570,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
         return ''
 
     @builder
-    def returning(self, *terms: Any) -> "PostgreSQLQueryBuilder":
+    def returning(self, *terms: Any):
         for term in terms:
             if isinstance(term, Field):
                 self._return_field(term)
@@ -578,7 +581,9 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                     raise QueryException("Aggregate functions are not allowed in returning")
                 self._return_other(term)
             else:
-                self._return_other(self.wrap_constant(term, self._wrapper_cls))
+                constant = self.wrap_constant(term, self._wrapper_cls)
+                assert isinstance(constant, Term)
+                self._return_other(constant)
 
     def _validate_returning_term(self, term: Term) -> None:
         for field in term.fields_():
@@ -586,8 +591,12 @@ class PostgreSQLQueryBuilder(QueryBuilder):
                 raise QueryException("Returning can't be used in this query")
 
             table_is_insert_or_update_table = field.table in {self._insert_table, self._update_table}
-            join_tables = set(itertools.chain.from_iterable([j.criterion.tables_ for j in self._joins]))
-            join_and_base_tables = set(self._from) | join_tables
+            join_tables = set(
+                itertools.chain.from_iterable([j.criterion.tables_ for j in self._joins if isinstance(j, JoinOn)])
+            )
+            join_and_base_tables = (
+                set(cast(Iterable[Table], filter(lambda v: isinstance(v, Table), self._from))) | join_tables
+            )
             table_not_base_or_join = bool(term.tables_ - join_and_base_tables)
             if not table_is_insert_or_update_table and table_not_base_or_join:
                 raise QueryException("You can't return from other tables")
@@ -596,7 +605,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
         self._returns = [returning for returning in self._returns if not hasattr(returning, "table")]
         self._return_star = True
 
-    def _return_field(self, term: Union[str, Field]) -> None:
+    def _return_field(self, term: Field) -> None:
         if self._return_star:
             # Do not add select terms after a star is selected
             return
@@ -615,11 +624,11 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             return
 
         if self._insert_table:
-            self._return_field(Field(term, table=self._insert_table))
+            self._return_field(Field(term, table=self._insert_table) if isinstance(term, str) else term)
         elif self._update_table:
-            self._return_field(Field(term, table=self._update_table))
+            self._return_field(Field(term, table=self._update_table) if isinstance(term, str) else term)
         elif self._delete_from:
-            self._return_field(Field(term, table=self._from[0]))
+            self._return_field(Field(term, table=self._from[0]) if isinstance(term, str) else term)
         else:
             raise QueryException("Returning can't be used in this query")
 
@@ -680,7 +689,7 @@ class MSSQLQueryBuilder(QueryBuilder):
         self._top_percent: bool = False
 
     @builder
-    def top(self, value: Union[str, int], percent: bool = False, with_ties: bool = False) -> "MSSQLQueryBuilder":
+    def top(self, value: Union[str, int], percent: bool = False, with_ties: bool = False):
         """
         Implements support for simple TOP clauses.
         https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql?view=sql-server-2017
@@ -692,11 +701,11 @@ class MSSQLQueryBuilder(QueryBuilder):
 
         if percent and not (0 <= int(value) <= 100):
             raise QueryException("TOP value must be between 0 and 100 when `percent`" " is specified")
-        self._top_percent: bool = percent
-        self._top_with_ties: bool = with_ties
+        self._top_percent = percent
+        self._top_with_ties = with_ties
 
     @builder
-    def fetch_next(self, limit: int) -> "MSSQLQueryBuilder":
+    def fetch_next(self, limit: int):
         # Overridden to provide a more domain-specific API for T-SQL users
         self._limit = limit
 
@@ -754,7 +763,7 @@ class ClickHouseQuery(Query):
         )
 
     @classmethod
-    def drop_database(self, database: Union[Database, str]) -> "ClickHouseDropQueryBuilder":
+    def drop_database(cls, database: Union[Database, str]) -> "ClickHouseDropQueryBuilder":
         return ClickHouseDropQueryBuilder().drop_database(database)
 
     @classmethod
@@ -786,10 +795,17 @@ class ClickHouseQueryBuilder(QueryBuilder):
         return 'ALTER TABLE'
 
     def _update_sql(self, **kwargs: Any) -> str:
+        assert self._update_table
         return "ALTER TABLE {table}".format(table=self._update_table.get_sql(**kwargs))
 
     def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
-        selectable = ",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
+        def _error_none(v) -> NoReturn:
+            raise TypeError("expect Selectable or QueryBuilder, got {}".format(type(v).__name__))
+
+        selectable = ",".join(
+            (clause.get_sql(subquery=True, with_alias=True, **kwargs) if clause is not None else _error_none(clause))
+            for clause in self._from
+        )
         if self._delete_from:
             return " {selectable} DELETE".format(selectable=selectable)
         return " FROM {selectable}".format(selectable=selectable)
@@ -813,15 +829,15 @@ class ClickHouseDropQueryBuilder(DropQueryBuilder):
         self._cluster_name = None
 
     @builder
-    def drop_dictionary(self, dictionary: str) -> "ClickHouseDropQueryBuilder":
+    def drop_dictionary(self, dictionary: str):
         super()._set_target('DICTIONARY', dictionary)
 
     @builder
-    def drop_quota(self, quota: str) -> "ClickHouseDropQueryBuilder":
+    def drop_quota(self, quota: str):
         super()._set_target('QUOTA', quota)
 
     @builder
-    def on_cluster(self, cluster: str) -> "ClickHouseDropQueryBuilder":
+    def on_cluster(self, cluster: str):
         if self._cluster_name:
             raise AttributeError("'DropQuery' object already has attribute cluster_name")
         self._cluster_name = cluster
@@ -860,7 +876,7 @@ class SQLLiteQueryBuilder(QueryBuilder):
         self._insert_or_replace = False
 
     @builder
-    def insert_or_replace(self, *terms: Any) -> "SQLLiteQueryBuilder":
+    def insert_or_replace(self, *terms: Any):
         self._apply_terms(*terms)
         self._replace = True
         self._insert_or_replace = True

@@ -346,7 +346,7 @@ class MyEnum(Enum):
     INT = 0
     BOOL = True
     DATE = date(2020, 2, 2)
-    NONE = None
+    NONE: None = None
 
 
 class WhereTests(unittest.TestCase):

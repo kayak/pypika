@@ -1,4 +1,13 @@
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Protocol, Type, TYPE_CHECKING, runtime_checkable
+
+if TYPE_CHECKING:
+    import sys
+    from typing import overload, TypeVar
+
+    if sys.version_info >= (3, 10):
+        from typing import ParamSpec, Concatenate
+    else:
+        from typing_extensions import ParamSpec, Concatenate
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -36,7 +45,23 @@ class FunctionException(Exception):
     pass
 
 
-def builder(func: Callable) -> Callable:
+if TYPE_CHECKING:
+    _T = TypeVar('_T')
+    _S = TypeVar('_S')
+    _P = ParamSpec('_P')
+
+if TYPE_CHECKING:
+
+    @overload
+    def builder(func: Callable[Concatenate[_S, _P], None]) -> Callable[Concatenate[_S, _P], _S]:
+        ...
+
+    @overload
+    def builder(func: Callable[Concatenate[_S, _P], _T]) -> Callable[Concatenate[_S, _P], _T]:
+        ...
+
+
+def builder(func):
     """
     Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
     building queries which mutate the query and return self.  To make the build functions immutable, this decorator is
@@ -118,8 +143,16 @@ def format_alias_sql(
     )
 
 
-def validate(*args: Any, exc: Optional[Exception] = None, type: Optional[Type] = None) -> None:
+def validate(*args: Any, exc: Exception, type: Optional[Type] = None) -> None:
     if type is not None:
         for arg in args:
             if not isinstance(arg, type):
                 raise exc
+
+
+@runtime_checkable
+class SQLPart(Protocol):
+    """This protocol indicates the class can generate a part of SQL"""
+
+    def get_sql(self, **kwargs) -> str:
+        ...
