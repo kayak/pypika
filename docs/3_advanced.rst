@@ -24,6 +24,25 @@ the platform-specific Query classes can be used.
 You can use these query classes as a drop in replacement for the default ``Query`` class shown in the other examples.
 Again, if you encounter any issues specific to a platform, please create a GitHub issue on this repository.
 
+Or even different query languages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some services created their own query language similar to SQL. To generate expressions for Jira there is a ``JiraQueryBuilder`` class.
+
+.. code-block:: python
+
+    from pypika import MySQLQuery, MSSQLQuery, PostgreSQLQuery, OracleQuery, VerticaQuery
+
+    J = JiraTable()
+    j = (
+        JiraQueryBuilder()
+        .where(J.project.isin(["PROJ1", "PROJ2"]))
+        .where(J.issuetype == "My issue")
+        .where(J.labels.isempty() | J.labels.notin(["stale", "bug"]))
+        .where(J.repos.notempty() & J.repos.notin(["main", "dev"]))
+    )
+    print(j.get_sql())
+
 GROUP BY Modifiers
 ------------------
 
