@@ -31,7 +31,7 @@ Some services created their own query language similar to SQL. To generate expre
 
 .. code-block:: python
 
-    from pypika import MySQLQuery, MSSQLQuery, PostgreSQLQuery, OracleQuery, VerticaQuery
+    from pypika import JiraTable, JiraQueryBuilder
 
     J = JiraTable()
     j = (
