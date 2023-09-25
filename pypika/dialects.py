@@ -370,6 +370,9 @@ class OracleQueryBuilder(QueryBuilder):
         kwargs['groupby_alias'] = False
         return super().get_sql(*args, **kwargs)
 
+    def _limit_sql(self) -> str:
+        return " FETCH FIRST {limit} ROWS ONLY".format(limit=self._limit)
+
 
 class PostgreSQLQuery(Query):
     """
