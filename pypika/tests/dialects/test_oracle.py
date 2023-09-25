@@ -19,3 +19,10 @@ class SelectTests(unittest.TestCase):
         q = OracleQuery.from_(subquery).select(col, Count('*')).groupby(col)
 
         self.assertEqual('SELECT sq0.abc a,COUNT(\'*\') FROM (SELECT abc FROM table1) sq0 GROUP BY sq0.abc', str(q))
+
+    def test_limit_query(self):
+        t = Table('table1')
+        limit = 5
+        q = OracleQuery.from_(t).select(t.test).limit(limit)
+
+        self.assertEqual(f'SELECT test FROM table1 FETCH FIRST {limit} ROWS ONLY', str(q))
