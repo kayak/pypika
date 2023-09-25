@@ -1,11 +1,10 @@
 from copy import copy
 from functools import reduce
-from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set
+from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
     ArithmeticExpression,
-    Criterion,
     EmptyCriterion,
     Field,
     Function,
@@ -2059,7 +2058,6 @@ class CreateQueryBuilder:
 
 
 class CreateIndexBuilder:
-
     def __init__(self) -> None:
         self._index = None
         self._columns = []
@@ -2121,6 +2119,7 @@ class CreateIndexBuilder:
 
     def __repr__(self) -> str:
         return self.__str__()
+
 
 class DropQueryBuilder:
     """
