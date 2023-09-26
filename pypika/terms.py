@@ -184,12 +184,12 @@ class Term(Node):
     def all_(self) -> "All":
         return All(self)
 
-    def isin(self, arg: Union[list, tuple, set, "Term"]) -> "ContainsCriterion":
-        if isinstance(arg, (list, tuple, set)):
+    def isin(self, arg: Union[list, tuple, set, frozenset, "Term"]) -> "ContainsCriterion":
+        if isinstance(arg, (list, tuple, set, frozenset)):
             return ContainsCriterion(self, Tuple(*[self.wrap_constant(value) for value in arg]))
         return ContainsCriterion(self, arg)
 
-    def notin(self, arg: Union[list, tuple, set, "Term"]) -> "ContainsCriterion":
+    def notin(self, arg: Union[list, tuple, set, frozenset, "Term"]) -> "ContainsCriterion":
         return self.isin(arg).negate()
 
     def bin_regex(self, pattern: str) -> "BasicCriterion":
