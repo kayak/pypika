@@ -1274,6 +1274,100 @@ This produces:
 
         CREATE TABLE "names" AS (SELECT "last_name","first_name" FROM "person")
 
+Managing Table Indices
+^^^^^^^^^^^^^^^^^^^^^^
+
+Create Indices
+""""""""""""""""
+
+The entry point for creating indices is ``pypika.Query.create_index``.
+An index name (as ``str``) or a ``pypika.terms.Index`` a table (as ``str`` or ``pypika.Table``) and
+columns (as ``pypika.Column``) must be specified.
+
+.. code-block:: python
+
+    my_index = Index("my_index")
+    person = Table("person")
+    stmt = Query \
+        .create_index(my_index) \
+        .on(person) \
+        .columns(person.first_name, person.last_name)
+
+This produces:
+
+.. code-block:: sql
+
+    CREATE INDEX my_index
+    ON person (first_name, last_name)
+
+It is also possible to create a unique index
+
+.. code-block:: python
+
+    my_index = Index("my_index")
+    person = Table("person")
+    stmt = Query \
+        .create_index(my_index) \
+        .on(person) \
+        .columns(person.first_name, person.last_name) \
+        .unique()
+
+This produces:
+
+.. code-block:: sql
+
+        CREATE UNIQUE INDEX my_index
+        ON person (first_name, last_name)
+
+It is also possible to create an index if it does not exist
+
+.. code-block:: python
+
+    my_index = Index("my_index")
+    person = Table("person")
+    stmt = Query \
+        .create_index(my_index) \
+        .on(person) \
+        .columns(person.first_name, person.last_name) \
+        .if_not_exists()
+
+This produces:
+
+.. code-block:: sql
+
+        CREATE INDEX IF NOT EXISTS my_index
+        ON person (first_name, last_name)
+
+Drop Indices
+""""""""""""""""
+
+Then entry point for dropping indices is ``pypika.Query.drop_index``.
+It takes either ``str`` or ``pypika.terms.Index`` as an argument.
+
+.. code-block:: python
+
+    my_index = Index("my_index")
+    stmt = Query.drop_index(my_index)
+
+This produces:
+
+.. code-block:: sql
+
+    DROP INDEX my_index
+
+It is also possible to drop an index if it exists
+
+.. code-block:: python
+
+    my_index = Index("my_index")
+    stmt = Query.drop_index(my_index).if_exists()
+
+This produces:
+
+.. code-block:: sql
+
+    DROP INDEX IF EXISTS my_index
+
 .. _tutorial_end:
 
 
