@@ -12,7 +12,17 @@ from pypika.queries import (
     Query,
     QueryBuilder,
 )
-from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, NullCriterion, Star, Term, ValueWrapper
+from pypika.terms import (
+    ArithmeticExpression,
+    Criterion,
+    EmptyCriterion,
+    Field,
+    Function,
+    NullCriterion,
+    Star,
+    Term,
+    ValueWrapper,
+)
 from pypika.utils import QueryException, builder, format_alias_sql, format_quotes
 
 
