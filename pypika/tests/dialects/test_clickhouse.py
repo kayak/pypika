@@ -12,6 +12,11 @@ class ClickHouseQueryTests(TestCase):
         t = Table('abc')
         query = ClickHouseQuery.from_(t).select(t.foo.as_('f1'), t.bar.as_('f2'))
         self.assertEqual(str(query), 'SELECT "foo" AS "f1","bar" AS "f2" FROM "abc"')
+    
+    def test_use_FINAL_keyword(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).final().select(t.foo, t.bar, t.baz)
+        self.assertEqual(str(query), 'SELECT "foo","bar","baz" FROM "abc" FINAL')
 
 
 class ClickHouseDeleteTests(TestCase):
