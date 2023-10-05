@@ -1535,6 +1535,9 @@ class QueryBuilder(Selectable, Term):
                 for field, value in self._updates
             )
         )
+    
+    def pipe(self, func, *args, **kwargs): 
+        return func(self, *args, **kwargs)
 
 
 class Joiner:
