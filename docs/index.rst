@@ -20,6 +20,7 @@ Contents
     3_advanced
     4_extending
     5_reference
+    6_contributing
 
 Indices and tables
 ------------------
