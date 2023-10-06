@@ -1370,9 +1370,17 @@ This produces:
 
 .. _tutorial_end:
 
+.. _contributing_start: 
+
+Contributing
+------------
+
+We welcome community contributions to |Brand|. Please see the `contributing guide <6_contributing.html>`_ to more info.
+
+.. _contributing_end:
+
 
 .. _license_start:
-
 
 License
 -------

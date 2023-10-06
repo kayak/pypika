@@ -1,16 +1,16 @@
 Guidelines for Contributing
 ===========================
 
-PyPika welcomes contributions in all forms. These include: 
+PyPika welcomes contributions in all forms. These may be bugs, feature requests, documentation, or examples. Please feel free to:
 
-1. Submitting an issue to report a bug or request a feature
-2. 
-
+#. Submitting an issue
+#. Opening a pull request
+#. Helping with outstanding issues and pull requests 
 
 Open an issue
 -------------
 
-If you find a bug or have a feature request, please [open an issue](https://github.com/kayak/pypika/issues) on GitHub.
+If you find a bug or have a feature request, please `open an issue <https://github.com/kayak/pypika/issues>`_ on GitHub. Please just check that the issue doesn't already exist before opening a new one.
 
 Local development steps
 -----------------------
@@ -18,10 +18,10 @@ Local development steps
 Create a forked branch of the repo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Do this onces but keep it up to date
+Do this once but keep it up to date
 
-1. [Fork the kayak/PyPika repo GitHub](https://github.com/kayak/pypika/fork)
-2. Clone forked repo and set upstream
+#. `Fork the kayak/PyPika repo GitHub <https://github.com/kayak/pypika/fork>`_
+#. Clone forked repo and set upstream
 
 .. code-block:: bash
 
@@ -32,62 +32,47 @@ Do this onces but keep it up to date
 Setup local development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Setup up python virtual environment
+#. Setup up python virtual environment
 
-Create and activate the environment. Here is an example using `venv` from the standard library:
+    Create and activate the environment. Here is an example using ``venv`` from the standard library:
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    python -m venv .venv
-    source .venv/bin/activate
+        python -m venv .venv
+        source .venv/bin/activate
 
-2. Install pre-commit 
+#. Install python dependencies for development
 
-pre-commit is use for checking code style
+    With the virtual environment activated, install the development requirements, pre-commit, and the package itself:
 
-```bash
-python -m pip install pre-commit
-pre-commit install 
-```
+    .. code-block:: bash
 
-2. Install python dependecies for development
+        make install
 
-Install dev requirements
+#. Build the docs locally
 
-.. code-block:: bash
+    .. code-block:: bash 
 
-    python -m pip install -r requirements-dev.txt 
+        make docs.build
 
-Install an editable version of the `pypika` package:
+    Open the docs in your browser. For instance, on macOS:
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    python -m pip install -e .
+        open docs/_build/index.html
 
-3. Build the docs locally
+#. Run the tests
 
-.. code-block:: bash 
+    .. code-block:: bash 
 
-    sphinx-build -b html docs docs/_build
+        make test
 
-Open the docs in your browser. For instance, on macOS:
-
-.. code-block:: bash
-
-    open docs/_build/index.html
-
-4. Run the tests
-
-The tests can be run locally using `tox`:
-
-.. code-block:: bash 
-
-    tox 
-
-These tests will also be run on GitHub Actions when you open a pull request.
+    These tests will also run on GitHub Actions when you open a pull request.
 
 Pull Request checklist
 ----------------------
 
-- Add passing tests 
-- Add docstring when possible!
+- Passing tests
+- pre-commit hooks passing
+- Docstring and examples and checking for correct rendering in the docs
+

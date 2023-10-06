@@ -9,6 +9,10 @@ PyPika - Python Query Builder
    :start-after: _appendix_start:
    :end-before:  _appendix_end:
 
+.. include:: ../README.rst
+   :start-after: _contributing_start:
+   :end-before:  _contributing_end:
+
 Contents
 --------
 
