@@ -51,6 +51,8 @@ Setup local development environment
 
 #. Build the docs locally
 
+    Our docs are built with Sphinx. To build the docs locally:
+
     .. code-block:: bash 
 
         make docs.build
@@ -63,6 +65,8 @@ Setup local development environment
 
 #. Run the tests
 
+    The unit tests are run with ``unittest`` via ``tox``. To run the tests locally:
+
     .. code-block:: bash 
 
         make test
@@ -72,7 +76,9 @@ Setup local development environment
 Pull Request checklist
 ----------------------
 
-- Passing tests
-- pre-commit hooks passing
-- Docstring and examples and checking for correct rendering in the docs
+Please check that your pull request meets the following criteria:
+
+- Unit tests pass
+- pre-commit hooks pass
+- Docstring and examples and checking for correct render in the docs
 
