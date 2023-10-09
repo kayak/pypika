@@ -1537,6 +1537,29 @@ class QueryBuilder(Selectable, Term):
         )
     
     def pipe(self, func, *args, **kwargs): 
+        """Call a function on the current object and return the result.
+
+        Example usage:
+
+        .. code-block:: python
+
+            from pypika import Query, functions as fn
+            from pypika.queries import QueryBuilder
+
+            def rows_by_group(query: QueryBuilder, *groups) -> QueryBuilder:
+                return (
+                    query
+                    .select(*groups, fn.Count("*").as_("n_rows"))
+                    .groupby(*groups)
+                )
+
+            base_query = Query.from_("table")
+
+            col1_agg = base_query.pipe(rows_by_group, "col1")
+            col2_agg = base_query.pipe(rows_by_group, "col2")
+            col1_col2_agg = base_query.pipe(rows_by_group, "col1", "col2")
+            
+        """
         return func(self, *args, **kwargs)
 
 
