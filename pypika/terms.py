@@ -184,12 +184,12 @@ class Term(Node):
     def all_(self) -> "All":
         return All(self)
 
-    def isin(self, arg: Union[list, tuple, set, "Term"]) -> "ContainsCriterion":
-        if isinstance(arg, (list, tuple, set)):
+    def isin(self, arg: Union[list, tuple, set, frozenset, "Term"]) -> "ContainsCriterion":
+        if isinstance(arg, (list, tuple, set, frozenset)):
             return ContainsCriterion(self, Tuple(*[self.wrap_constant(value) for value in arg]))
         return ContainsCriterion(self, arg)
 
-    def notin(self, arg: Union[list, tuple, set, "Term"]) -> "ContainsCriterion":
+    def notin(self, arg: Union[list, tuple, set, frozenset, "Term"]) -> "ContainsCriterion":
         return self.isin(arg).negate()
 
     def bin_regex(self, pattern: str) -> "BasicCriterion":
@@ -486,12 +486,18 @@ class SystemTimeValue(LiteralValue):
 
 class Criterion(Term):
     def __and__(self, other: Any) -> "ComplexCriterion":
+        if isinstance(other, EmptyCriterion):
+            return self
         return ComplexCriterion(Boolean.and_, self, other)
 
     def __or__(self, other: Any) -> "ComplexCriterion":
+        if isinstance(other, EmptyCriterion):
+            return self
         return ComplexCriterion(Boolean.or_, self, other)
 
     def __xor__(self, other: Any) -> "ComplexCriterion":
+        if isinstance(other, EmptyCriterion):
+            return self
         return ComplexCriterion(Boolean.xor_, self, other)
 
     @staticmethod
@@ -531,6 +537,9 @@ class EmptyCriterion(Criterion):
 
     def __xor__(self, other: Any) -> Any:
         return other
+
+    def __invert__(self) -> Any:
+        return self
 
 
 class Field(Criterion, JSON):

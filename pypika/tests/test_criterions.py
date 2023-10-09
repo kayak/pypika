@@ -438,6 +438,12 @@ class IsInTests(unittest.TestCase):
         self.assertEqual('COALESCE("foo",0) IN (0,1)', str(c1))
         self.assertEqual('COALESCE("isin"."foo",0) IN (0,1)', str(c2))
 
+        for t in (list, tuple, set, frozenset):
+            c_type = fn.Coalesce(Field("foo"), 0).isin(t([0, 1]))
+            self.assertEqual('COALESCE("foo",0) IN (0,1)', str(c_type))
+
+        self.assertRaises(AttributeError, lambda: str(fn.Coalesce(Field("foo"), 0).isin('SHOULD_FAIL')))
+
     def test__in_unicode(self):
         c1 = Field("foo").isin([u"a", u"b"])
         c2 = Field("foo", table=self.t).isin([u"a", u"b"])
@@ -790,6 +796,62 @@ class EmptyCriterionTests(unittest.TestCase):
         empty_criterion = EmptyCriterion()
 
         self.assertEqual(len(empty_criterion.fields_()), 0)
+
+    def test_empty_criterion_on_the_left(self):
+        t = Table("test1")
+        q = EmptyCriterion() & t.f1 == "v1"
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_empty_criterion_on_the_right(self):
+        t = Table("test1")
+        q = (t.f1 == "v1") & EmptyCriterion()
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_invertion_of_the_empty_criterion(self):
+        t = Table("test1")
+        q = (t.f1 == "v1") & ~EmptyCriterion()
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_different_operations_with_empty_criterion(self):
+        t = Table("test1")
+        q1 = (t.f1 == "v1") & EmptyCriterion()
+        q2 = (t.f1 == "v1") | EmptyCriterion()
+        q3 = (t.f1 == "v1") ^ EmptyCriterion()
+
+        expected_sql = '"test1"."f1"=\'v1\''
+        self.assertEqual(
+            expected_sql,
+            q1.get_sql(with_namespace=True),
+        )
+        self.assertEqual(
+            expected_sql,
+            q2.get_sql(with_namespace=True),
+        )
+        self.assertEqual(
+            expected_sql,
+            q3.get_sql(with_namespace=True),
+        )
+
+    def test_more_than_one_empty_criterions(self):
+        t = Table("test1")
+        q = EmptyCriterion() & ~(EmptyCriterion() | EmptyCriterion()) & (t.f1 == "v1") & ~EmptyCriterion()
+
+        self.assertEqual(
+            '"test1"."f1"=\'v1\'',
+            q.get_sql(with_namespace=True),
+        )
 
 
 class AllTests(unittest.TestCase):

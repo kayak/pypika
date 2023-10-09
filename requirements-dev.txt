@@ -9,6 +9,3 @@ tox==3.14.3
 tox-venv==0.4.0
 tox-gh-actions==0.3.0
 coverage==5.1
-
-# Formatting
-black==21.5b1
