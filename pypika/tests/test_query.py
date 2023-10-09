@@ -204,3 +204,27 @@ class QueryBuilderTests(unittest.TestCase):
 
         with self.subTest('OracleQueryBuilder'):
             self.assertEqual(OracleQuery, OracleQueryBuilder.QUERY_CLS)
+
+    def test_pipe(self) -> None: 
+        base_query = Query.from_("test")
+
+        def select(query: QueryBuilder) -> QueryBuilder:
+            return query.select("test1", "test2")
+        
+        def count_group(query: QueryBuilder, *groups) -> QueryBuilder: 
+            return query.groupby(*groups).select(*groups, functions.Count("*"))
+
+        def where_clause(query: QueryBuilder, num_days: int) -> QueryBuilder:
+            return query.where("date" > functions.Now() - num_days)
+        
+        for func, args, kwargs in [
+            (select, [], {}),
+            (count_group, ["test1", "test2"], {}), 
+            (count_group, ["test1"], {}), 
+            (where_clause, [1], {}),
+            (where_clause, [], {"num_days": 1}),
+        ]: 
+            self.assertEqual(
+                str(base_query.pipe(func, *args, **kwargs)),
+                str(func(base_query, *args, **kwargs))
+            )
