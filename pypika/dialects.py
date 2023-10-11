@@ -371,7 +371,10 @@ class OracleQueryBuilder(QueryBuilder):
         return super().get_sql(*args, **kwargs)
 
     def _limit_sql(self) -> str:
-        return " FETCH FIRST {limit} ROWS ONLY".format(limit=self._limit)
+        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
+
+    def _offset_sql(self) -> str:
+        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
 
 
 class PostgreSQLQuery(Query):
