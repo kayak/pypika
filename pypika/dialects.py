@@ -698,11 +698,6 @@ class MSSQLQueryBuilder(QueryBuilder):
         self._top_percent: bool = percent
         self._top_with_ties: bool = with_ties
 
-    @builder
-    def fetch_next(self, limit: int) -> "MSSQLQueryBuilder":
-        # Overridden to provide a more domain-specific API for T-SQL users
-        self._limit = limit
-
     def _offset_sql(self) -> str:
         return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
 
