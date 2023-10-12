@@ -104,7 +104,7 @@ class MySQLQueryBuilder(QueryBuilder):
 
     @builder
     def for_update(
-        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+            self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
     ) -> "QueryBuilder":
         self._for_update = True
         self._for_update_skip_locked = skip_locked
@@ -347,6 +347,14 @@ class VerticaCopyQueryBuilder:
         return self.get_sql()
 
 
+class FetchNextPaginationQueryBuilder(QueryBuilder):
+    def _limit_sql(self) -> str:
+        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
+
+    def _offset_sql(self) -> str:
+        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
+
+
 class OracleQuery(Query):
     """
     Defines a query class for use with Oracle.
@@ -357,7 +365,7 @@ class OracleQuery(Query):
         return OracleQueryBuilder(**kwargs)
 
 
-class OracleQueryBuilder(QueryBuilder):
+class OracleQueryBuilder(FetchNextPaginationQueryBuilder):
     QUOTE_CHAR = None
     QUERY_CLS = OracleQuery
 
@@ -370,11 +378,15 @@ class OracleQueryBuilder(QueryBuilder):
         kwargs['groupby_alias'] = False
         return super().get_sql(*args, **kwargs)
 
-    def _limit_sql(self) -> str:
-        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
+    def _apply_pagination(self, querystring: str) -> str:
+        # Note: Overridden as Oracle specifies offset before the fetch next limit
+        if self._offset:
+            querystring += self._offset_sql()
 
-    def _offset_sql(self) -> str:
-        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
+        if self._limit is not None:
+            querystring += self._limit_sql()
+
+        return querystring
 
 
 class PostgreSQLQuery(Query):
@@ -425,7 +437,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
     @builder
     def for_update(
-        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+            self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
     ) -> "QueryBuilder":
         self._for_update = True
         self._for_update_skip_locked = skip_locked
@@ -453,7 +465,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
     @builder
     def do_update(
-        self, update_field: Union[str, Field], update_value: Optional[Any] = None
+            self, update_field: Union[str, Field], update_value: Optional[Any] = None
     ) -> "PostgreSQLQueryBuilder":
         if self._on_conflict_do_nothing:
             raise QueryException("Can not have two conflict handlers")
@@ -676,7 +688,7 @@ class MSSQLQuery(Query):
         return MSSQLQueryBuilder(**kwargs)
 
 
-class MSSQLQueryBuilder(QueryBuilder):
+class MSSQLQueryBuilder(FetchNextPaginationQueryBuilder):
     QUERY_CLS = MSSQLQuery
 
     def __init__(self, **kwargs: Any) -> None:
@@ -700,12 +712,6 @@ class MSSQLQueryBuilder(QueryBuilder):
             raise QueryException("TOP value must be between 0 and 100 when `percent`" " is specified")
         self._top_percent: bool = percent
         self._top_with_ties: bool = with_ties
-
-    def _offset_sql(self) -> str:
-        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
-
-    def _limit_sql(self) -> str:
-        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
 
     def _apply_pagination(self, querystring: str) -> str:
         # Note: Overridden as MSSQL specifies offset before the fetch next limit

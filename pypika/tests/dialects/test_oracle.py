@@ -33,3 +33,11 @@ class SelectTests(unittest.TestCase):
         q = OracleQuery.from_(t).select(t.test).offset(offset)
 
         self.assertEqual(f'SELECT test FROM table1 OFFSET {offset} ROWS', str(q))
+
+    def test_limit_offset_query(self):
+        t = Table('table1')
+        limit = 5
+        offset = 5
+        q = OracleQuery.from_(t).select(t.test).limit(limit).offset(offset)
+
+        self.assertEqual(f'SELECT test FROM table1 OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY', str(q))
