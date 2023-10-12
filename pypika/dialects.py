@@ -347,7 +347,7 @@ class VerticaCopyQueryBuilder:
         return self.get_sql()
 
 
-class FetchNextPaginationQueryBuilder(QueryBuilder):
+class FetchNextAndOffsetRowsQueryBuilder(QueryBuilder):
     def _limit_sql(self) -> str:
         return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
 
@@ -365,7 +365,7 @@ class OracleQuery(Query):
         return OracleQueryBuilder(**kwargs)
 
 
-class OracleQueryBuilder(FetchNextPaginationQueryBuilder):
+class OracleQueryBuilder(FetchNextAndOffsetRowsQueryBuilder):
     QUOTE_CHAR = None
     QUERY_CLS = OracleQuery
 
@@ -688,7 +688,7 @@ class MSSQLQuery(Query):
         return MSSQLQueryBuilder(**kwargs)
 
 
-class MSSQLQueryBuilder(FetchNextPaginationQueryBuilder):
+class MSSQLQueryBuilder(FetchNextAndOffsetRowsQueryBuilder):
     QUERY_CLS = MSSQLQuery
 
     def __init__(self, **kwargs: Any) -> None:
