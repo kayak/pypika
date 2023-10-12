@@ -23,11 +23,11 @@ Do this once but keep it up to date
 #. `Fork the kayak/PyPika repo GitHub <https://github.com/kayak/pypika/fork>`_
 #. Clone forked repo and set upstream
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    git clone git@github.com:<your-username>/pypika.git
-    cd pypika
-    git remote add upstream git@github.com:kayak/pypika.git
+        git clone git@github.com:<your-username>/pypika.git
+        cd pypika
+        git remote add upstream git@github.com:kayak/pypika.git
 
 Setup local development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,6 +49,16 @@ Setup local development environment
 
         make install
 
+#. Run the tests
+
+    The unit tests are run with ``unittest`` via ``tox``. To run the tests locally:
+
+    .. code-block:: bash 
+
+        make test
+
+    These tests will also run on GitHub Actions when you open a pull request.
+
 #. Build the docs locally
 
     Our docs are built with Sphinx. To build the docs locally:
@@ -63,16 +73,6 @@ Setup local development environment
 
         open docs/_build/index.html
 
-#. Run the tests
-
-    The unit tests are run with ``unittest`` via ``tox``. To run the tests locally:
-
-    .. code-block:: bash 
-
-        make test
-
-    These tests will also run on GitHub Actions when you open a pull request.
-
 Pull Request checklist
 ----------------------
 
@@ -82,3 +82,20 @@ Please check that your pull request meets the following criteria:
 - pre-commit hooks pass
 - Docstring and examples and checking for correct render in the docs
 
+Documentation
+-------------
+
+Documentation is built with Sphinx and hosted on `Read the Docs <https://pypika.readthedocs.io/en/latest/>`_. The latest builds are displayed on their site `here <https://readthedocs.org/projects/pypika/builds/>`_.
+
+The code documentation is to be written in the docstrings of the code itself or in the various ``.rst`` files in project root or the ``docs/`` directory.
+
+The docstrings can be in either `Numpy <https://numpydoc.readthedocs.io/en/latest/format.html>`_ or `Sphinx <https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html>`_ format.
+
+Automations
+-----------
+
+We use `pre-commit <https://pre-commit.com/>`_ to automate format checks. Install the pre-commit hooks with the ``make install`` command described above.
+
+GitHub Actions runs both format checks and unit tests on every pull request.
+
+**NOTE:** The hosted documentation is built separately from the GitHub Actions workflow. To build the docs locally, use the ``make docs.build`` command described above.
