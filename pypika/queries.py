@@ -350,6 +350,15 @@ class Query:
     pattern.
 
     This class is immutable.
+
+    Examples
+    --------
+    Simple query
+
+    .. code-block:: python
+
+        from pypika import Query, Field
+        q = Query.from_('customers').select('*').where(Field("id") == 1)
     """
 
     @classmethod
@@ -367,7 +376,7 @@ class Query:
 
             An instance of a Table object or a string table name.
 
-        :returns QueryBuilder
+        :return: QueryBuilder
         """
         return cls._builder(**kwargs).from_(table)
 
@@ -458,7 +467,7 @@ class Query:
 
             An instance of a Table object or a string table name.
 
-        :returns QueryBuilder
+        :return QueryBuilder
         """
         return cls._builder(**kwargs).into(table)
 
@@ -478,7 +487,7 @@ class Query:
             A list of terms to select.  These can be any type of int, float, str, bool, or Term.  They cannot be a Field
             unless the function ``Query.from_`` is called first.
 
-        :returns QueryBuilder
+        :return: QueryBuilder
         """
         return cls._builder(**kwargs).select(*terms)
 
@@ -493,7 +502,7 @@ class Query:
 
             An instance of a Table object or a string table name.
 
-        :returns QueryBuilder
+        :return: QueryBuilder
         """
         return cls._builder(**kwargs).update(table)
 
@@ -507,7 +516,7 @@ class Query:
 
             A string table name.
 
-        :returns Table
+        :return: Table
         """
         kwargs["query_cls"] = cls
         return Table(table_name, **kwargs)
@@ -523,7 +532,7 @@ class Query:
 
             A list of string table names, or name and alias tuples.
 
-        :returns Table
+        :return: Table
         """
         kwargs["query_cls"] = cls
         return make_tables(*names, **kwargs)
