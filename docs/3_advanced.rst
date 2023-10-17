@@ -27,15 +27,15 @@ Again, if you encounter any issues specific to a platform, please create a GitHu
 Or even different query languages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Some services created their own query language similar to SQL. To generate expressions for Jira there is a ``JiraQueryBuilder`` class.
+Some services created their own query language similar to SQL. To generate expressions for Jira there is a ``JiraQuery`` class which just returns an instance of ``JiraQueryBuilder()`` so it could be used directly instead.
 
 .. code-block:: python
 
-    from pypika import JiraTable, JiraQueryBuilder
+    from pypika import JiraTable, JiraQuery
 
     J = JiraTable()
     j = (
-        JiraQueryBuilder()
+        JiraQuery._builder().from_(J)
         .where(J.project.isin(["PROJ1", "PROJ2"]))
         .where(J.issuetype == "My issue")
         .where(J.labels.isempty() | J.labels.notin(["stale", "bug"]))
