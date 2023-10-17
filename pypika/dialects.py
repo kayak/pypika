@@ -1,6 +1,6 @@
 import itertools
 from copy import copy
-from typing import Any, Optional, Union, Tuple as TypedTuple
+from typing import Any, List, Optional, Union, Tuple as TypedTuple
 
 from pypika.enums import Dialects
 from pypika.queries import (
@@ -892,6 +892,22 @@ class JiraQuery(Query):
     @classmethod
     def where(cls, *args, **kwargs) -> "QueryBuilder":
         return JiraQueryBuilder().where(*args, **kwargs)
+
+    @classmethod
+    def Table(cls, table_name: str = '', **_) -> "JiraTable":
+        """
+        Convenience method for creating a JiraTable
+        """
+        del table_name
+        return JiraTable()
+
+    @classmethod
+    def Tables(cls, *names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List["JiraTable"]:
+        """
+        Convenience method for creating many JiraTable instances
+        """
+        del kwargs
+        return [JiraTable() for _ in range(len(names))]
 
 
 class JiraQueryBuilder(QueryBuilder):
