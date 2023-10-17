@@ -889,6 +889,10 @@ class JiraQuery(Query):
     def _builder(cls, **kwargs) -> "JiraQueryBuilder":
         return JiraQueryBuilder(**kwargs)
 
+    @classmethod
+    def where(cls, *args, **kwargs) -> "QueryBuilder":
+        return JiraQueryBuilder().where(*args, **kwargs)
+
 
 class JiraQueryBuilder(QueryBuilder):
     """

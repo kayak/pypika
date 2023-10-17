@@ -35,7 +35,7 @@ Some services created their own query language similar to SQL. To generate expre
 
     J = JiraTable()
     j = (
-        JiraQuery._builder().from_(J)
+        JiraQuery
         .where(J.project.isin(["PROJ1", "PROJ2"]))
         .where(J.issuetype == "My issue")
         .where(J.labels.isempty() | J.labels.notin(["stale", "bug"]))
