@@ -31,17 +31,19 @@ Some services created their own query language similar to SQL. To generate expre
 
 .. code-block:: python
 
-    from pypika import JiraTable, JiraQuery
+    from pypika import JiraQuery
 
-    J = JiraTable()
-    j = (
-        JiraQuery
-        .where(J.project.isin(["PROJ1", "PROJ2"]))
+    J = JiraQuery.Table()
+    query = (
+        JiraQuery.where(J.project.isin(["PROJ1", "PROJ2"]))
         .where(J.issuetype == "My issue")
         .where(J.labels.isempty() | J.labels.notin(["stale", "bug"]))
         .where(J.repos.notempty() & J.repos.notin(["main", "dev"]))
     )
-    print(j.get_sql())
+
+.. code-block:: sql
+
+    project IN ("PROJ1","PROJ2") AND issuetype="My issue" AND (labels is EMPTY OR labels NOT IN ("stale","bug")) AND repos is not EMPTY AND repos NOT IN ("main","dev")
 
 GROUP BY Modifiers
 ------------------
