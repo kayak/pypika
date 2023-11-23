@@ -139,7 +139,7 @@ class Dialects(Enum):
     ORACLE = "oracle"
     MSSQL = "mssql"
     MYSQL = "mysql"
-    POSTGRESQL = "postgressql"
+    POSTGRESQL = "postgresql"
     REDSHIFT = "redshift"
     SQLLITE = "sqllite"
     SNOWFLAKE = "snowflake"

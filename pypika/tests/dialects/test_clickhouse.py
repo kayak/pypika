@@ -13,6 +13,16 @@ class ClickHouseQueryTests(TestCase):
         query = ClickHouseQuery.from_(t).select(t.foo.as_('f1'), t.bar.as_('f2'))
         self.assertEqual(str(query), 'SELECT "foo" AS "f1","bar" AS "f2" FROM "abc"')
 
+    def test_use_SAMPLE_keyword(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).select(t.foo).sample(10)
+        self.assertEqual(str(query), 'SELECT "foo" FROM "abc" SAMPLE 10')
+
+    def test_use_SAMPLE_with_offset_keyword(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).select(t.foo).sample(10, 5)
+        self.assertEqual(str(query), 'SELECT "foo" FROM "abc" SAMPLE 10 OFFSET 5')
+
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")

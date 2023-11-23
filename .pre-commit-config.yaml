@@ -1,0 +1,25 @@
+exclude: '.git'
+default_stages: [commit]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        files: "pypika.*"
+        exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
+      - id: check-yaml
+      - id: no-commit-to-branch
+        args: ['--branch', 'master']
+      - id: check-merge-conflict
+      - id: check-ast
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+
+  - repo: https://github.com/psf/black
+    rev: 23.9.1
+    hooks:
+      - id: black

@@ -1,11 +1,10 @@
 from copy import copy
 from functools import reduce
-from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set
+from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
     ArithmeticExpression,
-    Criterion,
     EmptyCriterion,
     Field,
     Function,
@@ -351,6 +350,15 @@ class Query:
     pattern.
 
     This class is immutable.
+
+    Examples
+    --------
+    Simple query
+
+    .. code-block:: python
+
+        from pypika import Query, Field
+        q = Query.from_('customers').select('*').where(Field("id") == 1)
     """
 
     @classmethod
@@ -368,7 +376,7 @@ class Query:
 
             An instance of a Table object or a string table name.
 
-        :returns QueryBuilder
+        :return: QueryBuilder
         """
         return cls._builder(**kwargs).from_(table)
 
@@ -383,6 +391,14 @@ class Query:
         :return: CreateQueryBuilder
         """
         return CreateQueryBuilder().create_table(table)
+
+    @classmethod
+    def create_index(cls, index: Union[str, Index]) -> "CreateIndexBuilder":
+        """
+        Query builder entry point. Initializes query building and sets the index name to be created. When using this
+        function, the query becomes a CREATE statement.
+        """
+        return CreateIndexBuilder().create_index(index)
 
     @classmethod
     def drop_database(cls, database: Union[Database, Table]) -> "DropQueryBuilder":
@@ -433,6 +449,14 @@ class Query:
         return DropQueryBuilder().drop_view(view)
 
     @classmethod
+    def drop_index(cls, index: Union[str, Index]) -> "DropQueryBuilder":
+        """
+        Query builder entry point. Initializes query building and sets the index name to be dropped. When using this
+        function, the query becomes a DROP statement.
+        """
+        return DropQueryBuilder().drop_index(index)
+
+    @classmethod
     def into(cls, table: Union[Table, str], **kwargs: Any) -> "QueryBuilder":
         """
         Query builder entry point.  Initializes query building and sets the table to insert into.  When using this
@@ -443,7 +467,7 @@ class Query:
 
             An instance of a Table object or a string table name.
 
-        :returns QueryBuilder
+        :return QueryBuilder
         """
         return cls._builder(**kwargs).into(table)
 
@@ -463,7 +487,7 @@ class Query:
             A list of terms to select.  These can be any type of int, float, str, bool, or Term.  They cannot be a Field
             unless the function ``Query.from_`` is called first.
 
-        :returns QueryBuilder
+        :return: QueryBuilder
         """
         return cls._builder(**kwargs).select(*terms)
 
@@ -478,7 +502,7 @@ class Query:
 
             An instance of a Table object or a string table name.
 
-        :returns QueryBuilder
+        :return: QueryBuilder
         """
         return cls._builder(**kwargs).update(table)
 
@@ -492,7 +516,7 @@ class Query:
 
             A string table name.
 
-        :returns Table
+        :return: Table
         """
         kwargs["query_cls"] = cls
         return Table(table_name, **kwargs)
@@ -508,7 +532,7 @@ class Query:
 
             A list of string table names, or name and alias tuples.
 
-        :returns Table
+        :return: Table
         """
         kwargs["query_cls"] = cls
         return make_tables(*names, **kwargs)
@@ -1564,8 +1588,8 @@ class Joiner:
 
         criterion = None
         for field in fields:
-            consituent = Field(field, table=self.query._from[0]) == Field(field, table=self.item)
-            criterion = consituent if criterion is None else criterion & consituent
+            constituent = Field(field, table=self.query._from[0]) == Field(field, table=self.item)
+            criterion = constituent if criterion is None else criterion & constituent
 
         self.query.do_join(JoinOn(self.item, self.how, criterion))
         return self.query
@@ -2042,6 +2066,70 @@ class CreateQueryBuilder:
         return self.__str__()
 
 
+class CreateIndexBuilder:
+    def __init__(self) -> None:
+        self._index = None
+        self._columns = []
+        self._table = None
+        self._wheres = None
+        self._is_unique = False
+        self._if_not_exists = False
+
+    @builder
+    def create_index(self, index: Union[str, Index]) -> "CreateIndexBuilder":
+        self._index = index
+
+    @builder
+    def columns(self, *columns: Union[str, TypedTuple[str, str], Column]) -> "CreateIndexBuilder":
+        for column in columns:
+            if isinstance(column, str):
+                column = Column(column)
+            elif isinstance(column, tuple):
+                column = Column(column_name=column[0], column_type=column[1])
+            self._columns.append(column)
+
+    @builder
+    def on(self, table: Union[Table, str]) -> "CreateIndexBuilder":
+        self._table = table
+
+    @builder
+    def where(self, criterion: Union[Term, EmptyCriterion]) -> "CreateIndexBuilder":
+        """
+        Partial index where clause.
+        """
+        if self._wheres:
+            self._wheres &= criterion
+        else:
+            self._wheres = criterion
+
+    @builder
+    def unique(self) -> "CreateIndexBuilder":
+        self._is_unique = True
+
+    @builder
+    def if_not_exists(self) -> "CreateIndexBuilder":
+        self._if_not_exists = True
+
+    def get_sql(self) -> str:
+        if not self._columns or len(self._columns) == 0:
+            raise AttributeError("Cannot create index without columns")
+        if not self._table:
+            raise AttributeError("Cannot create index without table")
+        columns_str = ", ".join([c.name for c in self._columns])
+        unique_str = "UNIQUE" if self._is_unique else ""
+        if_not_exists_str = "IF NOT EXISTS" if self._if_not_exists else ""
+        base_sql = f"CREATE {unique_str} INDEX {if_not_exists_str} {self._index} ON {self._table}({columns_str})"
+        if self._wheres:
+            base_sql += f" WHERE {self._wheres}"
+        return base_sql.replace("  ", " ")
+
+    def __str__(self) -> str:
+        return self.get_sql()
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
 class DropQueryBuilder:
     """
     Query builder used to build DROP queries.
@@ -2080,6 +2168,10 @@ class DropQueryBuilder:
     @builder
     def drop_view(self, view: str) -> "DropQueryBuilder":
         self._set_target('VIEW', view)
+
+    @builder
+    def drop_index(self, index: str) -> "DropQueryBuilder":
+        self._set_target('INDEX', index)
 
     @builder
     def if_exists(self) -> "DropQueryBuilder":

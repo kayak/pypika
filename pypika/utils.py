@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Type, TypeVar
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -36,7 +36,10 @@ class FunctionException(Exception):
     pass
 
 
-def builder(func: Callable) -> Callable:
+C = TypeVar("C")
+
+
+def builder(func: C) -> C:
     """
     Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
     building queries which mutate the query and return self.  To make the build functions immutable, this decorator is
