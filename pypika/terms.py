@@ -375,7 +375,6 @@ class ValueWrapper(Term):
         if isinstance(value, date):
             return cls.get_formatted_value(value.isoformat(), **kwargs)
         if isinstance(value, str):
-            value = value.replace(quote_char, quote_char * 2)
             return format_quotes(value, quote_char)
         if isinstance(value, bool):
             return str.lower(str(value))
