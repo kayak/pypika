@@ -1375,7 +1375,7 @@ This produces:
 Contributing
 ------------
 
-We welcome community contributions to |Brand|. Please see the `contributing guide <6_contributing.html>`_ to more info.
+We welcome community contributions to |Brand|. Please see the `contributing guide <CONTRIBUTING.rst>`_ to more info.
 
 .. _contributing_end:
 
