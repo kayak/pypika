@@ -86,20 +86,16 @@ For instance, consider a scenario where you want to use the ``<->`` operator in 
 
 .. code-block:: python
 
-    from pypika import CustomFunction, Field, Query
+    from pypika import Field, Query
     from pypika.terms import ArithmeticExpression
 
     # Wrapper class for the custom operator
     class CustomOperator:
         value: str = "<->"  # Define your operator here
 
-    # Custom SQL functions if needed
-    ST_SetSRID = CustomFunction("ST_SetSRID", ["geometry", "srid"])
-    ST_MakePoint = CustomFunction("ST_MakePoint", ["longitude", "latitude"])
-
     # Preparing the operands
-    left_operand = ST_SetSRID(ST_MakePoint(Field("longitude"), Field("latitude")), 4326)
-    right_operand = Field("point")
+    left_operand = Field("left_operand_field")
+    right_operand = Field("right_operand_field")
 
     # Creating the custom ArithmeticExpression
     orderby_expression = ArithmeticExpression(CustomOperator, left_operand, right_operand)
@@ -112,10 +108,10 @@ With the custom operator defined, you can now incorporate it into your PyPika qu
 .. code-block:: python
 
     # Constructing the query with the custom ORDER BY clause
-    query = Query.from_("house").select("id").orderby(orderby_expression)
+    query = Query.from_("your_table").select("your_columns").orderby(orderby_expression)
 
-    # The resulting SQL query will be:
-    # SELECT "id" FROM "house" ORDER BY ST_SetSRID(ST_MakePoint("longitude", "latitude"), 4326) <-> "point"
+    # The resulting SQL query will be similar to:
+    # SELECT "your_columns" FROM "your_table" ORDER BY "left_operand_field" <-> "right_operand_field"
 
 Adapting to Other Operators
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
