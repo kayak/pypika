@@ -74,3 +74,52 @@ Similarly analytic functions can be defined by extending ``pypika.terms.Analytic
 
     SELECT ROW_NUMBER() OVER(PARTITION BY "foo" ORDER BY "date") FROM "abc"
 
+Operators not included in PyPika
+""""""""""""""""""""""""""""""""""""
+
+PyPika may not include certain operators used in SQL, such as the ``<->``, ``<#>`` or ``<=>`` operators often used in extensions. To incorporate these operators, you can utilize a custom ``ArithmeticExpression`` from ``pypika.terms``.
+
+Custom Operator: ``<->`` for Distance Calculation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For instance, consider a scenario where you want to use the ``<->`` operator in an ``ORDER BY`` clause for geographic distance calculation. You can define this operator using a custom ``ArithmeticExpression``.
+
+.. code-block:: python
+
+    from pypika import CustomFunction, Field, Query
+    from pypika.terms import ArithmeticExpression
+
+    # Wrapper class for the custom operator
+    class CustomOperator:
+        value: str = "<->"  # Define your operator here
+
+    # Custom SQL functions if needed
+    ST_SetSRID = CustomFunction("ST_SetSRID", ["geometry", "srid"])
+    ST_MakePoint = CustomFunction("ST_MakePoint", ["longitude", "latitude"])
+
+    # Preparing the operands
+    left_operand = ST_SetSRID(ST_MakePoint(Field("longitude"), Field("latitude")), 4326)
+    right_operand = Field("point")
+
+    # Creating the custom ArithmeticExpression
+    orderby_expression = ArithmeticExpression(CustomOperator, left_operand, right_operand)
+
+Using the Custom Operator in a Query
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With the custom operator defined, you can now incorporate it into your PyPika queries. For example:
+
+.. code-block:: python
+
+    # Constructing the query with the custom ORDER BY clause
+    query = Query.from_("house").select("id").orderby(orderby_expression)
+
+    # The resulting SQL query will be:
+    # SELECT "id" FROM "house" ORDER BY ST_SetSRID(ST_MakePoint("longitude", "latitude"), 4326) <-> "point"
+
+Adapting to Other Operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This method is not limited to the ``<->`` operator. You can adapt it for any other operator by changing the ``value`` in the ``CustomOperator`` class. This allows for a flexible approach to integrate various operators that are not natively supported in PyPika.
+
+
