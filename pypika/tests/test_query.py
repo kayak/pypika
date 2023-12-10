@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Case, Query, Tables, Tuple, functions
+from pypika import Case, Query, Tables, Tuple, functions, Field
 from pypika.dialects import (
     ClickHouseQuery,
     ClickHouseQueryBuilder,
@@ -204,3 +204,39 @@ class QueryBuilderTests(unittest.TestCase):
 
         with self.subTest('OracleQueryBuilder'):
             self.assertEqual(OracleQuery, OracleQueryBuilder.QUERY_CLS)
+
+    def test_pipe(self) -> None:
+        base_query = Query.from_("test")
+
+        def select(query: QueryBuilder) -> QueryBuilder:
+            return query.select("test1", "test2")
+
+        def count_group(query: QueryBuilder, *groups) -> QueryBuilder:
+            return query.groupby(*groups).select(*groups, functions.Count("*"))
+
+        for func, args, kwargs, expected_str in [
+            (select, [], {}, 'SELECT "test1","test2" FROM "test"'),
+            (
+                count_group,
+                ["test1", "test2"],
+                {},
+                'SELECT "test1","test2",COUNT(*) FROM "test" GROUP BY "test1","test2"',
+            ),
+            (count_group, ["test1"], {}, 'SELECT "test1",COUNT(*) FROM "test" GROUP BY "test1"'),
+        ]:
+            result_str = str(base_query.pipe(func, *args, **kwargs))
+            self.assertEqual(result_str, str(func(base_query, *args, **kwargs)))
+            self.assertEqual(result_str, expected_str)
+
+        def where_clause(query: QueryBuilder, num_days: int) -> QueryBuilder:
+            return query.where(Field("date") > functions.Now() - num_days)
+
+        result_str = str(base_query.pipe(select).pipe(where_clause, num_days=1))
+        self.assertEqual(
+            result_str,
+            str(select(where_clause(base_query, num_days=1))),
+        )
+        self.assertEqual(
+            result_str,
+            'SELECT "test1","test2" FROM "test" WHERE "date">NOW()-1',
+        )

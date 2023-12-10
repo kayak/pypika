@@ -1368,6 +1368,58 @@ This produces:
 
     DROP INDEX IF EXISTS my_index
 
+
+Chaining Functions
+^^^^^^^^^^^^^^^^^^
+
+The ``QueryBuilder.pipe`` method gives a more readable alternative while chaining functions.
+
+.. code-block:: python 
+
+    # This 
+    (
+        query
+        .pipe(func1, *args)
+        .pipe(func2, **kwargs)
+        .pipe(func3)
+    )
+
+    # Is equivalent to this
+    func3(func2(func1(query, *args), **kwargs))
+
+Or for a more concrete example:
+
+.. code-block:: python 
+
+    from pypika import Field, Query, functions as fn
+    from pypika.queries import QueryBuilder
+
+    def filter_days(query: QueryBuilder, col, num_days: int) -> QueryBuilder: 
+        if isinstance(col, str): 
+            col = Field(col)
+
+        return query.where(col > fn.Now() - num_days)
+
+    def count_groups(query: QueryBuilder, *groups) -> QueryBuilder: 
+        return query.groupby(*groups).select(*groups, fn.Count("*").as_("n_rows"))
+
+    base_query = Query.from_("table")
+
+    query = (
+        base_query
+        .pipe(filter_days, "date", num_days=7)
+        .pipe(count_groups, "col1", "col2")
+    )
+
+This produces: 
+
+.. code-block:: sql
+
+    SELECT "col1","col2",COUNT(*) n_rows 
+    FROM "table" 
+    WHERE "date">NOW()-7 
+    GROUP BY "col1","col2"
+
 .. _tutorial_end:
 
 .. _contributing_start: 
