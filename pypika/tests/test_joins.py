@@ -346,6 +346,20 @@ class SelectQueryJoinTests(unittest.TestCase):
             str(query),
         )
 
+    def test_join_with_force_index(self):
+        table_a, table_b = Tables("a", "b")
+
+        q1 = (
+            Query.from_(table_a)
+            .select(table_b.ouch)
+            .join(table_b, force_index='PRIMARY')
+            .on(table_a.foo == table_b.boo)
+        )
+
+        self.assertEqual(
+            'SELECT "b"."ouch" FROM "a" JOIN "b" FORCE INDEX (PRIMARY) ON "a"."foo"="b"."boo"',
+            str(q1),
+        )
 
 class JoinBehaviorTests(unittest.TestCase):
     table_abc, table_efg, table_hij, table_klm = Tables("abc", "efg", "hij", "klm")
