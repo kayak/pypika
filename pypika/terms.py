@@ -59,7 +59,7 @@ class Term(Node):
     @staticmethod
     def wrap_constant(
         val, wrapper_cls: Optional[Type["Term"]] = None
-    ) -> Union[ValueError, NodeT, "LiteralValue", "Array", "Tuple", "ValueWrapper"]:
+    ) -> Union[NodeT, "LiteralValue", "Array", "Tuple", "ValueWrapper"]:
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
