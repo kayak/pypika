@@ -543,10 +543,12 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             updates = []
             for field, value in self._on_conflict_do_updates:
                 if value:
+                    value_get_sql_kwargs = kwargs.copy()
+                    value_get_sql_kwargs['with_namespace'] = True
                     updates.append(
                         "{field}={value}".format(
                             field=field.get_sql(**kwargs),
-                            value=value.get_sql(with_namespace=True, **kwargs),
+                            value=value.get_sql(**value_get_sql_kwargs),
                         )
                     )
                 else:
@@ -559,8 +561,10 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             action_sql = " DO UPDATE SET {updates}".format(updates=",".join(updates))
 
             if self._on_conflict_do_update_wheres:
+                wheres_get_sql_kwargs = kwargs.copy()
+                wheres_get_sql_kwargs['with_namespace'] = True
                 action_sql += " WHERE {where}".format(
-                    where=self._on_conflict_do_update_wheres.get_sql(subquery=True, with_namespace=True, **kwargs)
+                    where=self._on_conflict_do_update_wheres.get_sql(subquery=True, **wheres_get_sql_kwargs)
                 )
             return action_sql
 
