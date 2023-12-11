@@ -628,9 +628,11 @@ class Tuple(Criterion):
         for value in self.values:
             yield from value.nodes_()
 
-    def get_sql(self, **kwargs: Any) -> str:
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         sql = "({})".format(",".join(term.get_sql(**kwargs) for term in self.values))
-        return format_alias_sql(sql, self.alias, **kwargs)
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
     @property
     def is_aggregate(self) -> bool:
@@ -821,13 +823,15 @@ class ContainsCriterion(Criterion):
         """
         self.term = self.term.replace_table(current_table, new_table)
 
-    def get_sql(self, subquery: Any = None, **kwargs: Any) -> str:
+    def get_sql(self, subquery: Any = None, with_alias: bool = False, **kwargs: Any) -> str:
         sql = "{term} {not_}IN {container}".format(
             term=self.term.get_sql(**kwargs),
             container=self.container.get_sql(subquery=True, **kwargs),
             not_="NOT " if self._is_negated else "",
         )
-        return format_alias_sql(sql, self.alias, **kwargs)
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
     @builder
     def negate(self) -> "ContainsCriterion":
@@ -929,12 +933,14 @@ class BitwiseAndCriterion(Criterion):
         """
         self.term = self.term.replace_table(current_table, new_table)
 
-    def get_sql(self, **kwargs: Any) -> str:
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         sql = "({term} & {value})".format(
             term=self.term.get_sql(**kwargs),
             value=self.value,
         )
-        return format_alias_sql(sql, self.alias, **kwargs)
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
 
 class NullCriterion(Criterion):
@@ -964,7 +970,9 @@ class NullCriterion(Criterion):
         sql = "{term} IS NULL".format(
             term=self.term.get_sql(**kwargs),
         )
-        return format_alias_sql(sql, self.alias, **kwargs)
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
 
 class NotNullCriterion(NullCriterion):
@@ -1189,10 +1197,12 @@ class Not(Criterion):
         yield self
         yield from self.term.nodes_()
 
-    def get_sql(self, **kwargs: Any) -> str:
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         kwargs["subcriterion"] = True
         sql = "NOT {term}".format(term=self.term.get_sql(**kwargs))
-        return format_alias_sql(sql, self.alias, **kwargs)
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
     @ignore_copy
     def __getattr__(self, name: str) -> Any:
@@ -1237,9 +1247,11 @@ class All(Criterion):
         yield self
         yield from self.term.nodes_()
 
-    def get_sql(self, **kwargs: Any) -> str:
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         sql = "{term} ALL".format(term=self.term.get_sql(**kwargs))
-        return format_alias_sql(sql, self.alias, **kwargs)
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
 
 class CustomFunction:
@@ -1326,8 +1338,7 @@ class Function(Criterion):
             special=(" " + special_params_sql) if special_params_sql else "",
         )
 
-    def get_sql(self, **kwargs: Any) -> str:
-        with_alias = kwargs.pop("with_alias", False)
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         with_namespace = kwargs.pop("with_namespace", False)
         quote_char = kwargs.pop("quote_char", None)
         dialect = kwargs.pop("dialect", None)
