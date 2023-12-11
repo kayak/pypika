@@ -15,6 +15,13 @@ class FieldAliasTests(TestCase):
         self.assertEqual('bar', str(c1.alias))
 
 
+class FieldInitTests(TestCase):
+    def test_init_with_str_table(self):
+        test_table_name = "test_table"
+        field = Field(name="name", table=test_table_name)
+        self.assertEqual(field.table, Table(name=test_table_name))
+    
+
 class FieldHashingTests(TestCase):
     def test_tabled_eq_fields_equally_hashed(self):
         client_name1 = Field(name="name", table=Table("clients"))
