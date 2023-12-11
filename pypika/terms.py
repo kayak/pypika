@@ -1636,7 +1636,7 @@ class PseudoColumn(Term):
         self.name = name
 
     def get_sql(self, **kwargs: Any) -> str:
-        return self.name
+        return format_alias_sql(self.name, self.alias, **kwargs)
 
 
 class AtTimezone(Term):
