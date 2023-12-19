@@ -38,6 +38,13 @@ class FieldHashingTests(TestCase):
     def test_non_tabled_ne_fields_differently_hashed(self):
         self.assertTrue(hash(Field(name="A")) != hash(Field(name="B")))
 
+    def test_get_item(self):
+        c = Field("foo")
+        self.assertEqual(str(c['a']), "\"foo\"['a']")
+        self.assertEqual(str(c[1]), "\"foo\"[1]")
+        self.assertEqual(str(c[1]['a']), "\"foo\"[1]['a']")
+        self.assertEqual(str(Field("foo", alias="bar")[0].as_("y")), '"foo"[0] "y"')
+
 
 class AtTimezoneTests(TestCase):
     def test_when_interval_not_specified(self):
