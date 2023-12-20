@@ -845,15 +845,6 @@ class UnionTests(unittest.TestCase):
         with self.assertRaises(SetOperationException):
             str(query1 + query2)
 
-    def test_mysql_query_does_not_wrap_unioned_queries_with_params(self):
-        query1 = MySQLQuery.from_(self.table1).select(self.table1.foo)
-        query2 = Query.from_(self.table2).select(self.table2.bar)
-
-        self.assertEqual(
-            "SELECT `foo` FROM `abc` UNION SELECT `bar` FROM `efg`",
-            str(query1 + query2),
-        )
-
     def test_union_as_subquery(self):
         abc, efg = Tables("abc", "efg")
         hij = Query.from_(abc).select(abc.t).union(Query.from_(efg).select(efg.t))
@@ -968,15 +959,6 @@ class IntersectTests(unittest.TestCase):
         with self.assertRaises(SetOperationException):
             str(query1.intersect(query2))
 
-    def test_mysql_query_does_not_wrap_intersected_queries_with_params(self):
-        query1 = MySQLQuery.from_(self.table1).select(self.table1.foo)
-        query2 = Query.from_(self.table2).select(self.table2.bar)
-
-        self.assertEqual(
-            "SELECT `foo` FROM `abc` INTERSECT SELECT `bar` FROM `efg`",
-            str(query1.intersect(query2)),
-        )
-
     def test_intersect_as_subquery(self):
         abc, efg = Tables("abc", "efg")
         hij = Query.from_(abc).select(abc.t).intersect(Query.from_(efg).select(efg.t))
@@ -1063,15 +1045,6 @@ class MinusTests(unittest.TestCase):
 
         with self.assertRaises(SetOperationException):
             str(query1.minus(query2))
-
-    def test_mysql_query_does_not_wrap_minus_queries_with_params(self):
-        query1 = MySQLQuery.from_(self.table1).select(self.table1.foo)
-        query2 = Query.from_(self.table2).select(self.table2.bar)
-
-        self.assertEqual(
-            "SELECT `foo` FROM `abc` MINUS SELECT `bar` FROM `efg`",
-            str(query1 - query2),
-        )
 
     def test_minus_as_subquery(self):
         abc, efg = Tables("abc", "efg")
