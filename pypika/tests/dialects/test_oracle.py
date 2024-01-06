@@ -41,3 +41,11 @@ class SelectTests(unittest.TestCase):
         q = OracleQuery.from_(t).select(t.test).limit(limit).offset(offset)
 
         self.assertEqual(f'SELECT test FROM table1 OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY', str(q))
+
+    def test_fetch_next_method_deprecated(self):
+        with self.assertWarns(DeprecationWarning):
+            t = Table('table1')
+            limit = 5
+            q = OracleQuery.from_(t).select(t.test).fetch_next(limit)
+
+            self.assertEqual(f'SELECT test FROM table1 FETCH NEXT {limit} ROWS ONLY', str(q))

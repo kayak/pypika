@@ -1,4 +1,5 @@
 import itertools
+import warnings
 from copy import copy
 from typing import Any, Optional, Union, Tuple as TypedTuple
 
@@ -353,6 +354,11 @@ class FetchNextAndOffsetRowsQueryBuilder(QueryBuilder):
 
     def _offset_sql(self) -> str:
         return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
+
+    @builder
+    def fetch_next(self, limit: int):
+        warnings.warn("`fetch_next` is deprecated - please use the `limit` method", DeprecationWarning)
+        self._limit = limit
 
 
 class OracleQuery(Query):
