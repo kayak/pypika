@@ -104,7 +104,7 @@ class MySQLQueryBuilder(QueryBuilder):
 
     @builder
     def for_update(
-            self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
     ) -> "QueryBuilder":
         self._for_update = True
         self._for_update_skip_locked = skip_locked
@@ -437,7 +437,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
     @builder
     def for_update(
-            self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
     ) -> "QueryBuilder":
         self._for_update = True
         self._for_update_skip_locked = skip_locked
@@ -465,7 +465,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
     @builder
     def do_update(
-            self, update_field: Union[str, Field], update_value: Optional[Any] = None
+        self, update_field: Union[str, Field], update_value: Optional[Any] = None
     ) -> "PostgreSQLQueryBuilder":
         if self._on_conflict_do_nothing:
             raise QueryException("Can not have two conflict handlers")
