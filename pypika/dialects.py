@@ -874,6 +874,8 @@ class SQLLiteQueryBuilder(QueryBuilder):
         super().__init__(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
         self._insert_or_replace = False
 
+    _ignore_syntax = "OR IGNORE "
+
     @builder
     def insert_or_replace(self, *terms: Any) -> "SQLLiteQueryBuilder":
         self._apply_terms(*terms)
