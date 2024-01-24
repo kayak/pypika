@@ -1407,10 +1407,12 @@ class QueryBuilder(Selectable, Term):
             select=",".join(term.get_sql(with_alias=True, subquery=True, **kwargs) for term in self._selects),
         )
 
+    _ignore_syntax = "IGNORE "
+
     def _insert_sql(self, **kwargs: Any) -> str:
         return "INSERT {ignore}INTO {table}".format(
             table=self._insert_table.get_sql(**kwargs),
-            ignore="IGNORE " if self._ignore else "",
+            ignore=self._ignore_syntax if self._ignore else "",
         )
 
     def _replace_sql(self, **kwargs: Any) -> str:
