@@ -755,7 +755,7 @@ to Custom functions.
 Case Statements
 """""""""""""""
 
-Case statements allow fow a number of conditions to be checked sequentially and return a value for the first condition
+Case statements allow for a number of conditions to be checked sequentially and return a value for the first condition
 met or otherwise a default value.  The Case object can be used to chain conditions together along with their output
 using the ``when`` method and to set the default value using ``else_``.
 
