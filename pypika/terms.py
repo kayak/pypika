@@ -1312,7 +1312,7 @@ class Function(Criterion):
     def get_arg_sql(arg, **kwargs):
         return arg.get_sql(with_alias=False, **kwargs) if hasattr(arg, "get_sql") else str(arg)
 
-    def get_function_sql(self, **kwargs: Any) -> str:
+    def get_function_sql(self, subquery: Any = None, with_alias: Any = None, **kwargs: Any) -> str:
         special_params_sql = self.get_special_params_sql(**kwargs)
 
         return "{name}({args}{special})".format(
@@ -1333,7 +1333,9 @@ class Function(Criterion):
         dialect = kwargs.pop("dialect", None)
 
         # FIXME escape
-        function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char, dialect=dialect)
+        function_sql = self.get_function_sql(
+            with_namespace=with_namespace, quote_char=quote_char, dialect=dialect, **kwargs
+        )
 
         if self.schema is not None:
             function_sql = "{schema}.{function}".format(
