@@ -3,7 +3,7 @@ import re
 import uuid
 from datetime import date
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
 from pypika.utils import (
@@ -288,56 +288,115 @@ class Term(Node):
         raise NotImplementedError()
 
 
+def idx_placeholder_gen(idx: int) -> str:
+    return str(idx + 1)
+
+
+def named_placeholder_gen(idx: int) -> str:
+    return f'param{idx + 1}'
+
+
 class Parameter(Term):
     is_aggregate = None
 
-    def __init__(self, placeholder: Union[str, int]) -> None:
+    def __init__(self, placeholder: Union[str, int, Callable[[int], str]] = idx_placeholder_gen) -> None:
         super().__init__()
-        self.placeholder = placeholder
+        self._placeholder = placeholder
+
+    @property
+    def placeholder(self):
+        if callable(self._placeholder):
+            return self._placeholder(None)
+
+        return self._placeholder
 
     def get_sql(self, **kwargs: Any) -> str:
         return str(self.placeholder)
 
-
-class QmarkParameter(Parameter):
-    """Question mark style, e.g. ...WHERE name=?"""
-
-    def __init__(self) -> None:
+    def update_parameters(self, param_key: Any, param_value: Any, **kwargs):
         pass
 
-    def get_sql(self, **kwargs: Any) -> str:
-        return "?"
+    def get_param_key(self, placeholder: Any, **kwargs):
+        return placeholder
 
 
-class NumericParameter(Parameter):
+class ListParameter(Parameter):
+    def __init__(self, placeholder: Union[str, int, Callable[[int], str]] = idx_placeholder_gen) -> None:
+        super().__init__()
+        self._placeholder = placeholder
+        self._parameters = list()
+
+    @property
+    def placeholder(self):
+        if callable(self._placeholder):
+            return self._placeholder(len(self._parameters))
+
+        return self._placeholder
+
+    def get_parameters(self, **kwargs):
+        return self._parameters
+
+    def update_parameters(self, value: Any, **kwargs):
+        self._parameters.append(value)
+
+
+class DictParameter(Parameter):
+    def __init__(self, placeholder: Union[str, int, Callable[[int], str]] = named_placeholder_gen) -> None:
+        super().__init__()
+        self._placeholder = placeholder
+        self._parameters = dict()
+
+    @property
+    def placeholder(self):
+        if callable(self._placeholder):
+            return self._placeholder(len(self._parameters))
+
+        return self._placeholder
+
+    def get_parameters(self, **kwargs):
+        return self._parameters
+
+    def get_param_key(self, placeholder: Any, **kwargs):
+        return placeholder[1:]
+
+    def update_parameters(self, param_key: Any, value: Any, **kwargs):
+        self._parameters[param_key] = value
+
+
+class QmarkParameter(ListParameter):
+    def get_sql(self, **kwargs):
+        return '?'
+
+
+class NumericParameter(ListParameter):
     """Numeric, positional style, e.g. ...WHERE name=:1"""
 
     def get_sql(self, **kwargs: Any) -> str:
         return ":{placeholder}".format(placeholder=self.placeholder)
 
 
-class NamedParameter(Parameter):
+class FormatParameter(ListParameter):
+    """ANSI C printf format codes, e.g. ...WHERE name=%s"""
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return "%s"
+
+
+class NamedParameter(DictParameter):
     """Named style, e.g. ...WHERE name=:name"""
 
     def get_sql(self, **kwargs: Any) -> str:
         return ":{placeholder}".format(placeholder=self.placeholder)
 
 
-class FormatParameter(Parameter):
-    """ANSI C printf format codes, e.g. ...WHERE name=%s"""
-
-    def __init__(self) -> None:
-        pass
-
-    def get_sql(self, **kwargs: Any) -> str:
-        return "%s"
-
-
-class PyformatParameter(Parameter):
+class PyformatParameter(DictParameter):
     """Python extended format codes, e.g. ...WHERE name=%(name)s"""
 
     def get_sql(self, **kwargs: Any) -> str:
         return "%({placeholder})s".format(placeholder=self.placeholder)
+
+    def get_param_key(self, placeholder: Any, **kwargs):
+        return placeholder[2:-2]
 
 
 class Negative(Term):
@@ -385,9 +444,55 @@ class ValueWrapper(Term):
             return "null"
         return str(value)
 
-    def get_sql(self, quote_char: Optional[str] = None, secondary_quote_char: str = "'", **kwargs: Any) -> str:
-        sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
-        return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
+    def get_sql(
+        self,
+        quote_char: Optional[str] = None,
+        secondary_quote_char: str = "'",
+        parameter: Parameter = None,
+        **kwargs: Any,
+    ) -> str:
+        if parameter is None:
+            sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
+            return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
+        else:
+            # Don't stringify numbers when using a parameter
+            if isinstance(self.value, (int, float)):
+                value_sql = self.value
+            else:
+                value_sql = self.get_value_sql(quote_char=quote_char, **kwargs)
+            param_sql = parameter.get_sql(**kwargs)
+            param_key = parameter.get_param_key(placeholder=param_sql)
+            parameter.update_parameters(param_key=param_key, value=value_sql, **kwargs)
+
+            return format_alias_sql(param_sql, self.alias, quote_char=quote_char, **kwargs)
+
+
+class ParameterValueWrapper(ValueWrapper):
+    def __init__(self, parameter: Parameter, value: Any, alias: Optional[str] = None) -> None:
+        super().__init__(value, alias)
+        self._parameter = parameter
+
+    def get_sql(
+        self,
+        quote_char: Optional[str] = None,
+        secondary_quote_char: str = "'",
+        parameter: Parameter = None,
+        **kwargs: Any,
+    ) -> str:
+        if parameter is None:
+            sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
+            return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
+        else:
+            # Don't stringify numbers when using a parameter
+            if isinstance(self.value, (int, float)):
+                value_sql = self.value
+            else:
+                value_sql = self.get_value_sql(quote_char=quote_char, **kwargs)
+            param_sql = self._parameter.get_sql(**kwargs)
+            param_key = self._parameter.get_param_key(placeholder=param_sql)
+            parameter.update_parameters(param_key=param_key, value=value_sql, **kwargs)
+
+            return format_alias_sql(param_sql, self.alias, quote_char=quote_char, **kwargs)
 
 
 class JSON(Term):
