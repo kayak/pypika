@@ -299,15 +299,12 @@ def named_placeholder_gen(idx: int) -> str:
 class Parameter(Term):
     is_aggregate = None
 
-    def __init__(self, placeholder: Union[str, int, Callable[[int], str]] = idx_placeholder_gen) -> None:
+    def __init__(self, placeholder: Union[str, int]) -> None:
         super().__init__()
         self._placeholder = placeholder
 
     @property
     def placeholder(self):
-        if callable(self._placeholder):
-            return self._placeholder(None)
-
         return self._placeholder
 
     def get_sql(self, **kwargs: Any) -> str:
@@ -322,8 +319,7 @@ class Parameter(Term):
 
 class ListParameter(Parameter):
     def __init__(self, placeholder: Union[str, int, Callable[[int], str]] = idx_placeholder_gen) -> None:
-        super().__init__()
-        self._placeholder = placeholder
+        super().__init__(placeholder=placeholder)
         self._parameters = list()
 
     @property
@@ -342,8 +338,7 @@ class ListParameter(Parameter):
 
 class DictParameter(Parameter):
     def __init__(self, placeholder: Union[str, int, Callable[[int], str]] = named_placeholder_gen) -> None:
-        super().__init__()
-        self._placeholder = placeholder
+        super().__init__(placeholder=placeholder)
         self._parameters = dict()
 
     @property
