@@ -185,12 +185,12 @@ class InsertIntoWithDict(unittest.TestCase):
         q = q.insert(2, datetime(2023, 4, 19))
         self.assertEqual("INSERT INTO \"abc\" (\"num\",\"timestamp\") VALUES (1,'2023-04-18T00:00:00'),(2,'2023-04-19T00:00:00')", str(q))
 
-    def test_columns_is_not_allowed_with_insert_dict(self):
-        with self.assertRaises(QueryException):
-            Query.into(self.table_abc).columns("a", "b").insert_dict({"num": 1})
+    def test_columns_is_not_allowed_with_insert_dict_even_with_matching_columns(self):
+        with self.assertRaisesRegex(QueryException, "Cannot mix use of columns.*and insert_dict"):
+            Query.into(self.table_abc).columns("num", "key").insert_dict({"num": 1, "key": "foo"})
 
-        with self.assertRaises(QueryException):
-            Query.into(self.table_abc).insert_dict({"num": 1}).columns("a", "b")
+        with self.assertRaisesRegex(QueryException, "Cannot mix use of columns.*and insert_dict"):
+            Query.into(self.table_abc).insert_dict({"num": 1, "key": "foo"}).columns("num", "key")
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     table_abc = Table("abc")

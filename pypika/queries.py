@@ -907,10 +907,10 @@ class QueryBuilder(Selectable, Term):
         self._replace = False
 
     def insert_dict(self, data: Dict[str, Any]) -> "QueryBuilder":
-        cols = data.keys()
-        if self._columns and self._columns != cols:
-            raise QueryException("Current columns differs from columns in keys")
+        if self._columns:
+            raise QueryException("Cannot mix use of columns() and insert_dict()")
 
+        cols = data.keys()
         builder = self.columns(*cols).insert(*data.values())
         builder._using_insert_dict = True
         return builder
