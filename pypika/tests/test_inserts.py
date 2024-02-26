@@ -17,6 +17,7 @@ from pypika.functions import (
 )
 from pypika.terms import Values
 from pypika.utils import QueryException
+from datetime import datetime
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -168,6 +169,28 @@ class InsertIntoTests(unittest.TestCase):
             'WITH sub_qs AS (SELECT "id" FROM "abc") INSERT INTO "abc" SELECT "sub_qs"."id" FROM sub_qs', str(q)
         )
 
+class InsertIntoWithDict(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_inserting_simple_dictionary(self):
+        q = Query().into(self.table_abc).insert_dict({"c1": "value", "c2": 1})
+        self.assertEqual("INSERT INTO \"abc\" (\"c1\",\"c2\") VALUES ('value',1)", str(q))
+
+    def test_inserting_dictionary_goes_through_value_quoting_logic(self):
+        q = Query().into(self.table_abc).insert_dict({"num": 1, "timestamp": datetime(2023, 4, 18)})
+        self.assertEqual("INSERT INTO \"abc\" (\"num\",\"timestamp\") VALUES (1,'2023-04-18T00:00:00')", str(q))
+
+    def test_inserting_dictionary_produces_builder(self):
+        q = Query().into(self.table_abc).insert_dict({"num": 1, "timestamp": datetime(2023, 4, 18)})
+        q = q.insert(2, datetime(2023, 4, 19))
+        self.assertEqual("INSERT INTO \"abc\" (\"num\",\"timestamp\") VALUES (1,'2023-04-18T00:00:00'),(2,'2023-04-19T00:00:00')", str(q))
+
+    def test_columns_is_not_allowed_with_insert_dict(self):
+        with self.assertRaises(QueryException):
+            Query().into(self.table_abc).columns("a", "b").insert_dict({"num": 1})
+
+        with self.assertRaises(QueryException):
+            Query().into(self.table_abc).insert_dict({"num": 1}).columns("a", "b")
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     table_abc = Table("abc")
