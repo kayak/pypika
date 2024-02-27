@@ -476,7 +476,7 @@ class LiteralValue(Term):
 
 class NullValue(LiteralValue):
     def __init__(self, alias: Optional[str] = None) -> None:
-        super().__init__("NULL", alias)
+        super().__init__("null", alias)
 
 
 class SystemTimeValue(LiteralValue):
