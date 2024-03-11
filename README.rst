@@ -1420,6 +1420,20 @@ This produces:
     WHERE "date">NOW()-7 
     GROUP BY "col1","col2"
 
+Inserting dictionaries
+""""""""""""""""
+
+There's a simple convenience function to insert dicts with ``pypika.Query.into("mytable").insert_dict()``.
+
+.. code-block:: python
+    Query.into(Table("foo")).insert_dict({"value": 42, "created_at": datetime(2024, 3, 15)})
+
+This produces:
+
+.. code-block:: sql
+    INSERT INTO "foo" ("value", "created_at")
+        VALUES (42, '2024-03-15T00:00:00')
+
 .. _tutorial_end:
 
 .. _contributing_start: 
