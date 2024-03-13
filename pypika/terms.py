@@ -3,7 +3,21 @@ import re
 import uuid
 from datetime import date
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
 from pypika.utils import (
@@ -323,11 +337,11 @@ class ListParameter(Parameter):
         self._parameters = list()
 
     @property
-    def placeholder(self):
+    def placeholder(self) -> str:
         if callable(self._placeholder):
             return self._placeholder(len(self._parameters))
 
-        return self._placeholder
+        return str(self._placeholder)
 
     def get_parameters(self, **kwargs):
         return self._parameters
@@ -342,11 +356,11 @@ class DictParameter(Parameter):
         self._parameters = dict()
 
     @property
-    def placeholder(self):
+    def placeholder(self) -> str:
         if callable(self._placeholder):
             return self._placeholder(len(self._parameters))
 
-        return self._placeholder
+        return str(self._placeholder)
 
     def get_parameters(self, **kwargs):
         return self._parameters
@@ -439,6 +453,12 @@ class ValueWrapper(Term):
             return "null"
         return str(value)
 
+    def _get_param_data(self, parameter: Parameter, **kwargs) -> Tuple[str, str]:
+        param_sql = parameter.get_sql(**kwargs)
+        param_key = parameter.get_param_key(placeholder=param_sql)
+
+        return param_sql, param_key
+
     def get_sql(
         self,
         quote_char: Optional[str] = None,
@@ -449,17 +469,16 @@ class ValueWrapper(Term):
         if parameter is None:
             sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
             return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
-        else:
-            # Don't stringify numbers when using a parameter
-            if isinstance(self.value, (int, float)):
-                value_sql = self.value
-            else:
-                value_sql = self.get_value_sql(quote_char=quote_char, **kwargs)
-            param_sql = parameter.get_sql(**kwargs)
-            param_key = parameter.get_param_key(placeholder=param_sql)
-            parameter.update_parameters(param_key=param_key, value=value_sql, **kwargs)
 
-            return format_alias_sql(param_sql, self.alias, quote_char=quote_char, **kwargs)
+        # Don't stringify numbers when using a parameter
+        if isinstance(self.value, (int, float)):
+            value_sql = self.value
+        else:
+            value_sql = self.get_value_sql(quote_char=quote_char, **kwargs)
+        param_sql, param_key = self._get_param_data(parameter, **kwargs)
+        parameter.update_parameters(param_key=param_key, value=value_sql, **kwargs)
+
+        return format_alias_sql(param_sql, self.alias, quote_char=quote_char, **kwargs)
 
 
 class ParameterValueWrapper(ValueWrapper):
@@ -467,27 +486,11 @@ class ParameterValueWrapper(ValueWrapper):
         super().__init__(value, alias)
         self._parameter = parameter
 
-    def get_sql(
-        self,
-        quote_char: Optional[str] = None,
-        secondary_quote_char: str = "'",
-        parameter: Parameter = None,
-        **kwargs: Any,
-    ) -> str:
-        if parameter is None:
-            sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
-            return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
-        else:
-            # Don't stringify numbers when using a parameter
-            if isinstance(self.value, (int, float)):
-                value_sql = self.value
-            else:
-                value_sql = self.get_value_sql(quote_char=quote_char, **kwargs)
-            param_sql = self._parameter.get_sql(**kwargs)
-            param_key = self._parameter.get_param_key(placeholder=param_sql)
-            parameter.update_parameters(param_key=param_key, value=value_sql, **kwargs)
+    def _get_param_data(self, parameter: Parameter, **kwargs) -> Tuple[str, str]:
+        param_sql = self._parameter.get_sql(**kwargs)
+        param_key = self._parameter.get_param_key(placeholder=param_sql)
 
-            return format_alias_sql(param_sql, self.alias, quote_char=quote_char, **kwargs)
+        return param_sql, param_key
 
 
 class JSON(Term):
