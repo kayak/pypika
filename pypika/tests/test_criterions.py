@@ -618,6 +618,13 @@ class LikeTests(unittest.TestCase):
         self.assertEqual("\"foo\" GLOB 'a_b*'", str(c1))
         self.assertEqual('"like"."foo" GLOB \'a_b*\'', str(c2))
 
+    def test_not_glob_single_chars_and_various_chars(self):
+        c1 = Field("foo").not_glob("a_b*")
+        c2 = Field("foo", table=self.t).not_glob("a_b*")
+
+        self.assertEqual("\"foo\" NOT GLOB 'a_b*'", str(c1))
+        self.assertEqual('"like"."foo" NOT GLOB \'a_b*\'', str(c2))
+
 
 class ExistsCriterionTests(unittest.TestCase):
     t2 = Table("abc", alias="t2")
