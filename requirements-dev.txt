@@ -2,6 +2,8 @@
 Sphinx==1.6.5
 sphinx-rtd-theme==0.2.4
 bumpversion==0.5.3
+jinja2==3.0.3
+numpydoc==1.1.0
 
 # Testing
 parameterized==0.7.0

@@ -1,6 +1,31 @@
 """
 PyPika is divided into a couple of modules, primarily the ``queries`` and ``terms`` modules.
 
+pypika.analytics
+----------------
+
+Wrappers for SQL analytic functions
+
+pypika.dialects
+---------------
+
+This contains all of the dialect specific implementations of the ``Query`` class.
+
+pypika.enums
+------------
+
+Enumerated values are kept in this package which are used as options for Queries and Terms.
+
+pypika.functions
+----------------
+
+Wrappers for common SQL functions are stored in this package.
+
+pypika.pseudocolumns
+--------------------
+
+Wrappers for common SQL pseudocolumns are stored in this package.
+
 pypika.queries
 --------------
 
@@ -13,23 +38,12 @@ pypika.terms
 
 This module contains the classes which represent individual parts of queries that extend the ``Term`` base class.
 
-pypika.functions
-----------------
-
-Wrappers for common SQL functions are stored in this package.
-
-pypika.enums
-------------
-
-Enumerated values are kept in this package which are used as options for Queries and Terms.
-
-
 pypika.utils
 ------------
 
 This contains all of the utility classes such as exceptions and decorators.
-
 """
+
 # noinspection PyUnresolvedReferences
 from pypika.dialects import (
     ClickHouseQuery,
