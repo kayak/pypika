@@ -548,6 +548,10 @@ class Field(Criterion, JSON):
     ) -> None:
         super().__init__(alias=alias)
         self.name = name
+        if isinstance(table, str):
+            # avoid circular import at load time
+            from pypika.queries import Table
+            table = Table(table)
         self.table = table
 
     def nodes_(self) -> Iterator[NodeT]:
