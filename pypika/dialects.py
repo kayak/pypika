@@ -88,7 +88,7 @@ class MySQLQueryBuilder(QueryBuilder):
     QUERY_CLS = MySQLQuery
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(dialect=Dialects.MYSQL, wrap_set_operation_queries=False, **kwargs)
+        super().__init__(dialect=Dialects.MYSQL, **kwargs)
         self._duplicate_updates = []
         self._ignore_duplicates = False
         self._modifiers = []
