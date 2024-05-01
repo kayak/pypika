@@ -48,6 +48,7 @@ setup(
       packages=["pypika", "pypika.clickhouse"],
 
       # Include additional files into the package
+      package_data={"pypika": ["py.typed"]},
       include_package_data=True,
 
       install_requires=[],
