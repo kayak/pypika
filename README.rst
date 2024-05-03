@@ -510,7 +510,7 @@ Example of a correlated subquery in the `SELECT`
 Unions
 """"""
 
-Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonymous with "UNION`` so |Brand| does not
+Both ``UNION`` and ``UNION ALL`` are supported. ``UNION DISTINCT`` is synonymous with ``UNION`` so |Brand| does not
 provide a separate function for it.  Unions require that queries have the same number of ``SELECT`` clauses so
 trying to cast a unioned query to string will throw a ``SetOperationException`` if the column sizes are mismatched.
 
