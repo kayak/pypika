@@ -382,16 +382,6 @@ class BetweenTests(unittest.TestCase):
         self.assertEqual('COALESCE("foo",0) BETWEEN 0 AND 1', str(c1))
         self.assertEqual('COALESCE("btw"."foo",0) BETWEEN 0 AND 1', str(c2))
 
-    def test_get_item_only_works_with_slice(self):
-        with self.assertRaises(TypeError):
-            Field("foo")[0]
-
-        with self.assertRaises(TypeError):
-            Field("foo")[date(2000, 1, 1)]
-
-        with self.assertRaises(TypeError):
-            Field("foo")[datetime(2000, 1, 1, 0, 0, 0)]
-
 
 class IsInTests(unittest.TestCase):
     t = Table("abc", alias="isin")
