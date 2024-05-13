@@ -353,6 +353,17 @@ class Negative(Term):
         return "-{term}".format(term=self.term.get_sql(**kwargs))
 
 
+def escaped_param_str(value: str, quote_char: str) -> str:
+    # Did not find how to do that simply with pypika :(
+    return (
+        value.replace("\\", r"\\")
+        .replace(quote_char, quote_char * 2)
+        .replace("\r", r"\r")
+        .replace("\n", r"\n")
+        .replace("\t", r"\t")
+    )
+
+
 class ValueWrapper(Term):
     is_aggregate = None
 
@@ -367,23 +378,21 @@ class ValueWrapper(Term):
     def get_formatted_value(cls, value: Any, **kwargs):
         quote_char = kwargs.get("secondary_quote_char") or ""
 
-        # FIXME escape values
         if isinstance(value, Term):
             return value.get_sql(**kwargs)
         if isinstance(value, Enum):
             return cls.get_formatted_value(value.value, **kwargs)
         if isinstance(value, date):
             return cls.get_formatted_value(value.isoformat(), **kwargs)
-        if isinstance(value, str):
-            value = value.replace(quote_char, quote_char * 2)
-            return format_quotes(value, quote_char)
+        if isinstance(value, float):
+            return str(value)
         if isinstance(value, bool):
             return str.lower(str(value))
         if isinstance(value, uuid.UUID):
             return cls.get_formatted_value(str(value), **kwargs)
         if value is None:
             return "null"
-        return str(value)
+        return format_quotes(escaped_param_str(str(value)))
 
     def get_sql(self, quote_char: Optional[str] = None, secondary_quote_char: str = "'", **kwargs: Any) -> str:
         sql = self.get_value_sql(quote_char=quote_char, secondary_quote_char=secondary_quote_char, **kwargs)
