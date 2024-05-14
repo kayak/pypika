@@ -23,6 +23,14 @@ class ClickHouseQueryTests(TestCase):
         query = ClickHouseQuery.from_(t).select(t.foo).sample(10, 5)
         self.assertEqual(str(query), 'SELECT "foo" FROM "abc" SAMPLE 10 OFFSET 5')
 
+    def test_settings(self) -> None:
+        t = Table('abc')
+        query1 = ClickHouseQuery.from_(t).select(t.foo).settings(foo="bar")
+        query2 = query1.settings(baz="qux")
+        # Settings get deep-copied:
+        self.assertEqual(str(query1), 'SELECT "foo" FROM "abc" SETTINGS foo=bar')
+        # Settings are ordered alphabetically in the query string:
+        self.assertEqual(str(query2), 'SELECT "foo" FROM "abc" SETTINGS baz=qux, foo=bar')
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")
