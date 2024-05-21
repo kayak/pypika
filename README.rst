@@ -3,7 +3,14 @@ PyPika - Python Query Builder
 
 .. _intro_start:
 
-|BuildStatus|  |CoverageStatus|  |Codacy|  |Docs|  |PyPi|  |License|
+|License|
+
+
+Fork
+----
+
+This fork is not supported by Memfault at this time
+
 
 Abstract
 --------
