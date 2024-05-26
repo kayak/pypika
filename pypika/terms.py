@@ -75,10 +75,10 @@ class Term(Node):
 
         """
 
-        if isinstance(val, Node):
-            return val
         if val is None:
             return NullValue()
+        if isinstance(val, Node):
+            return val
         if isinstance(val, list):
             return Array(*val)
         if isinstance(val, tuple):
@@ -94,10 +94,10 @@ class Term(Node):
     ) -> Union["Term", "QueryBuilder", "Interval", "NullValue", "ValueWrapper", "JSON"]:
         from .queries import QueryBuilder
 
-        if isinstance(val, (Term, QueryBuilder, Interval)):
-            return val
         if val is None:
             return NullValue()
+        if isinstance(val, (Term, QueryBuilder, Interval)):
+            return val
         if isinstance(val, (str, int, bool)):
             wrapper_cls = wrapper_cls or ValueWrapper
             return wrapper_cls(val)
@@ -316,11 +316,8 @@ class NumericParameter(Parameter):
         return ":{placeholder}".format(placeholder=self.placeholder)
 
 
-class NamedParameter(Parameter):
+class NamedParameter(NumericParameter):
     """Named style, e.g. ...WHERE name=:name"""
-
-    def get_sql(self, **kwargs: Any) -> str:
-        return ":{placeholder}".format(placeholder=self.placeholder)
 
 
 class FormatParameter(Parameter):
@@ -365,6 +362,8 @@ class ValueWrapper(Term):
 
     @classmethod
     def get_formatted_value(cls, value: Any, **kwargs):
+        if value is None:
+            return "null"
         quote_char = kwargs.get("secondary_quote_char") or ""
 
         # FIXME escape values
@@ -381,8 +380,6 @@ class ValueWrapper(Term):
             return str.lower(str(value))
         if isinstance(value, uuid.UUID):
             return cls.get_formatted_value(str(value), **kwargs)
-        if value is None:
-            return "null"
         return str(value)
 
     def get_sql(self, quote_char: Optional[str] = None, secondary_quote_char: str = "'", **kwargs: Any) -> str:
@@ -485,20 +482,19 @@ class SystemTimeValue(LiteralValue):
 
 
 class Criterion(Term):
-    def __and__(self, other: Any) -> "ComplexCriterion":
+    def _compare(self, comparator: Comparator, other: Any) -> "ComplexCriterion":
         if isinstance(other, EmptyCriterion):
             return self
-        return ComplexCriterion(Boolean.and_, self, other)
+        return ComplexCriterion(comparator, self, other)
+
+    def __and__(self, other: Any) -> "ComplexCriterion":
+        return self._compare(Boolean.and_, other)
 
     def __or__(self, other: Any) -> "ComplexCriterion":
-        if isinstance(other, EmptyCriterion):
-            return self
-        return ComplexCriterion(Boolean.or_, self, other)
+        return self._compare(Boolean.or_, other)
 
     def __xor__(self, other: Any) -> "ComplexCriterion":
-        if isinstance(other, EmptyCriterion):
-            return self
-        return ComplexCriterion(Boolean.xor_, self, other)
+        return self._compare(Boolean.xor_, other)
 
     @staticmethod
     def any(terms: Iterable[Term] = ()) -> "EmptyCriterion":
@@ -551,6 +547,7 @@ class Field(Criterion, JSON):
         if isinstance(table, str):
             # avoid circular import at load time
             from pypika.queries import Table
+
             table = Table(table)
         self.table = table
 

@@ -3,7 +3,7 @@ default_stages: [commit]
 fail_fast: false
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: git@github.com:pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
       - id: trailing-whitespace
@@ -19,7 +19,7 @@ repos:
       - id: check-yaml
       - id: debug-statements
 
-  - repo: https://github.com/psf/black
+  - repo: git@github.com:psf/black
     rev: 23.9.1
     hooks:
       - id: black
