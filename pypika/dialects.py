@@ -13,7 +13,8 @@ from pypika.queries import (
     Query,
     QueryBuilder,
 )
-from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
+from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper, \
+    Values
 from pypika.utils import QueryException, builder, format_quotes
 
 
@@ -121,6 +122,14 @@ class MySQLQueryBuilder(QueryBuilder):
         self._duplicate_updates.append((field, ValueWrapper(value)))
 
     @builder
+    def on_duplicate_key_update_all(self) -> "MySQLQueryBuilder":
+        if self._ignore_duplicates:
+            raise QueryException("Can not have two conflict handlers")
+
+        for field in self._columns:
+            self._duplicate_updates.append((field, ValueWrapper(Values(field))))
+
+    @builder
     def on_duplicate_key_ignore(self) -> "MySQLQueryBuilder":
         if self._duplicate_updates:
             raise QueryException("Can not have two conflict handlers")
@@ -134,7 +143,7 @@ class MySQLQueryBuilder(QueryBuilder):
             if self._duplicate_updates:
                 querystring += self._on_duplicate_key_update_sql(**kwargs)
             elif self._ignore_duplicates:
-                querystring += self._on_duplicate_key_ignore_sql()
+                querystring += self._on_duplicate_key_ignore_sql(**kwargs)
         return querystring
 
     def _for_update_sql(self, **kwargs) -> str:
@@ -159,8 +168,10 @@ class MySQLQueryBuilder(QueryBuilder):
             )
         )
 
-    def _on_duplicate_key_ignore_sql(self) -> str:
-        return " ON DUPLICATE KEY IGNORE"
+    def _on_duplicate_key_ignore_sql(self, **kwargs: Any) -> str:
+        # This feature isn't available in MySQL. This is a workaround where a field is set to itself on a duplicate key.
+        field_sql = self._columns[0].get_sql(**kwargs)
+        return f" ON DUPLICATE KEY UPDATE {field_sql}={field_sql}"
 
     @builder
     def modifier(self, value: str) -> "MySQLQueryBuilder":
