@@ -90,6 +90,21 @@ class Sqrt(Function):
         super(Sqrt, self).__init__("SQRT", term, alias=alias)
 
 
+class Log(Function):
+    DEFAULT_BASE = 10
+
+    def __init__(self, term, base, alias=None):
+        if base != self.DEFAULT_BASE:
+            super(Log, self).__init__("LOG", base, term, alias=alias)
+        else:
+            super(Log, self).__init__("LOG", term, alias=alias)
+
+
+class Log10(Log):
+    def __init__(self, *args, **kwargs):
+        super(Log10, self).__init__(base=10, *args, **kwargs)
+
+
 class Floor(Function):
     def __init__(self, term, alias=None):
         super(Floor, self).__init__("FLOOR", term, alias=alias)
