@@ -177,6 +177,32 @@ class TimestampAdd(Function):
         super(TimestampAdd, self).__init__("TIMESTAMPADD", LiteralValue(date_part), interval, term, alias=alias)
 
 
+class Month(Function):
+    """Usage:
+        from pypika import Dialects, Field, Query, Table
+
+        customer = Table("customer")
+        _birth_date = Month(customer.birth_date)
+        # where month in birth_date equals 10, October
+        where_clause = _birth_date.eq(10)
+    """
+    def __init__(self, term, alias=None):
+        super(Month, self).__init__("MONTH", term, alias=alias)
+
+
+class DayOfMonth(Function):
+    """Usage:
+        from pypika import Dialects, Field, Query, Table
+
+        customer = Table("customer")
+        _birth_date = DayOfMonth(customer.birth_date)
+        # where date in _birth_month equals 25
+        where_clause = _birth_date.eq(25)
+    """
+    def __init__(self, term, alias=None):
+        super(DayOfMonth, self).__init__("DAYOFMONTH", term, alias=alias)
+
+
 # String Functions
 class Ascii(Function):
     def __init__(self, term, alias=None):
