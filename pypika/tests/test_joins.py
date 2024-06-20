@@ -93,6 +93,23 @@ class SelectQueryJoinTests(unittest.TestCase):
             query = Query.from_(self.table0).hash_join(self.table1).on(self.table0.foo == self.table1.bar).select("*")
             self.assertEqual(expected, str(query))
 
+    def test_asof_join(self):
+        expected = 'SELECT * FROM "abc" ASOF JOIN "efg" ON "abc"."foo"="efg"."bar"'
+
+        with self.subTest("join with enum"):
+            query = (
+                Query.from_(self.table0)
+                .join(self.table1, how=JoinType.asof)
+                .on(self.table0.foo == self.table1.bar)
+                .select("*")
+            )
+
+            self.assertEqual(expected, str(query))
+
+        with self.subTest("join function"):
+            query = Query.from_(self.table0).asof_join(self.table1).on(self.table0.foo == self.table1.bar).select("*")
+            self.assertEqual(expected, str(query))
+
     def test_outer_join(self):
         expected = 'SELECT * FROM "abc" FULL OUTER JOIN "efg" ON "abc"."foo"="efg"."bar"'
 
