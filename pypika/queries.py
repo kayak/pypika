@@ -1618,7 +1618,7 @@ class Joiner:
         self.how = how
         self.type_label = type_label
 
-    def on(self, criterion: Optional[Criterion], collate: Optional[str] = None) -> QueryBuilder:
+    def on(self, criterion: Optional[Union[Criterion, bool]], collate: Optional[str] = None) -> QueryBuilder:
         if criterion is None:
             raise JoinException(
                 "Parameter 'criterion' is required for a "
