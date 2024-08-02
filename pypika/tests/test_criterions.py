@@ -639,6 +639,16 @@ class ExistsCriterionTests(unittest.TestCase):
             'SELECT "t1"."field1" FROM "def" "t1" WHERE NOT EXISTS (SELECT "t2"."field2" FROM "abc" "t2")', str(q1)
         )
 
+    def test_exists_with_double_quotes(self):
+        t3 = Table('abc"', alias='t3"')
+        q3 = QueryBuilder().from_(t3).select(t3.field2)
+        t1 = Table("def", alias="t1")
+        q1 = QueryBuilder().from_(t1).where(ExistsCriterion(q3)).select(t1.field1)
+
+        self.assertEqual(
+            'SELECT "t1"."field1" FROM "def" "t1" WHERE EXISTS (SELECT "t3"""."field2" FROM "abc""" "t3""")', str(q1)
+        )
+
 
 class ComplexCriterionTests(unittest.TestCase):
     table_abc, table_efg = Table("abc", alias="cx0"), Table("efg", alias="cx1")
@@ -705,6 +715,11 @@ class ComplexCriterionTests(unittest.TestCase):
 
         self.assertEqual('"foo" BETWEEN 0 AND 1 AND "bool_field"', str(c1 & c2))
         self.assertEqual('"bool_field" AND "foo" BETWEEN 0 AND 1', str(c2 & c1))
+
+    def test__between_with_quotes(self):
+        c = Field('foo"\'').between("a'", "c'")
+
+        self.assertEqual('"foo""\'" BETWEEN \'a\'\'\' AND \'c\'\'\'', str(c))
 
 
 class FieldsAsCriterionTests(unittest.TestCase):

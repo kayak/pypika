@@ -367,7 +367,6 @@ class ValueWrapper(Term):
     def get_formatted_value(cls, value: Any, **kwargs):
         quote_char = kwargs.get("secondary_quote_char") or ""
 
-        # FIXME escape values
         if isinstance(value, Term):
             return value.get_sql(**kwargs)
         if isinstance(value, Enum):
@@ -840,7 +839,6 @@ class ExistsCriterion(Criterion):
         self._is_negated = False
 
     def get_sql(self, **kwargs):
-        # FIXME escape
         return "{not_}EXISTS {container}".format(
             container=self.container.get_sql(**kwargs), not_='NOT ' if self._is_negated else ''
         )
@@ -884,7 +882,6 @@ class BetweenCriterion(RangeCriterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
-        # FIXME escape
         sql = "{term} BETWEEN {start} AND {end}".format(
             term=self.term.get_sql(**kwargs),
             start=self.start.get_sql(**kwargs),
