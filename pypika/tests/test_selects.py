@@ -49,6 +49,11 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT 1 "test"', str(q))
 
+    def test_select_literal_with_alias_with_quotes(self):
+        q = Query.select(ValueWrapper("contains'\"quotes", "contains'\"quotes"))
+
+        self.assertEqual('SELECT \'contains\'\'"quotes\' "contains\'""quotes"', str(q))
+
     def test_select_no_from_with_field_raises_exception(self):
         with self.assertRaises(QueryException):
             Query.select("asdf")
@@ -72,6 +77,11 @@ class SelectTests(unittest.TestCase):
         q = Query.from_(Table("abc", ["schema1", "schema2"])).select("*")
 
         self.assertEqual('SELECT * FROM "schema1"."schema2"."abc"', str(q))
+
+    def test_select__table_schema_escape_double_quote(self):
+        q = Query.from_(Table("abc", 'schema_with_double_quote"')).select("*")
+
+        self.assertEqual('SELECT * FROM "schema_with_double_quote"""."abc"', str(q))
 
     def test_select__star__replacement(self):
         q = Query.from_("abc").select("foo").select("*")

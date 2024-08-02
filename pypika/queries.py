@@ -94,7 +94,6 @@ class Schema:
         return Table(item, schema=self)
 
     def get_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
-        # FIXME escape
         schema_sql = format_quotes(self._name, quote_char)
 
         if self._parent is not None:
@@ -146,7 +145,6 @@ class Table(Selectable):
 
     def get_sql(self, **kwargs: Any) -> str:
         quote_char = kwargs.get("quote_char")
-        # FIXME escape
         table_sql = format_quotes(self._table_name, quote_char)
 
         if self._schema is not None:
