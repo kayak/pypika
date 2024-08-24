@@ -1,9 +1,11 @@
 """
 Package for SQL functions wrappers
 """
+from __future__ import annotations
 
 from typing import Optional
 
+from pypika import Field
 from pypika.enums import SqlTypes
 from pypika.terms import (
     AggregateFunction,
@@ -12,6 +14,7 @@ from pypika.terms import (
     Star,
 )
 from pypika.utils import builder
+
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -37,64 +40,64 @@ class DistinctOptionFunction(AggregateFunction):
 
 
 class Count(DistinctOptionFunction):
-    def __init__(self, param: str, alias: Optional[str] = None):
+    def __init__(self, param: str | Field, alias: Optional[str] = None) -> None:
         is_star = isinstance(param, str) and "*" == param
         super(Count, self).__init__("COUNT", Star() if is_star else param, alias=alias)
 
 
 # Arithmetic Functions
 class Sum(DistinctOptionFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Sum, self).__init__("SUM", term, alias=alias)
 
 
 class Avg(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Avg, self).__init__("AVG", term, alias=alias)
 
 
 class Min(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Min, self).__init__("MIN", term, alias=alias)
 
 
 class Max(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Max, self).__init__("MAX", term, alias=alias)
 
 
 class Std(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Std, self).__init__("STD", term, alias=alias)
 
 
 class StdDev(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(StdDev, self).__init__("STDDEV", term, alias=alias)
 
 
 class Abs(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Abs, self).__init__("ABS", term, alias=alias)
 
 
 class First(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(First, self).__init__("FIRST", term, alias=alias)
 
 
 class Last(AggregateFunction):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Last, self).__init__("LAST", term, alias=alias)
 
 
 class Sqrt(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Sqrt, self).__init__("SQRT", term, alias=alias)
 
 
 class Floor(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Floor, self).__init__("FLOOR", term, alias=alias)
 
 
@@ -134,17 +137,17 @@ class ToChar(Function):
 
 
 class Signed(Cast):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Signed, self).__init__(term, SqlTypes.SIGNED, alias=alias)
 
 
 class Unsigned(Cast):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Unsigned, self).__init__(term, SqlTypes.UNSIGNED, alias=alias)
 
 
 class Date(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Date, self).__init__("DATE", term, alias=alias)
 
 
@@ -170,7 +173,7 @@ class ToDate(Function):
 
 
 class Timestamp(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Timestamp, self).__init__("TIMESTAMP", term, alias=alias)
 
 
@@ -182,7 +185,7 @@ class TimestampAdd(Function):
 
 # String Functions
 class Ascii(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Ascii, self).__init__("ASCII", term, alias=alias)
 
 
@@ -192,7 +195,7 @@ class NullIf(Function):
 
 
 class Bin(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Bin, self).__init__("BIN", term, alias=alias)
 
 
@@ -208,17 +211,17 @@ class Insert(Function):
 
 
 class Length(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Length, self).__init__("LENGTH", term, alias=alias)
 
 
 class Upper(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Upper, self).__init__("UPPER", term, alias=alias)
 
 
 class Lower(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Lower, self).__init__("LOWER", term, alias=alias)
 
 
@@ -228,12 +231,12 @@ class Substring(Function):
 
 
 class Reverse(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Reverse, self).__init__("REVERSE", term, alias=alias)
 
 
 class Trim(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(Trim, self).__init__("TRIM", term, alias=alias)
 
 
@@ -300,7 +303,7 @@ class Extract(Function):
 
 # Null Functions
 class IsNull(Function):
-    def __init__(self, term: str, alias: Optional[str] = None):
+    def __init__(self, term: str | Field, alias: Optional[str] = None):
         super(IsNull, self).__init__("ISNULL", term, alias=alias)
 
 
