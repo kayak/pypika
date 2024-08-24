@@ -551,7 +551,6 @@ class Field(Criterion, JSON):
         if isinstance(table, str):
             # avoid circular import at load time
             from pypika.queries import Table
-
             table = Table(table)
         self.table = table
 
@@ -1323,11 +1322,9 @@ class Function(Criterion):
         return "{name}({args}{special})".format(
             name=self.name,
             args=",".join(
-                (
-                    p.get_sql(with_alias=False, subquery=True, **kwargs)
-                    if hasattr(p, "get_sql")
-                    else self.get_arg_sql(p, **kwargs)
-                )
+                p.get_sql(with_alias=False, subquery=True, **kwargs)
+                if hasattr(p, "get_sql")
+                else self.get_arg_sql(p, **kwargs)
                 for p in self.args
             ),
             special=(" " + special_params_sql) if special_params_sql else "",
