@@ -551,6 +551,7 @@ class Field(Criterion, JSON):
         if isinstance(table, str):
             # avoid circular import at load time
             from pypika.queries import Table
+
             table = Table(table)
         self.table = table
 
