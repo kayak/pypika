@@ -1,7 +1,7 @@
 import itertools
 import warnings
 from copy import copy
-from typing import Any, Optional, Union, Tuple as TypedTuple
+from typing import Any, Optional, Union, Tuple as TypedTuple, List
 
 from pypika.enums import Dialects
 from pypika.queries import (
@@ -384,7 +384,7 @@ class OracleQueryBuilder(FetchNextAndOffsetRowsQueryBuilder):
         kwargs['groupby_alias'] = False
         return super().get_sql(*args, **kwargs)
 
-    def _apply_pagination(self, querystring: str) -> str:
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
         # Note: Overridden as Oracle specifies offset before the fetch next limit
         if self._offset:
             querystring += self._offset_sql()
@@ -719,7 +719,7 @@ class MSSQLQueryBuilder(FetchNextAndOffsetRowsQueryBuilder):
         self._top_percent: bool = percent
         self._top_with_ties: bool = with_ties
 
-    def _apply_pagination(self, querystring: str) -> str:
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
         # Note: Overridden as MSSQL specifies offset before the fetch next limit
         if self._limit is not None or self._offset:
             # Offset has to be present if fetch next is specified in a MSSQL query
@@ -794,10 +794,20 @@ class ClickHouseQuery(Query):
 class ClickHouseQueryBuilder(QueryBuilder):
     QUERY_CLS = ClickHouseQuery
 
+    _distinct_on: List[Term]
+    _limit_by: Optional[TypedTuple[int, int, List[Term]]]
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._sample = None
         self._sample_offset = None
+        self._distinct_on = []
+        self._limit_by = None
+
+    def __copy__(self) -> "ClickHouseQueryBuilder":
+        newone = super().__copy__()
+        newone._limit_by = copy(self._limit_by)
+        return newone
 
     @builder
     def sample(self, sample: int, offset: Optional[int] = None) -> "ClickHouseQueryBuilder":
@@ -831,6 +841,55 @@ class ClickHouseQueryBuilder(QueryBuilder):
                 for field, value in self._updates
             )
         )
+
+    @builder
+    def distinct_on(self, *fields: Union[str, Term]) -> "ClickHouseQueryBuilder":
+        for field in fields:
+            if isinstance(field, str):
+                self._distinct_on.append(Field(field))
+            elif isinstance(field, Term):
+                self._distinct_on.append(field)
+
+    def _distinct_sql(self, **kwargs: Any) -> str:
+        if self._distinct_on:
+            return "DISTINCT ON({distinct_on}) ".format(
+                distinct_on=",".join(term.get_sql(with_alias=True, **kwargs) for term in self._distinct_on)
+            )
+        return super()._distinct_sql(**kwargs)
+
+    @builder
+    def limit_by(self, n, *by: Union[str, Term]) -> "ClickHouseQueryBuilder":
+        self._limit_by = (n, 0, [Field(field) if isinstance(field, str) else field for field in by])
+
+    @builder
+    def limit_offset_by(self, n, offset, *by: Union[str, Term]) -> "ClickHouseQueryBuilder":
+        self._limit_by = (n, offset, [Field(field) if isinstance(field, str) else field for field in by])
+
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
+        # LIMIT BY isn't really a pagination per se but since we need
+        # to add this to the query right before an actual LIMIT clause
+        # this is good enough.
+        if self._limit_by:
+            querystring += self._limit_by_sql(**kwargs)
+        return super()._apply_pagination(querystring, **kwargs)
+
+    def _limit_by_sql(self, **kwargs: Any) -> str:
+        (n, offset, by) = self._limit_by
+        by = ",".join(term.get_sql(with_alias=True, **kwargs) for term in by)
+        if offset != 0:
+            return f" LIMIT {n} OFFSET {offset} BY ({by})"
+        else:
+            return f" LIMIT {n} BY ({by})"
+
+    def replace_table(self, current_table: Optional[Table], new_table: Optional[Table]) -> "ClickHouseQueryBuilder":
+        newone = super().replace_table(current_table, new_table)
+        if self._limit_by:
+            newone._limit_by = (
+                self._limit_by[0],
+                self._limit_by[1],
+                [column.replace_table(current_table, new_table) for column in self._limit_by[2]],
+            )
+        return newone
 
 
 class ClickHouseDropQueryBuilder(DropQueryBuilder):
