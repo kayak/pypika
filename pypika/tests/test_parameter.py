@@ -196,3 +196,11 @@ class ParametrizedTestsWithValues(unittest.TestCase):
             sql,
         )
         self.assertEqual({':buz': 'buz', 'bar': 'bar'}, parameter.get_parameters())
+
+    def test_pyformat_parameter(self):
+        q = Query.into(self.table_abc).columns("a", "b", "c").insert(1, 2.2, 'foo')
+
+        parameter = PyformatParameter()
+        sql = q.get_sql(parameter=parameter)
+        self.assertEqual('INSERT INTO "abc" ("a","b","c") VALUES (%(param1)s,%(param2)s,%(param3)s)', sql)
+        self.assertEqual({"param1": 1, "param2": 2.2, "param3": "foo"}, parameter.get_parameters())
