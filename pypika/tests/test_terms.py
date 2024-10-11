@@ -20,7 +20,7 @@ class FieldInitTests(TestCase):
         test_table_name = "test_table"
         field = Field(name="name", table=test_table_name)
         self.assertEqual(field.table, Table(name=test_table_name))
-    
+
 
 class FieldHashingTests(TestCase):
     def test_tabled_eq_fields_equally_hashed(self):
