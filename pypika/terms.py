@@ -771,6 +771,21 @@ class Array(Tuple):
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
+class Struct(Criterion):
+    def __init__(self, *values: Any, field_names: List[str] = None) -> None:
+        super().__init__()
+        if field_names is None:
+            self.terms = [self.wrap_constant(value) for value in values]
+        elif len(field_names) == len(values):
+            self.terms = [self.wrap_constant(value).as_(name) for value, name in zip(values, field_names)]
+        else:
+            raise Exception("field_names must have the same length as the number of fields")
+
+    def get_sql(self, **kwargs: Any) -> str:
+        sql = "STRUCT({})".format(",".join([term.get_sql(as_keyword=True) for term in self.terms]))
+        return format_alias_sql(sql, self.alias, **kwargs)
+
+
 class Bracket(Tuple):
     def __init__(self, term: Any) -> None:
         super().__init__(term)
