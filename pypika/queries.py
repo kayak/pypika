@@ -206,7 +206,7 @@ class Table(Selectable):
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def select(self, *terms: Sequence[Union[int, float, str, bool, Term, Field]]) -> "QueryBuilder":
+    def select(self, *terms: Union[int, float, str, bool, Term, Field]) -> "QueryBuilder":
         """
         Perform a SELECT operation on the current table
 
