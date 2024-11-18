@@ -798,11 +798,17 @@ class ClickHouseQueryBuilder(QueryBuilder):
         super().__init__(**kwargs)
         self._sample = None
         self._sample_offset = None
+        self._settings = None
 
     @builder
     def sample(self, sample: int, offset: Optional[int] = None) -> "ClickHouseQueryBuilder":
         self._sample = sample
         self._sample_offset = offset
+
+    @builder
+    def settings(self, **kwargs: Any) -> "ClickHouseQueryBuilder":
+        self._settings = self._settings.copy() if self._settings else {}
+        self._settings.update(kwargs)
 
     @staticmethod
     def _delete_sql(**kwargs: Any) -> str:
@@ -820,6 +826,8 @@ class ClickHouseQueryBuilder(QueryBuilder):
             clauses.append(f"SAMPLE {self._sample}")
         if self._sample_offset is not None:
             clauses.append(f"OFFSET {self._sample_offset}")
+        if self._settings:
+            clauses.append(f"SETTINGS {', '.join(f'{k}={v}' for k, v in sorted(self._settings.items()))}")
         return " FROM {clauses}".format(clauses=" ".join(clauses))
 
     def _set_sql(self, **kwargs: Any) -> str:
