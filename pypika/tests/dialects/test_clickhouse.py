@@ -23,6 +23,11 @@ class ClickHouseQueryTests(TestCase):
         query = ClickHouseQuery.from_(t).select(t.foo).sample(10, 5)
         self.assertEqual(str(query), 'SELECT "foo" FROM "abc" SAMPLE 10 OFFSET 5')
 
+    def test_use_FINAL_keyword(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).select(t.foo).final()
+        self.assertEqual(str(query), 'SELECT "foo" FROM "abc" FINAL')
+
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")
