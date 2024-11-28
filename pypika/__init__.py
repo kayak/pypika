@@ -48,6 +48,7 @@ This contains all of the utility classes such as exceptions and decorators.
 from pypika.dialects import (
     ClickHouseQuery,
     Dialects,
+    JiraQuery,
     MSSQLQuery,
     MySQLQuery,
     OracleQuery,
