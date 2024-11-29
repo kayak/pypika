@@ -168,6 +168,15 @@ class InsertIntoTests(unittest.TestCase):
             'WITH sub_qs AS (SELECT "id" FROM "abc") INSERT INTO "abc" SELECT "sub_qs"."id" FROM sub_qs', str(q)
         )
 
+    def test_insert_dict(self):
+        d = {self.table_abc.foo: 1, self.table_abc.bar: "a", self.table_abc.buz: True}
+        query = (
+            Query.into(self.table_abc)
+                .insert_dict(d)
+        )
+
+        self.assertEqual('INSERT INTO "abc" ("foo","bar","buz") VALUES (1,\'a\',true)', str(query))
+
 
 class PostgresInsertIntoOnConflictTests(unittest.TestCase):
     table_abc = Table("abc")
@@ -737,6 +746,34 @@ class InsertIntoOnDuplicateTests(unittest.TestCase):
 
         self.assertEqual(
             "INSERT IGNORE INTO `abc` VALUES (1) ON DUPLICATE KEY UPDATE `baz`=false",
+            str(query),
+        )
+
+    def test_on_duplicate_key_update_all(self):
+        query = (
+            MySQLQuery.into(self.table_abc)
+                .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz)
+                .insert(1, "a", True)
+                .on_duplicate_key_update_all()
+        )
+
+        self.assertEqual(
+            "INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,'a',true) ON DUPLICATE KEY "
+            "UPDATE `foo`=VALUES(`foo`),`bar`=VALUES(`bar`),`baz`=VALUES(`baz`)",
+            str(query),
+        )
+
+    def test_on_duplicate_key_ignore(self):
+        query = (
+            MySQLQuery.into(self.table_abc)
+                .columns(self.table_abc.foo, self.table_abc.bar, self.table_abc.baz)
+                .insert(1, "a", True)
+                .on_duplicate_key_ignore()
+        )
+
+        self.assertEqual(
+            "INSERT INTO `abc` (`foo`,`bar`,`baz`) VALUES (1,'a',true) ON DUPLICATE KEY "
+            "UPDATE `foo`=`foo`",
             str(query),
         )
 

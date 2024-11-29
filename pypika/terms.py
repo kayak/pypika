@@ -449,6 +449,8 @@ class ValueWrapper(Term):
             return str.lower(str(value))
         if isinstance(value, uuid.UUID):
             return cls.get_formatted_value(str(value), **kwargs)
+        if isinstance(value, bytes):
+            return "x'" + value.hex() + "'"
         if value is None:
             return "null"
         return str(value)
