@@ -99,6 +99,7 @@ from pypika.terms import (
     Rollup,
     Tuple,
     CustomFunction,
+    Struct,
 )
 
 # noinspection PyUnresolvedReferences
