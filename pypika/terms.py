@@ -568,6 +568,15 @@ class Values(Term):
         return "VALUES({value})".format(value=self.field.get_sql(quote_char=quote_char, **kwargs))
 
 
+class StaticValue(Term):
+    def __init__(self, value, alias: Optional[str] = None) -> None:
+        super().__init__(alias)
+        self._value = value
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return format_alias_sql(self._value, self.alias, static_quote_char="'", **kwargs)
+
+
 class LiteralValue(Term):
     def __init__(self, value, alias: Optional[str] = None) -> None:
         super().__init__(alias)
