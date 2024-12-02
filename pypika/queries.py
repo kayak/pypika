@@ -1,4 +1,5 @@
 from copy import copy
+from warnings import warn
 from functools import reduce
 from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
 
@@ -33,9 +34,14 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
+class ReusedNestedQueryWarning(UserWarning):
+    ...
+
+
 class Selectable(Node):
     def __init__(self, alias: str) -> None:
         self.alias = alias
+        self.is_nested = False
 
     @builder
     def as_(self, alias: str) -> "Selectable":
@@ -780,6 +786,17 @@ class QueryBuilder(Selectable, Term):
         newone._use_indexes = copy(self._use_indexes)
         return newone
 
+    @staticmethod
+    def check_nested_query_used(selectable: Selectable) -> None:
+        """Issues a warning if a nested query is used.
+
+        A nested query is subject to alias changes, which if used in multiple contexts may lead to unexpected behavior.
+        """
+        if isinstance(selectable, Selectable) and selectable.is_nested:
+            assert selectable.alias is not None
+            warn(f"Query {selectable} is used as a nested subquery elsewhere. "
+                 "Consider deepcopying the query to avoid unexpected aliasing.", ReusedNestedQueryWarning, stacklevel=2)
+
     @builder
     def from_(self, selectable: Union[Selectable, Query, str]) -> "QueryBuilder":
         """
@@ -796,6 +813,7 @@ class QueryBuilder(Selectable, Term):
         """
 
         self._from.append(Table(selectable) if isinstance(selectable, str) else selectable)
+        self.check_nested_query_used(selectable)
 
         if isinstance(selectable, (QueryBuilder, _SetOperation)) and selectable.alias is None:
             if isinstance(selectable, QueryBuilder):
@@ -804,7 +822,9 @@ class QueryBuilder(Selectable, Term):
                 sub_query_count = 0
 
             sub_query_count = max(self._subquery_count, sub_query_count)
+
             selectable.alias = "sq%d" % sub_query_count
+            selectable.is_nested = True
             self._subquery_count = sub_query_count + 1
 
     @builder
@@ -1020,6 +1040,7 @@ class QueryBuilder(Selectable, Term):
     def join(
         self, item: Union[Table, "QueryBuilder", AliasedQuery, Selectable], how: JoinType = JoinType.inner
     ) -> "Joiner":
+        self.check_nested_query_used(item)
         if isinstance(item, Table):
             return Joiner(self, item, how, type_label="table")
 

@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 from pypika import Case, Query, Tables, Tuple, functions, Field
 from pypika.dialects import (
@@ -24,7 +25,7 @@ from pypika.dialects import (
     VerticaQuery,
     VerticaQueryBuilder,
 )
-from pypika.queries import CreateQueryBuilder, DropQueryBuilder, QueryBuilder
+from pypika.queries import CreateQueryBuilder, DropQueryBuilder, QueryBuilder, ReusedNestedQueryWarning
 
 
 class QueryTablesTests(unittest.TestCase):
@@ -156,6 +157,31 @@ class QueryTablesTests(unittest.TestCase):
 
         self.assertTrue(q.is_joined(self.table_b))
         self.assertFalse(q.is_joined(self.table_c))
+
+    def test_nested_query_reuse(self):
+        sq = Query.from_(self.table_a).select(self.table_a.name, self.table_a.customer)
+        self.assertIs(sq.alias, None)
+        # A query has already captured sq as a subquery and has changed its alias to sq0
+        q1 = Query.from_(sq).select(sq.name)
+        self.assertEqual(q1._subquery_count, 1)
+        with self.assertWarnsRegex(ReusedNestedQueryWarning, "^Query .* used as a nested subquery elsewhere."):
+            q2 = Query.from_(sq).select(sq.customer)
+            # This occurs because the inner query is already aliased, so no alias was generated for it and
+            # the subquery count used to generate aliases did not increase.
+            self.assertEqual(q2._subquery_count, 0)
+
+    def test_joined_query_reuse(self):
+        q1 = Query.from_(self.table_a).select(self.table_a.foo, self.table_a.bar)
+
+        q2 = Query.from_(self.table_b).select(self.table_b.bar, self.table_b.boo)
+        # When we derive a query from q2, we give it an alias of sq0 here.
+        Query.from_(q2).select(q2.bar, q2.boo)
+
+        # When we derive a query from q1, we also give it an alias of sq0 here.
+        with self.assertWarnsRegex(ReusedNestedQueryWarning, "^Query .* used as a nested subquery elsewhere."):
+            Query.from_(q1).join(q2).on(q1.b == q2.b).select(q1.a, q2.c)
+            self.assertEqual(q1.alias, "sq0")
+            self.assertEqual(q2.alias, "sq0")
 
 
 class QueryBuilderTests(unittest.TestCase):
