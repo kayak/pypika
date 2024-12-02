@@ -165,6 +165,9 @@ class Term(Node):
     def glob(self, expr: str) -> "BasicCriterion":
         return BasicCriterion(Matching.glob, self, self.wrap_constant(expr))
 
+    def not_glob(self, expr: str) -> "BasicCriterion":
+        return BasicCriterion(Matching.not_glob, self, self.wrap_constant(expr))
+
     def like(self, expr: str) -> "BasicCriterion":
         return BasicCriterion(Matching.like, self, self.wrap_constant(expr))
 
