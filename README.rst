@@ -94,6 +94,20 @@ referenced as attributes on instances of ``pypika.Table``.
     customers = Table('customers')
     q = Query.from_(customers).select(customers.id, customers.fname, customers.lname, customers.phone)
 
+The table also can create via class-style:
+
+.. code-block:: python
+
+    from pypika import TableMeta, Table, Field, Query
+
+    class Customer(metaclass=TableMeta):
+        id = Field('id')
+        first_name = Field('fname')
+        last_name = Field('lname')
+        phone = Field('phone')
+
+    q = Query.from_(Customer).select(Customer.id, Customer.first_name, Customer.last_name, Customer.phone)
+
 Both of the above examples result in the following SQL:
 
 .. code-block:: sql

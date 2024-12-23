@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -239,6 +239,25 @@ class Table(Selectable):
         :return: QueryBuilder
         """
         return self._query_cls.into(self).insert(*terms)
+    
+
+class TableMeta(type):
+    """
+    A metaclass for creating tables.
+    It can be define some metedate of table using class variables like `__table_name__`, `__schema__`, `__alias__` and `__query_cls__`.
+    The default name of table is the same as the class name.
+    """
+    def __new__(cls, name: str, bases: TypedTuple[type], dct: Dict[str, Any]) -> Table:
+        table_name = dct.get("__table_name__", name)
+        schema = dct.get("__schema__", None)
+        alias = dct.get("__alias__", None)
+        query_cls = dct.get("__query_cls__", None)
+        table = Table(table_name, schema, alias, query_cls)
+        for key, value in dct.items():
+            if isinstance(value, Field):
+                value.table = table
+                setattr(table, key, value)
+        return table
 
 
 def make_tables(*names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List[Table]:
