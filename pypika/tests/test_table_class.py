@@ -2,7 +2,7 @@
 
 import unittest
 
-from pypika import Database, Dialects, Schema, SQLLiteQuery, Table, SYSTEM_TIME, table_class
+from pypika import Database, Dialects, Schema, SQLLiteQuery, Table, SYSTEM_TIME, table_class, Field
 
 
 class TableStructureTests(unittest.TestCase):
@@ -40,6 +40,38 @@ class TableStructureTests(unittest.TestCase):
             pass
 
         self.assertEqual('"x_schema"."test_table"', str(T))
+
+    def test_table_with_field(self):
+        @table_class("test_table")
+        class T(Table):
+            f = Field('f')
+
+        self.assertEqual('"f"', T.f.get_sql(with_alias=True, quote_char='"'))
+        self.assertEqual(id(T), id(T.f.table))
+
+    def test_table_with_str_field(self):
+        @table_class("test_table")
+        class T(Table):
+            f = 'f'
+
+        self.assertEqual('"f"', T.f.get_sql(with_alias=True, quote_char='"'))
+        self.assertEqual(id(T), id(T.f.table))
+
+    def test_table_with_field_and_ailas(self):
+        @table_class("test_table")
+        class T(Table):
+            f = Field('f', alias='my_f')
+
+        self.assertEqual('"f" "my_f"', T.f.get_sql(with_alias=True, quote_char='"'))
+        self.assertEqual(id(T), id(T.f.table))
+
+    def test_table_with_unset_field(self):
+        @table_class("test_table")
+        class T(Table):
+            pass
+
+        self.assertEqual('"f"', T.f.get_sql(with_alias=True, quote_char='"'))
+        self.assertEqual(id(T), id(T.f.table))
 
     def test_table_with_schema_and_schema_parent_arg(self):
         @table_class("test_table", schema=Schema("x_schema", parent=Database("x_db")))
