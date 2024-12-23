@@ -98,7 +98,7 @@ The table also can create via class-style:
 
 .. code-block:: python
 
-    from pypika import table_class, Table, Field
+    from pypika import table_class, Table, Field, Query
 
     @table_class('customers')
     class Customer(Table):
