@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
+from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, TypeVar
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -239,6 +239,31 @@ class Table(Selectable):
         :return: QueryBuilder
         """
         return self._query_cls.into(self).insert(*terms)
+
+
+T = TypeVar("T", bound=Table)
+
+
+def table_class(
+    name: str,
+    schema: Optional[Union[Schema, str]] = None,
+    alias: Optional[str] = None,
+    query_cls: Optional[Type["Query"]] = None,
+):
+    """
+    A decorator for creating a new table via class-style syntax.
+
+    >>> @table_class("user")
+    ... class User(Table):
+    ...     id = Field("_id")
+    ...     name = Field("name", alias="username")
+    """
+    def builder(cls: Type[T]) -> T:
+        if not issubclass(cls, Table):
+            raise TypeError(f"{cls.__name__} must be a subclass of Table.")
+        return cls(name=name, schema=schema, alias=alias, query_cls=query_cls)
+
+    return builder
 
 
 def make_tables(*names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List[Table]:
