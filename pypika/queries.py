@@ -273,11 +273,9 @@ def table_class(
         if not issubclass(cls, Table):
             raise TypeError(f"{cls.__name__} must be a subclass of Table.")
         table = cls(name=name, schema=schema, alias=alias, query_cls=query_cls)
-        for key, field in cls.__dict__.items():
+        for field in cls.__dict__.values():
             if isinstance(field, Field):
                 field.table = table
-            elif isinstance(field, str):
-                setattr(cls, key, Field(field, table=table))
         return table
 
     return builder

@@ -49,14 +49,6 @@ class TableStructureTests(unittest.TestCase):
         self.assertEqual('"f"', T.f.get_sql(with_alias=True, quote_char='"'))
         self.assertEqual(id(T), id(T.f.table))
 
-    def test_table_with_str_field(self):
-        @table_class("test_table")
-        class T(Table):
-            f = 'f'
-
-        self.assertEqual('"f"', T.f.get_sql(with_alias=True, quote_char='"'))
-        self.assertEqual(id(T), id(T.f.table))
-
     def test_table_with_field_and_ailas(self):
         @table_class("test_table")
         class T(Table):
