@@ -97,6 +97,7 @@ referenced as attributes on instances of ``pypika.Table``.
 The table also can create via class-style:
 
 .. code-block:: python
+
     from pypika import table_class, Table, Field
 
     @table_class('customers')
