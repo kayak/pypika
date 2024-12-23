@@ -107,7 +107,7 @@ The table also can create via class-style:
         last_name = Field('lname')
         phone = Field('phone')
 
-    q = Query.from_(Customer).select(Customer.id, Customer.fname, Customer.lname, Customer.phone)
+    q = Query.from_(Customer).select(Customer.id, Customer.first_name, Customer.last_name, Customer.phone)
 
 Both of the above examples result in the following SQL:
 
