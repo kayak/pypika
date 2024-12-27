@@ -737,7 +737,11 @@ class Tuple(Criterion):
             yield from value.nodes_()
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = "({})".format(",".join(term.get_sql(**kwargs) for term in self.values))
+        unique_table = kwargs.get('unique_table')
+        values = [term.get_sql(**kwargs) for term in self.values]
+        values = sorted(values) if unique_table else values
+
+        sql = "({})".format(",".join(values))
         return format_alias_sql(sql, self.alias, **kwargs)
 
     @property
@@ -879,10 +883,14 @@ class BasicCriterion(Criterion):
         self.right = self.right.replace_table(current_table, new_table)
 
     def get_sql(self, quote_char: str = '"', with_alias: bool = False, **kwargs: Any) -> str:
+        unique_table = kwargs.get('unique_table')
+        left = self.left.get_sql(quote_char=quote_char, **kwargs)
+        right = self.right.get_sql(quote_char=quote_char, **kwargs)
+        left, right = (right, left) if unique_table and right < left else (left, right)
         sql = "{left}{comparator}{right}".format(
             comparator=self.comparator.value,
-            left=self.left.get_sql(quote_char=quote_char, **kwargs),
-            right=self.right.get_sql(quote_char=quote_char, **kwargs),
+            left=left,
+            right=right,
         )
         if with_alias:
             return format_alias_sql(sql, self.alias, **kwargs)

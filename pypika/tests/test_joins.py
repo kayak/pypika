@@ -215,6 +215,53 @@ class SelectQueryJoinTests(unittest.TestCase):
             str(query),
         )
 
+    def test_join_on_unique_table(self):
+        table_a, table_b = Tables('a', 'b')
+
+        with self.subTest('on with ='):
+            query = (
+                Query.from_(table_a)
+                .join(table_b)
+                .on(table_a.b_id == table_b.id)
+                .join(table_b)
+                .on(table_a.b_id == table_b.id)
+                .join(table_b)
+                .on(table_b.id == table_a.b_id)
+                .select('*')
+            )
+
+            self.assertEqual('SELECT * FROM "a" JOIN "b" ON "a"."b_id"="b"."id"', query.get_sql(unique_table=True))
+
+        with self.subTest('on with <>'):
+            # already sorted. input: 'abc' != table_a.name, output: "a"."name"<>'abc'
+            query = (
+                Query.from_(table_a)
+                .join(table_b)
+                .on((table_a.b_id == table_b.id) & (table_a.name != 'abc') & (18 != table_b.age) & (100 != table_a.id))
+                .select('*')
+            )
+
+            self.assertEqual(
+                'SELECT * FROM "a" JOIN "b" ON "a"."b_id"="b"."id" AND "a"."name"<>\'abc\' AND "b"."age"<>18 AND "a"."id"<>100',
+                str(query),
+            )
+
+        with self.subTest('on with and'):
+            pass
+
+        with self.subTest('on with or'):
+            pass
+
+        with self.subTest('on with >,>=,<,<='):
+            pass
+
+        with self.subTest('on with in'):
+            q1 = Query.from_(table_a).where(table_a.field('b_id').isin([100, 200, 300]))
+
+            q2 = Query.from_(table_a).where(table_a.field('b_id').isin([200, 300, 100]))
+
+            self.assertEqual(q1.get_sql(unique_table=True), q2.get_sql(unique_table=True))
+
     def test_join_using_string_field_name(self):
         query = Query.from_(self.table0).join(self.table1).using("id").select("*")
 
