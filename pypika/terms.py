@@ -147,6 +147,9 @@ class Term(Node):
     def bitwiseand(self, value: int) -> "BitwiseAndCriterion":
         return BitwiseAndCriterion(self, self.wrap_constant(value))
 
+    def bitwiseor(self, value: int) -> "BitwiseOrCriterion":
+        return BitwiseOrCriterion(self, self.wrap_constant(value))
+
     def gt(self, other: Any) -> "BasicCriterion":
         return self > other
 
@@ -1039,6 +1042,39 @@ class BitwiseAndCriterion(Criterion):
 
     def get_sql(self, **kwargs: Any) -> str:
         sql = "({term} & {value})".format(
+            term=self.term.get_sql(**kwargs),
+            value=self.value,
+        )
+        return format_alias_sql(sql, self.alias, **kwargs)
+
+
+class BitwiseOrCriterion(Criterion):
+    def __init__(self, term: Term, value: Any, alias: Optional[str] = None) -> None:
+        super().__init__(alias)
+        self.term = term
+        self.value = value
+
+    def nodes_(self) -> Iterator[NodeT]:
+        yield self
+        yield from self.term.nodes_()
+        yield from self.value.nodes_()
+
+    @builder
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "BitwiseOrCriterion":
+        """
+        Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
+
+        :param current_table:
+            The table to be replaced.
+        :param new_table:
+            The table to replace with.
+        :return:
+            A copy of the criterion with the tables replaced.
+        """
+        self.term = self.term.replace_table(current_table, new_table)
+
+    def get_sql(self, **kwargs: Any) -> str:
+        sql = "({term} | {value})".format(
             term=self.term.get_sql(**kwargs),
             value=self.value,
         )
