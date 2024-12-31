@@ -1238,7 +1238,7 @@ class QueryBuilder(Selectable, Term):
         kwargs.setdefault("alias_quote_char", self.ALIAS_QUOTE_CHAR)
         kwargs.setdefault("as_keyword", self.as_keyword)
         kwargs.setdefault("dialect", self.dialect)
-        kwargs.setdefault('unique_table', False)
+        kwargs.setdefault('normalize', False)
 
     def get_sql(self, with_alias: bool = False, subquery: bool = False, **kwargs: Any) -> str:
         self._set_kwargs_defaults(kwargs)
@@ -1255,7 +1255,7 @@ class QueryBuilder(Selectable, Term):
         has_reference_to_foreign_table = self._foreign_table
         has_update_from = self._update_table and self._from
 
-        enable_unique_table = kwargs['unique_table']
+        enable_normalize = kwargs['normalize']
 
         kwargs["with_namespace"] = any(
             [
@@ -1277,7 +1277,7 @@ class QueryBuilder(Selectable, Term):
 
             if self._joins:
                 joins = [join.get_sql(**kwargs) for join in self._joins]
-                if enable_unique_table:
+                if enable_normalize:
                     joins = set(joins)
                 querystring += " " + " ".join(joins)
 
@@ -1342,7 +1342,7 @@ class QueryBuilder(Selectable, Term):
 
         if self._joins:
             joins = [join.get_sql(**kwargs) for join in self._joins]
-            if enable_unique_table:
+            if enable_normalize:
                 joins = set(joins)
 
             querystring += " " + " ".join(joins)

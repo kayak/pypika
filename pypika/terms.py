@@ -737,9 +737,9 @@ class Tuple(Criterion):
             yield from value.nodes_()
 
     def get_sql(self, **kwargs: Any) -> str:
-        unique_table = kwargs.get('unique_table')
+        normalize = kwargs.get('normalize')
         values = [term.get_sql(**kwargs) for term in self.values]
-        values = sorted(values) if unique_table else values
+        values = sorted(values) if normalize else values
 
         sql = "({})".format(",".join(values))
         return format_alias_sql(sql, self.alias, **kwargs)
@@ -883,10 +883,10 @@ class BasicCriterion(Criterion):
         self.right = self.right.replace_table(current_table, new_table)
 
     def get_sql(self, quote_char: str = '"', with_alias: bool = False, **kwargs: Any) -> str:
-        unique_table = kwargs.get('unique_table')
+        normalize = kwargs.get('normalize')
         left = self.left.get_sql(quote_char=quote_char, **kwargs)
         right = self.right.get_sql(quote_char=quote_char, **kwargs)
-        left, right = (right, left) if unique_table and right < left else (left, right)
+        left, right = (right, left) if normalize and right < left else (left, right)
         sql = "{left}{comparator}{right}".format(
             comparator=self.comparator.value,
             left=left,
@@ -1093,10 +1093,15 @@ class NotNullCriterion(NullCriterion):
 
 class ComplexCriterion(BasicCriterion):
     def get_sql(self, subcriterion: bool = False, **kwargs: Any) -> str:
+        normalize = kwargs.get('normalize')
+        left = self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs)
+        right = self.right.get_sql(subcriterion=self.needs_brackets(self.right), **kwargs)
+        left, right = (right, left) if normalize and right < left else (left, right)
+
         sql = "{left} {comparator} {right}".format(
             comparator=self.comparator.value,
-            left=self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs),
-            right=self.right.get_sql(subcriterion=self.needs_brackets(self.right), **kwargs),
+            left=left,
+            right=right,
         )
 
         if subcriterion:

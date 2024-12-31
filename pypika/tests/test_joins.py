@@ -215,7 +215,7 @@ class SelectQueryJoinTests(unittest.TestCase):
             str(query),
         )
 
-    def test_join_on_unique_table(self):
+    def test_join_on_normalize(self):
         table_a, table_b = Tables('a', 'b')
 
         with self.subTest('on with ='):
@@ -230,7 +230,7 @@ class SelectQueryJoinTests(unittest.TestCase):
                 .select('*')
             )
 
-            self.assertEqual('SELECT * FROM "a" JOIN "b" ON "a"."b_id"="b"."id"', query.get_sql(unique_table=True))
+            self.assertEqual('SELECT * FROM "a" JOIN "b" ON "a"."b_id"="b"."id"', query.get_sql(normalize=True))
 
         with self.subTest('on with <>'):
             # already sorted. input: 'abc' != table_a.name, output: "a"."name"<>'abc'
@@ -247,20 +247,62 @@ class SelectQueryJoinTests(unittest.TestCase):
             )
 
         with self.subTest('on with and'):
-            pass
+            query = (
+                Query.from_(table_a)
+                .join(table_b)
+                .on((table_b.field('status') == 1) & (table_a.field('b_id') == table_b.field('id')))
+                .select('*')
+            )
+
+            self.assertEqual(
+                'SELECT * FROM "a" JOIN "b" ON "a"."b_id"="b"."id" AND "b"."status"=1', query.get_sql(normalize=True)
+            )
 
         with self.subTest('on with or'):
-            pass
+            query = (
+                Query.from_(table_a)
+                .join(table_b)
+                .on(
+                    (table_a.field('b_old_id') == table_b.field('old_id'))
+                    | (table_a.field('b_id') == table_b.field('id'))
+                )
+                .select('*')
+            )
+
+            self.assertEqual(
+                'SELECT * FROM "a" JOIN "b" ON "a"."b_id"="b"."id" OR "a"."b_old_id"="b"."old_id"',
+                query.get_sql(normalize=True),
+            )
 
         with self.subTest('on with >,>=,<,<='):
-            pass
+            query = (
+                Query.from_(table_a)
+                .join(table_b)
+                .on((100 > table_b.field('age')) & (table_b.field('id') == table_a.field('b_id')))
+                .select('*')
+            )
+
+            self.assertEqual(
+                'SELECT * FROM "a" JOIN "b" ON "a"."b_id"="b"."id" AND "b"."age"<100',
+                query.get_sql(normalize=True),
+            )
 
         with self.subTest('on with in'):
-            q1 = Query.from_(table_a).where(table_a.field('b_id').isin([100, 200, 300]))
+            q1 = (
+                Query.from_(table_a)
+                .join(table_b)
+                .on((table_a.field('b_id') == table_b.field('id')) & (table_b.field('status').isin([0, 2, 1])))
+                .select('*')
+            )
 
-            q2 = Query.from_(table_a).where(table_a.field('b_id').isin([200, 300, 100]))
+            q2 = (
+                Query.from_(table_a)
+                .join(table_b)
+                .on((table_a.field('b_id') == table_b.field('id')) & (table_b.field('status').isin([2, 1, 0])))
+                .select('*')
+            )
 
-            self.assertEqual(q1.get_sql(unique_table=True), q2.get_sql(unique_table=True))
+            self.assertEqual(q1.get_sql(normalize=True), q2.get_sql(normalize=True))
 
     def test_join_using_string_field_name(self):
         query = Query.from_(self.table0).join(self.table1).using("id").select("*")
