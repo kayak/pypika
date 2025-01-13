@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+import pypika.terms
 from pypika import (
     ClickHouseQuery,
     Database,
@@ -25,12 +26,12 @@ class ClickHouseQueryTests(TestCase):
 
     def test_settings(self) -> None:
         t = Table('abc')
-        query1 = ClickHouseQuery.from_(t).select(t.foo).settings(foo="bar")
+        query1 = ClickHouseQuery.from_(t).select(t.foo).settings(foo="bar").limit(1)
         query2 = query1.settings(baz="qux")
         # Settings get deep-copied:
-        self.assertEqual(str(query1), 'SELECT "foo" FROM "abc" SETTINGS foo=bar')
+        self.assertEqual(str(query1), 'SELECT "foo" FROM "abc" LIMIT 1 SETTINGS foo=bar')
         # Settings are ordered alphabetically in the query string:
-        self.assertEqual(str(query2), 'SELECT "foo" FROM "abc" SETTINGS baz=qux, foo=bar')
+        self.assertEqual(str(query2), 'SELECT "foo" FROM "abc" LIMIT 1 SETTINGS baz=qux, foo=bar')
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")
