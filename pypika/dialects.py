@@ -833,7 +833,18 @@ class ClickHouseQueryBuilder(QueryBuilder):
         querystring = super()._apply_pagination(querystring)
 
         if self._settings:
-            querystring += f" SETTINGS {', '.join(f'{k}={v}' for k, v in sorted(self._settings.items()))}"
+            def _format_value(v: object) -> str:
+                if isinstance(v, str):
+                    return f"'{v}'"
+                elif isinstance(v, bool):
+                    return str(v).lower()
+                elif isinstance(v, (int, float)):
+                    return str(v)
+                elif isinstance(v, dict):
+                    return f"{{{', '.join(f'{_format_value(k)}: {_format_value(v)}' for k, v in v.items())}}}"
+                raise TypeError(f"Unsupported SETTING value {type(v)}")
+
+            querystring += f" SETTINGS {', '.join(f'{k}={_format_value(v)}' for k, v in sorted(self._settings.items()))}"
 
         return querystring
 

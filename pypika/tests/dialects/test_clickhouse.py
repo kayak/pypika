@@ -29,9 +29,14 @@ class ClickHouseQueryTests(TestCase):
         query1 = ClickHouseQuery.from_(t).select(t.foo).settings(foo="bar").limit(1)
         query2 = query1.settings(baz="qux")
         # Settings get deep-copied:
-        self.assertEqual(str(query1), 'SELECT "foo" FROM "abc" LIMIT 1 SETTINGS foo=bar')
+        self.assertEqual(str(query1), 'SELECT "foo" FROM "abc" LIMIT 1 SETTINGS foo=\'bar\'')
         # Settings are ordered alphabetically in the query string:
-        self.assertEqual(str(query2), 'SELECT "foo" FROM "abc" LIMIT 1 SETTINGS baz=qux, foo=bar')
+        self.assertEqual(str(query2), 'SELECT "foo" FROM "abc" LIMIT 1 SETTINGS baz=\'qux\', foo=\'bar\'')
+
+        # Settings values can be different data types:
+        query3 = ClickHouseQuery.from_(t).select(t.foo).settings(a_str="foo", an_int=123, an_float=4.563, a_bool=True, a_map={"a": 1, "b": 2})
+        self.assertEqual(str(query3), 'SELECT "foo" FROM "abc" SETTINGS a_bool=true, a_map={\'a\': 1, \'b\': 2}, a_str=\'foo\', an_float=4.563, an_int=123')
+
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")
