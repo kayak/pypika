@@ -977,6 +977,12 @@ class SQLLiteQueryBuilder(QueryBuilder):
     ) -> "QueryBuilder":
         self._for_update = False
 
+    def _insert_sql(self, **kwargs: Any) -> str:
+        return "INSERT {ignore}INTO {table}".format(
+            table=self._insert_table.get_sql(**kwargs),
+            ignore="OR IGNORE " if self._ignore else "",
+        )
+
 
 
 class JiraQuery(Query):
