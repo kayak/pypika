@@ -661,6 +661,9 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
         querystring = super(PostgreSQLQueryBuilder, self).get_sql(with_alias, subquery, **kwargs)
 
+        if querystring == '':
+            return ''
+
         querystring += self._on_conflict_sql(**kwargs)
         querystring += self._on_conflict_action_sql(**kwargs)
 
