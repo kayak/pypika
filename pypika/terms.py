@@ -1623,10 +1623,23 @@ class Interval(Node):
         # Oracle and MySQL requires just single quotes around the expr
         Dialects.ORACLE: "INTERVAL '{expr}' {unit}",
         Dialects.MYSQL: "INTERVAL '{expr}' {unit}",
+        # SQLite doesn't have a direct INTERVAL type, use datetime functions instead
+        Dialects.SQLLITE: "{expr} {unit}",
     }
 
     units = ["years", "months", "days", "hours", "minutes", "seconds", "microseconds"]
     labels = ["YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND", "MICROSECOND"]
+
+    # SQLite unit conversion mapping
+    sqlite_units = {
+        "YEAR": "years",
+        "MONTH": "months",
+        "DAY": "days",
+        "HOUR": "hours",
+        "MINUTE": "minutes",
+        "SECOND": "seconds",
+        "MICROSECOND": "microseconds",
+    }
 
     trim_pattern = re.compile(r"(^0+\.)|(\.0+$)|(^[0\-.: ]+[\-: ])|([\-:. ][0\-.: ]+$)")
 
@@ -1675,6 +1688,9 @@ class Interval(Node):
     def get_sql(self, **kwargs: Any) -> str:
         dialect = self.dialect or kwargs.get("dialect")
 
+        if dialect == Dialects.SQLLITE:
+            return self._get_sqlite_sql()
+
         if self.largest == "MICROSECOND":
             expr = getattr(self, "microseconds")
             unit = "MICROSECOND"
@@ -1716,6 +1732,34 @@ class Interval(Node):
                 unit = "DAY"
 
         return self.templates.get(dialect, "INTERVAL '{expr} {unit}'").format(expr=expr, unit=unit)
+
+    def _get_sqlite_sql(self) -> str:
+        """Generate SQLite-compatible interval expression using datetime functions"""
+        if hasattr(self, "quarters"):
+            # Convert quarters to months for SQLite
+            value = getattr(self, "quarters") * 3
+            sign = "-" if self.is_negative else "+"
+            return f"datetime('now', '{sign}{value} months')"
+
+        if hasattr(self, "weeks"):
+            # Convert weeks to days for SQLite
+            value = getattr(self, "weeks") * 7
+            sign = "-" if self.is_negative else "+"
+            return f"datetime('now', '{sign}{value} days')"
+
+        # Construct datetime expression with each non-zero component
+        components = []
+        for unit, label in zip(self.units, self.labels):
+            if hasattr(self, unit) and getattr(self, unit):
+                value = getattr(self, unit)
+                sign = "-" if self.is_negative else "+"
+                sqlite_unit = self.sqlite_units.get(label, unit)
+                components.append(f"'{sign}{value} {sqlite_unit}'")
+
+        if not components:
+            return "datetime('now')"
+
+        return f"datetime('now', {', '.join(components)})"
 
 
 class Pow(Function):
