@@ -608,3 +608,27 @@ class RankTests(unittest.TestCase):
             self.assertEqual(
                 'SELECT LEAD("date",1,\'2000-01-01\') OVER(PARTITION BY "foo" ORDER BY "date") FROM "abc"', str(q)
             )
+
+    def test_qualify(self):
+        expr = an.Rank().over(self.table_abc.foo).orderby(self.table_abc.date)
+        q = Query.from_(self.table_abc).select("*").qualify(expr > 1)
+
+        self.assertEqual(
+            "SELECT " "*" ' FROM "abc" ' 'QUALIFY RANK() OVER(PARTITION BY "foo" ORDER BY "date")>1',
+            str(q),
+        )
+
+    def test_qualify_and(self):
+        expr1 = an.Rank().over(self.table_abc.foo).orderby(self.table_abc.date)
+        expr2 = an.RowNumber().over(self.table_abc.foo).orderby(self.table_abc.date)
+        q = Query.from_(self.table_abc).select("*").qualify((expr1 > 1) & (expr2 > 2))
+
+        self.assertEqual(
+            "SELECT "
+            "*"
+            ' FROM "abc" '
+            'QUALIFY RANK() OVER(PARTITION BY "foo" ORDER BY "date")>1 '
+            "AND "
+            'ROW_NUMBER() OVER(PARTITION BY "foo" ORDER BY "date")>2',
+            str(q),
+        )
