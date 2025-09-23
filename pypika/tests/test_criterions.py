@@ -270,6 +270,23 @@ class CriterionTests(unittest.TestCase):
 
         self.assertEqual('SELECT "abc" FROM "items" WHERE ("foo" & 1)=1', str(q))
 
+    def test__criterion_bitwise_or(self):
+        c1 = Field("foo").bitwiseor(2)
+        c2 = Field("foo", table=self.t).bitwiseor(10) == 2
+
+        self.assertEqual('("foo" | 2)', str(c1))
+        self.assertEqual('("crit"."foo" | 10)=2', str(c2))
+
+    def test__criterion_bitwise_or_with_alias(self):
+        c1 = Field("foo").bitwiseor(2).as_('alias')
+
+        self.assertEqual('("foo" | 2) "alias"', str(c1))
+
+    def test__bitwise_or_in_where_clause(self):
+        q = QueryBuilder().from_('items').select('abc').where(Field("foo").bitwiseor(1) == 1)
+
+        self.assertEqual('SELECT "abc" FROM "items" WHERE ("foo" | 1)=1', str(q))
+
 
 class NotTests(unittest.TestCase):
     table_abc, table_efg = Table("abc", alias="cx0"), Table("efg", alias="cx1")
