@@ -1,7 +1,7 @@
 import itertools
 import warnings
 from copy import copy
-from typing import Any, Optional, Union, Tuple as TypedTuple, List
+from typing import Any, List, Optional, Union, Tuple as TypedTuple
 
 from pypika.enums import Dialects
 from pypika.queries import (
@@ -13,8 +13,18 @@ from pypika.queries import (
     Query,
     QueryBuilder,
 )
-from pypika.terms import ArithmeticExpression, Criterion, EmptyCriterion, Field, Function, Star, Term, ValueWrapper
-from pypika.utils import QueryException, builder, format_quotes
+from pypika.terms import (
+    ArithmeticExpression,
+    Criterion,
+    EmptyCriterion,
+    Field,
+    Function,
+    NullCriterion,
+    Star,
+    Term,
+    ValueWrapper,
+)
+from pypika.utils import QueryException, builder, format_alias_sql, format_quotes
 
 
 class SnowflakeQuery(Query):
@@ -962,3 +972,101 @@ class SQLLiteQueryBuilder(QueryBuilder):
     def _replace_sql(self, **kwargs: Any) -> str:
         prefix = "INSERT OR " if self._insert_or_replace else ""
         return prefix + super()._replace_sql(**kwargs)
+
+
+class JiraQuery(Query):
+    """
+    Defines a query class for use with Jira.
+    """
+
+    @classmethod
+    def _builder(cls, **kwargs) -> "JiraQueryBuilder":
+        return JiraQueryBuilder(**kwargs)
+
+    @classmethod
+    def where(cls, *args, **kwargs) -> "QueryBuilder":
+        return JiraQueryBuilder().where(*args, **kwargs)
+
+    @classmethod
+    def Table(cls, table_name: str = '', **_) -> "JiraTable":
+        """
+        Convenience method for creating a JiraTable
+        """
+        del table_name
+        return JiraTable()
+
+    @classmethod
+    def Tables(cls, *names: Union[TypedTuple[str, str], str], **kwargs: Any) -> List["JiraTable"]:
+        """
+        Convenience method for creating many JiraTable instances
+        """
+        del kwargs
+        return [JiraTable() for _ in range(len(names))]
+
+
+class JiraQueryBuilder(QueryBuilder):
+    """
+    Defines a main query builder class to produce JQL expression
+    """
+
+    QUOTE_CHAR = ""
+    SECONDARY_QUOTE_CHAR = '"'
+    QUERY_CLS = JiraQuery
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(dialect=Dialects.JIRA, **kwargs)
+        self._from = [JiraTable()]
+        self._selects = [Star()]
+        self._select_star = True
+
+    def get_sql(self, with_alias: bool = False, subquery: bool = False, **kwargs) -> str:
+        return super().get_sql(with_alias, subquery, **kwargs).strip()
+
+    def _from_sql(self, with_namespace: bool = False, **_: Any) -> str:
+        """
+        JQL doen't have from statements
+        """
+        return ""
+
+    def _select_sql(self, **_: Any) -> str:
+        """
+        JQL doen't have select statements
+        """
+        return ""
+
+    def _where_sql(self, quote_char=None, **kwargs: Any) -> str:
+        return self._wheres.get_sql(quote_char=quote_char, subquery=True, **kwargs)
+
+
+class JiraEmptyCriterion(NullCriterion):
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
+        del with_alias
+        sql = "{term} is EMPTY".format(
+            term=self.term.get_sql(**kwargs),
+        )
+        return format_alias_sql(sql, self.alias, **kwargs)
+
+
+class JiraNotEmptyCriterion(JiraEmptyCriterion):
+    def get_sql(self, with_alias: bool = False, **kwargs) -> str:
+        del with_alias
+        sql = "{term} is not EMPTY".format(
+            term=self.term.get_sql(**kwargs),
+        )
+        return format_alias_sql(sql, self.alias, **kwargs)
+
+
+class JiraField(Field):
+    def isempty(self) -> JiraEmptyCriterion:
+        return JiraEmptyCriterion(self)
+
+    def notempty(self) -> JiraNotEmptyCriterion:
+        return JiraNotEmptyCriterion(self)
+
+
+class JiraTable(Table):
+    def __init__(self):
+        super().__init__("issues")
+
+    def field(self, name: str) -> JiraField:
+        return JiraField(name, table=self)
