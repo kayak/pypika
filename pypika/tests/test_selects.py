@@ -954,6 +954,60 @@ class HavingTests(unittest.TestCase):
         self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo" HAVING "buz"=\'fiz\'', str(q))
 
 
+class QualifyTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_qualify_greater_than(self):
+        q = (
+            Query.from_(self.table_abc)
+            .select(self.table_abc.foo, fn.Sum(self.table_abc.bar))
+            .groupby(self.table_abc.foo)
+            .qualify(self.table_abc.bar > 1)
+        )
+
+        self.assertEqual(
+            'SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" QUALIFY "bar">1',
+            str(q),
+        )
+
+    def test_qualify_and(self):
+        q = (
+            Query.from_(self.table_abc)
+            .select(self.table_abc.foo, fn.Sum(self.table_abc.bar))
+            .groupby(self.table_abc.foo)
+            .qualify((self.table_abc.bar > 1) & (self.table_abc.bar < 100))
+        )
+
+        self.assertEqual(
+            'SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" QUALIFY "bar">1 AND "bar"<100',
+            str(q),
+        )
+
+    def test_mysql_query_uses_backtick_quote_chars(self):
+        q = MySQLQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual("SELECT `foo` FROM `abc` QUALIFY `buz`='fiz'", str(q))
+
+    def test_vertica_query_uses_double_quote_chars(self):
+        q = VerticaQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+    def test_mssql_query_uses_double_quote_chars(self):
+        q = MSSQLQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+    def test_oracle_query_uses_no_quote_chars(self):
+        q = OracleQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT foo FROM abc QUALIFY buz=\'fiz\'', str(q))
+
+    def test_postgres_query_uses_double_quote_chars(self):
+        q = PostgreSQLQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+    def test_redshift_query_uses_double_quote_chars(self):
+        q = RedshiftQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+
 class OrderByTests(unittest.TestCase):
     t = Table("abc")
 

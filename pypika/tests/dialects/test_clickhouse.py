@@ -13,6 +13,21 @@ class ClickHouseQueryTests(TestCase):
         query = ClickHouseQuery.from_(t).select(t.foo.as_('f1'), t.bar.as_('f2'))
         self.assertEqual(str(query), 'SELECT "foo" AS "f1","bar" AS "f2" FROM "abc"')
 
+    def test_use_SAMPLE_keyword(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).select(t.foo).sample(10)
+        self.assertEqual(str(query), 'SELECT "foo" FROM "abc" SAMPLE 10')
+
+    def test_use_SAMPLE_with_offset_keyword(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).select(t.foo).sample(10, 5)
+        self.assertEqual(str(query), 'SELECT "foo" FROM "abc" SAMPLE 10 OFFSET 5')
+
+    def test_use_FINAL_keyword(self):
+        t = Table('abc')
+        query = ClickHouseQuery.from_(t).select(t.foo).final()
+        self.assertEqual(str(query), 'SELECT "foo" FROM "abc" FINAL')
+
 
 class ClickHouseDeleteTests(TestCase):
     table_abc = Table("abc")
@@ -84,3 +99,48 @@ class ClickHouseDropQuery(TestCase):
         self.assertEqual('DROP QUOTA "myquota"', str(q1))
         self.assertEqual('DROP USER "myuser"', str(q2))
         self.assertEqual('DROP VIEW "myview"', str(q3))
+
+
+class DistinctOnTests(TestCase):
+    table_abc = Table("abc")
+
+    def test_distinct_on(self):
+        q = ClickHouseQuery.from_(self.table_abc).distinct_on("lname", self.table_abc.fname).select("lname", "id")
+
+        self.assertEqual('''SELECT DISTINCT ON("lname","fname") "lname","id" FROM "abc"''', str(q))
+
+
+class LimitByTests(TestCase):
+    table_abc = Table("abc")
+
+    def test_limit_by(self):
+        q = ClickHouseQuery.from_(self.table_abc).limit_by(1, "a", self.table_abc.b).select("a", "b", "c")
+
+        self.assertEqual('''SELECT "a","b","c" FROM "abc" LIMIT 1 BY ("a","b")''', str(q))
+
+    def test_limit_offset_by(self):
+        q = ClickHouseQuery.from_(self.table_abc).limit_offset_by(1, 2, "a", self.table_abc.b).select("a", "b", "c")
+
+        self.assertEqual('''SELECT "a","b","c" FROM "abc" LIMIT 1 OFFSET 2 BY ("a","b")''', str(q))
+
+    def test_limit_offset0_by(self):
+        q = ClickHouseQuery.from_(self.table_abc).limit_offset_by(1, 0, "a", self.table_abc.b).select("a", "b", "c")
+
+        self.assertEqual('''SELECT "a","b","c" FROM "abc" LIMIT 1 BY ("a","b")''', str(q))
+
+    def test_rename_table(self):
+        table_join = Table("join")
+
+        q = (
+            ClickHouseQuery.from_(self.table_abc)
+            .join(table_join)
+            .using("a")
+            .limit_by(1, self.table_abc.a, table_join.a)
+            .select(self.table_abc.b, table_join.b)
+        )
+        q = q.replace_table(self.table_abc, Table("xyz"))
+
+        self.assertEqual(
+            '''SELECT "xyz"."b","join"."b" FROM "xyz" JOIN "join" USING ("a") LIMIT 1 BY ("xyz"."a","join"."a")''',
+            str(q),
+        )

@@ -1,4 +1,5 @@
 import itertools
+import warnings
 from copy import copy
 from typing import Any, List, Optional, Union, Tuple as TypedTuple
 
@@ -97,7 +98,7 @@ class MySQLQueryBuilder(QueryBuilder):
     QUERY_CLS = MySQLQuery
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(dialect=Dialects.MYSQL, wrap_set_operation_queries=False, **kwargs)
+        super().__init__(dialect=Dialects.MYSQL, **kwargs)
         self._duplicate_updates = []
         self._ignore_duplicates = False
         self._modifiers = []
@@ -357,6 +358,19 @@ class VerticaCopyQueryBuilder:
         return self.get_sql()
 
 
+class FetchNextAndOffsetRowsQueryBuilder(QueryBuilder):
+    def _limit_sql(self) -> str:
+        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
+
+    def _offset_sql(self) -> str:
+        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
+
+    @builder
+    def fetch_next(self, limit: int):
+        warnings.warn("`fetch_next` is deprecated - please use the `limit` method", DeprecationWarning)
+        self._limit = limit
+
+
 class OracleQuery(Query):
     """
     Defines a query class for use with Oracle.
@@ -367,7 +381,7 @@ class OracleQuery(Query):
         return OracleQueryBuilder(**kwargs)
 
 
-class OracleQueryBuilder(QueryBuilder):
+class OracleQueryBuilder(FetchNextAndOffsetRowsQueryBuilder):
     QUOTE_CHAR = None
     QUERY_CLS = OracleQuery
 
@@ -379,6 +393,16 @@ class OracleQueryBuilder(QueryBuilder):
         # Note: set directly in kwargs as they are re-used down the tree in the case of subqueries!
         kwargs['groupby_alias'] = False
         return super().get_sql(*args, **kwargs)
+
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
+        # Note: Overridden as Oracle specifies offset before the fetch next limit
+        if self._offset:
+            querystring += self._offset_sql()
+
+        if self._limit is not None:
+            querystring += self._limit_sql()
+
+        return querystring
 
 
 class PostgreSQLQuery(Query):
@@ -680,7 +704,7 @@ class MSSQLQuery(Query):
         return MSSQLQueryBuilder(**kwargs)
 
 
-class MSSQLQueryBuilder(QueryBuilder):
+class MSSQLQueryBuilder(FetchNextAndOffsetRowsQueryBuilder):
     QUERY_CLS = MSSQLQuery
 
     def __init__(self, **kwargs: Any) -> None:
@@ -705,18 +729,7 @@ class MSSQLQueryBuilder(QueryBuilder):
         self._top_percent: bool = percent
         self._top_with_ties: bool = with_ties
 
-    @builder
-    def fetch_next(self, limit: int) -> "MSSQLQueryBuilder":
-        # Overridden to provide a more domain-specific API for T-SQL users
-        self._limit = limit
-
-    def _offset_sql(self) -> str:
-        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
-
-    def _limit_sql(self) -> str:
-        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
-
-    def _apply_pagination(self, querystring: str) -> str:
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
         # Note: Overridden as MSSQL specifies offset before the fetch next limit
         if self._limit is not None or self._offset:
             # Offset has to be present if fetch next is specified in a MSSQL query
@@ -791,6 +804,31 @@ class ClickHouseQuery(Query):
 class ClickHouseQueryBuilder(QueryBuilder):
     QUERY_CLS = ClickHouseQuery
 
+    _distinct_on: List[Term]
+    _limit_by: Optional[TypedTuple[int, int, List[Term]]]
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._final = False
+        self._sample = None
+        self._sample_offset = None
+        self._distinct_on = []
+        self._limit_by = None
+
+    def __copy__(self) -> "ClickHouseQueryBuilder":
+        newone = super().__copy__()
+        newone._limit_by = copy(self._limit_by)
+        return newone
+
+    @builder
+    def final(self) -> "ClickHouseQueryBuilder":
+        self._final = True
+
+    @builder
+    def sample(self, sample: int, offset: Optional[int] = None) -> "ClickHouseQueryBuilder":
+        self._sample = sample
+        self._sample_offset = offset
+
     @staticmethod
     def _delete_sql(**kwargs: Any) -> str:
         return 'ALTER TABLE'
@@ -802,7 +840,14 @@ class ClickHouseQueryBuilder(QueryBuilder):
         selectable = ",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
         if self._delete_from:
             return " {selectable} DELETE".format(selectable=selectable)
-        return " FROM {selectable}".format(selectable=selectable)
+        clauses = [selectable]
+        if self._final is not False:
+            clauses.append("FINAL")
+        if self._sample is not None:
+            clauses.append(f"SAMPLE {self._sample}")
+        if self._sample_offset is not None:
+            clauses.append(f"OFFSET {self._sample_offset}")
+        return " FROM {clauses}".format(clauses=" ".join(clauses))
 
     def _set_sql(self, **kwargs: Any) -> str:
         return " UPDATE {set}".format(
@@ -813,6 +858,55 @@ class ClickHouseQueryBuilder(QueryBuilder):
                 for field, value in self._updates
             )
         )
+
+    @builder
+    def distinct_on(self, *fields: Union[str, Term]) -> "ClickHouseQueryBuilder":
+        for field in fields:
+            if isinstance(field, str):
+                self._distinct_on.append(Field(field))
+            elif isinstance(field, Term):
+                self._distinct_on.append(field)
+
+    def _distinct_sql(self, **kwargs: Any) -> str:
+        if self._distinct_on:
+            return "DISTINCT ON({distinct_on}) ".format(
+                distinct_on=",".join(term.get_sql(with_alias=True, **kwargs) for term in self._distinct_on)
+            )
+        return super()._distinct_sql(**kwargs)
+
+    @builder
+    def limit_by(self, n, *by: Union[str, Term]) -> "ClickHouseQueryBuilder":
+        self._limit_by = (n, 0, [Field(field) if isinstance(field, str) else field for field in by])
+
+    @builder
+    def limit_offset_by(self, n, offset, *by: Union[str, Term]) -> "ClickHouseQueryBuilder":
+        self._limit_by = (n, offset, [Field(field) if isinstance(field, str) else field for field in by])
+
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
+        # LIMIT BY isn't really a pagination per se but since we need
+        # to add this to the query right before an actual LIMIT clause
+        # this is good enough.
+        if self._limit_by:
+            querystring += self._limit_by_sql(**kwargs)
+        return super()._apply_pagination(querystring, **kwargs)
+
+    def _limit_by_sql(self, **kwargs: Any) -> str:
+        (n, offset, by) = self._limit_by
+        by = ",".join(term.get_sql(with_alias=True, **kwargs) for term in by)
+        if offset != 0:
+            return f" LIMIT {n} OFFSET {offset} BY ({by})"
+        else:
+            return f" LIMIT {n} BY ({by})"
+
+    def replace_table(self, current_table: Optional[Table], new_table: Optional[Table]) -> "ClickHouseQueryBuilder":
+        newone = super().replace_table(current_table, new_table)
+        if self._limit_by:
+            newone._limit_by = (
+                self._limit_by[0],
+                self._limit_by[1],
+                [column.replace_table(current_table, new_table) for column in self._limit_by[2]],
+            )
+        return newone
 
 
 class ClickHouseDropQueryBuilder(DropQueryBuilder):
