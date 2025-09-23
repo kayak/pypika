@@ -736,6 +736,7 @@ class QueryBuilder(Selectable, Term):
         self._groupbys = []
         self._with_totals = False
         self._havings = None
+        self._qualifys = None
         self._orderbys = []
         self._joins = []
         self._unions = []
@@ -835,6 +836,7 @@ class QueryBuilder(Selectable, Term):
         self._prewheres = self._prewheres.replace_table(current_table, new_table) if self._prewheres else None
         self._groupbys = [groupby.replace_table(current_table, new_table) for groupby in self._groupbys]
         self._havings = self._havings.replace_table(current_table, new_table) if self._havings else None
+        self._qualifys = self._qualifys.replace_table(current_table, new_table) if self._qualifys else None
         self._orderbys = [
             (orderby[0].replace_table(current_table, new_table), orderby[1]) for orderby in self._orderbys
         ]
@@ -968,6 +970,16 @@ class QueryBuilder(Selectable, Term):
             self._havings &= criterion
         else:
             self._havings = criterion
+
+    @builder
+    def qualify(self, criterion: Union[Term, EmptyCriterion]) -> "QueryBuilder":
+        if isinstance(criterion, EmptyCriterion):
+            return
+
+        if self._qualifys:
+            self._qualifys &= criterion
+        else:
+            self._qualifys = criterion
 
     @builder
     def groupby(self, *terms: Union[str, int, Term]) -> "QueryBuilder":
@@ -1351,6 +1363,9 @@ class QueryBuilder(Selectable, Term):
         if self._havings:
             querystring += self._having_sql(**kwargs)
 
+        if self._qualifys:
+            querystring += self._qualify_sql(**kwargs)
+
         if self._orderbys:
             querystring += self._orderby_sql(**kwargs)
 
@@ -1543,6 +1558,9 @@ class QueryBuilder(Selectable, Term):
 
     def _having_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
         return " HAVING {having}".format(having=self._havings.get_sql(quote_char=quote_char, **kwargs))
+
+    def _qualify_sql(self, quote_char: Optional[str] = None, **kwargs: Any) -> str:
+        return " QUALIFY {qualify}".format(qualify=self._qualifys.get_sql(quote_char=quote_char, **kwargs))
 
     def _offset_sql(self) -> str:
         return " OFFSET {offset}".format(offset=self._offset)
