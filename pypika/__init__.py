@@ -75,6 +75,7 @@ from pypika.queries import (
     Database,
     make_tables as Tables,
     make_columns as Columns,
+    table_class,
 )
 
 # noinspection PyUnresolvedReferences
@@ -142,6 +143,7 @@ __all__ = (
     'Database',
     'Tables',
     'Columns',
+    'table_class',
     'Array',
     'Bracket',
     'Case',
