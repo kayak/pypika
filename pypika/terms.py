@@ -104,11 +104,11 @@ class Term(Node):
 
     @staticmethod
     def wrap_json(
-        val: Union["Term", "QueryBuilder", "Interval", None, str, int, bool], wrapper_cls=None
-    ) -> Union["Term", "QueryBuilder", "Interval", "NullValue", "ValueWrapper", "JSON"]:
+        val: Union["Term", "QueryBuilder", None, str, int, bool], wrapper_cls=None
+    ) -> Union["Term", "QueryBuilder", "NullValue", "ValueWrapper", "JSON"]:
         from .queries import QueryBuilder
 
-        if isinstance(val, (Term, QueryBuilder, Interval)):
+        if isinstance(val, (Term, QueryBuilder)):
             return val
         if val is None:
             return NullValue()
@@ -1650,7 +1650,7 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
         return None
 
 
-class Interval(Node):
+class Interval(Term):
     templates = {
         # PostgreSQL, Redshift and Vertica require quotes around the expr and unit e.g. INTERVAL '1 week'
         Dialects.POSTGRESQL: "INTERVAL '{expr} {unit}'",
