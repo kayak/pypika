@@ -18,7 +18,7 @@ def version():
                 if isinstance(name, ast.Name) and name.id in ('__version__', '__version_info__', 'VERSION'):
                     v = node.value
                     if isinstance(v, ast.Constant):
-                        return v.value
+                        return str(v.value)
 
                     if isinstance(v, ast.Tuple):
                         r = []
