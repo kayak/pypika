@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union
+from typing import Any, List, Optional, Sequence, Tuple as TypedTuple, Type, Union, Set, Dict
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -751,7 +751,7 @@ class QueryBuilder(Selectable, Term):
         self._select_star_tables = set()
         self._mysql_rollup = False
         self._select_into = False
-
+        self._using_insert_dict = False
         self._subquery_count = 0
         self._foreign_table = False
 
@@ -892,6 +892,9 @@ class QueryBuilder(Selectable, Term):
         if self._insert_table is None:
             raise AttributeError("'Query' object has no attribute '%s'" % "insert")
 
+        if self._using_insert_dict:
+            raise QueryException("Cannot mix use of columns() and insert_dict()")
+
         if terms and isinstance(terms[0], (list, tuple)):
             terms = terms[0]
 
@@ -904,6 +907,15 @@ class QueryBuilder(Selectable, Term):
     def insert(self, *terms: Any) -> "QueryBuilder":
         self._apply_terms(*terms)
         self._replace = False
+
+    def insert_dict(self, data: Dict[str, Any]) -> "QueryBuilder":
+        if self._columns:
+            raise QueryException("Cannot mix use of columns() and insert_dict()")
+
+        cols = data.keys()
+        builder = self.columns(*cols).insert(*data.values())
+        builder._using_insert_dict = True
+        return builder
 
     @builder
     def replace(self, *terms: Any) -> "QueryBuilder":
