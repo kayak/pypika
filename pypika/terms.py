@@ -595,20 +595,19 @@ class SystemTimeValue(LiteralValue):
 
 
 class Criterion(Term):
-    def __and__(self, other: Any) -> "ComplexCriterion":
+    def _compare(self, comparator: Comparator, other: Any) -> "ComplexCriterion":
         if isinstance(other, EmptyCriterion):
             return self
-        return ComplexCriterion(Boolean.and_, self, other)
+        return ComplexCriterion(comparator, self, other)
+
+    def __and__(self, other: Any) -> "ComplexCriterion":
+        return self._compare(Boolean.and_, other)
 
     def __or__(self, other: Any) -> "ComplexCriterion":
-        if isinstance(other, EmptyCriterion):
-            return self
-        return ComplexCriterion(Boolean.or_, self, other)
+        return self._compare(Boolean.or_, other)
 
     def __xor__(self, other: Any) -> "ComplexCriterion":
-        if isinstance(other, EmptyCriterion):
-            return self
-        return ComplexCriterion(Boolean.xor_, self, other)
+        return self._compare(Boolean.xor_, other)
 
     @staticmethod
     def any(terms: Iterable[Term] = ()) -> "EmptyCriterion":
