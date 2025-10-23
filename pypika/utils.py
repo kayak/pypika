@@ -78,7 +78,7 @@ def builder(func: Callable[Concatenate[_Self, P], Optional[R]]) -> Callable[Conc
     return _copy
 
 
-def ignore_copy(func: Callable) -> Callable:
+def ignore_copy(func: Callable[[_Self, str], R]) -> Callable[[_Self, str], R]:
     """
     Decorator for wrapping the __getattr__ function for classes that are copied via deepcopy.  This prevents infinite
     recursion caused by deepcopy looking for magic functions in the class. Any class implementing __getattr__ that is
@@ -88,7 +88,8 @@ def ignore_copy(func: Callable) -> Callable:
     model type class (stored in the Query instance) is copied.
     """
 
-    def _getattr(self, name):
+    @wraps(func)
+    def _getattr(self, name: str) -> R:
         if name in [
             "__copy__",
             "__deepcopy__",
