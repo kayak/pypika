@@ -1031,7 +1031,7 @@ class QueryBuilder(Selectable, Term):
     @builder
     def join(
         self, item: Union[Table, "QueryBuilder", AliasedQuery, Selectable], how: JoinType = JoinType.inner
-    ) -> "Joiner":
+    ) -> "Joiner[Self]":
         if isinstance(item, Table):
             return Joiner(self, item, how, type_label="table")
 
@@ -1048,31 +1048,31 @@ class QueryBuilder(Selectable, Term):
 
         raise ValueError("Cannot join on type '%s'" % type(item))
 
-    def inner_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def inner_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.inner)
 
-    def left_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def left_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.left)
 
-    def left_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def left_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.left_outer)
 
-    def right_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def right_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.right)
 
-    def right_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def right_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.right_outer)
 
-    def outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.outer)
 
-    def full_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def full_outer_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.full_outer)
 
-    def cross_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def cross_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.cross)
 
-    def hash_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner":
+    def hash_join(self, item: Union[Table, "QueryBuilder", AliasedQuery]) -> "Joiner[Self]":
         return self.join(item, JoinType.hash)
 
     @builder
@@ -1627,16 +1627,16 @@ class QueryBuilder(Selectable, Term):
         return func(self, *args, **kwargs)
 
 
-class Joiner:
+class Joiner(Generic[QB]):
     def __init__(
-        self, query: QueryBuilder, item: Union[Table, "QueryBuilder", AliasedQuery], how: JoinType, type_label: str
+        self, query: QB, item: Union[Table, "QueryBuilder", AliasedQuery], how: JoinType, type_label: str
     ) -> None:
         self.query = query
         self.item = item
         self.how = how
         self.type_label = type_label
 
-    def on(self, criterion: Optional[Criterion], collate: Optional[str] = None) -> QueryBuilder:
+    def on(self, criterion: Optional[Criterion], collate: Optional[str] = None) -> QB:
         if criterion is None:
             raise JoinException(
                 "Parameter 'criterion' is required for a "
@@ -1646,7 +1646,7 @@ class Joiner:
         self.query.do_join(JoinOn(self.item, self.how, criterion, collate))
         return self.query
 
-    def on_field(self, *fields: Any) -> QueryBuilder:
+    def on_field(self, *fields: Any) -> QB:
         if not fields:
             raise JoinException(
                 "Parameter 'fields' is required for a " "{type} JOIN but was not supplied.".format(type=self.type_label)
@@ -1660,14 +1660,14 @@ class Joiner:
         self.query.do_join(JoinOn(self.item, self.how, criterion))
         return self.query
 
-    def using(self, *fields: Any) -> QueryBuilder:
+    def using(self, *fields: Any) -> QB:
         if not fields:
             raise JoinException("Parameter 'fields' is required when joining with a using clause but was not supplied.")
 
         self.query.do_join(JoinUsing(self.item, self.how, [Field(field) for field in fields]))
         return self.query
 
-    def cross(self) -> QueryBuilder:
+    def cross(self) -> QB:
         """Return cross join"""
         self.query.do_join(Join(self.item, JoinType.cross))
 
