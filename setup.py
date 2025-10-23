@@ -51,7 +51,7 @@ setup(
       package_data={"pypika": ["py.typed"]},
       include_package_data=True,
 
-      install_requires=[],
+      install_requires=["typing_extensions>=4.5.0"],
 
       # Details
       url="https://github.com/kayak/pypika",
