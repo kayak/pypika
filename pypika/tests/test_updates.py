@@ -152,6 +152,11 @@ class PostgresUpdateTests(unittest.TestCase):
 
         self.assertEqual('UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING *', str(q))
 
+    def test_update_returning_no_updates(self):
+        q = PostgreSQLQuery.update(self.table_abc).returning(self.table_abc.star)
+
+        self.assertEqual('', str(q))
+
 
 class SQLLiteUpdateTests(unittest.TestCase):
     table_abc = Table("abc")
