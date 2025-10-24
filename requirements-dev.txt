@@ -7,7 +7,5 @@ numpydoc==1.1.0
 
 # Testing
 parameterized==0.7.0
-tox==3.14.3
-tox-venv==0.4.0
-tox-gh-actions==0.3.0
 coverage==5.1
+pytest
