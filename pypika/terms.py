@@ -62,7 +62,7 @@ class Term(Node):
         self.alias = alias
 
     @builder
-    def as_(self, alias: str) -> "Term":
+    def as_(self, alias: str) -> None:
         self.alias = alias
 
     @property
@@ -671,7 +671,7 @@ class Field(Criterion, JSON):
             yield from self.table.nodes_()
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "Field":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -752,7 +752,7 @@ class Tuple(Criterion):
         return resolve_is_aggregate([val.is_aggregate for val in self.values])
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "Tuple":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -811,7 +811,7 @@ class NestedCriterion(Criterion):
         return resolve_is_aggregate([term.is_aggregate for term in [self.left, self.right, self.nested]])
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "NestedCriterion":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -871,7 +871,7 @@ class BasicCriterion(Criterion):
         return resolve_is_aggregate([term.is_aggregate for term in [self.left, self.right]])
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "BasicCriterion":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -923,7 +923,7 @@ class ContainsCriterion(Criterion):
         return self.term.is_aggregate
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "ContainsCriterion":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -986,7 +986,7 @@ class RangeCriterion(Criterion):
 
 class BetweenCriterion(RangeCriterion):
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "BetweenCriterion":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1031,7 +1031,7 @@ class BitwiseAndCriterion(Criterion):
         yield from self.value.nodes_()
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "BitwiseAndCriterion":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1064,7 +1064,7 @@ class BitwiseOrCriterion(Criterion):
         yield from self.value.nodes_()
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "BitwiseOrCriterion":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1095,7 +1095,7 @@ class NullCriterion(Criterion):
         yield from self.term.nodes_()
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "NullCriterion":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1180,7 +1180,7 @@ class ArithmeticExpression(Term):
         return resolve_is_aggregate([self.left.is_aggregate, self.right.is_aggregate])
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "ArithmeticExpression":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1281,11 +1281,11 @@ class Case(Criterion):
         )
 
     @builder
-    def when(self, criterion: Any, term: Any) -> "Case":
+    def when(self, criterion: Any, term: Any) -> None:
         self._cases.append((criterion, self.wrap_constant(term)))
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "Case":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1362,7 +1362,7 @@ class Not(Criterion):
         return inner
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "Not":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1440,7 +1440,7 @@ class Function(Criterion):
         return resolve_is_aggregate([arg.is_aggregate for arg in self.args])
 
     @builder
-    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> "Function":
+    def replace_table(self, current_table: Optional["Table"], new_table: Optional["Table"]) -> None:
         """
         Replaces all occurrences of the specified table with the new table. Useful when reusing fields across queries.
 
@@ -1505,7 +1505,7 @@ class AggregateFunction(Function):
         self._include_filter = False
 
     @builder
-    def filter(self, *filters: Any) -> "AnalyticFunction":
+    def filter(self, *filters: Any) -> None:
         self._include_filter = True
         self._filters += filters
 
@@ -1536,12 +1536,12 @@ class AnalyticFunction(AggregateFunction):
         self._include_over = False
 
     @builder
-    def over(self, *terms: Any) -> "AnalyticFunction":
+    def over(self, *terms: Any) -> None:
         self._include_over = True
         self._partition += terms
 
     @builder
-    def orderby(self, *terms: Any, **kwargs: Any) -> "AnalyticFunction":
+    def orderby(self, *terms: Any, **kwargs: Any) -> None:
         self._include_over = True
         self._orderbys += [(term, kwargs.get("order")) for term in terms]
 
@@ -1610,11 +1610,11 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
         self.bound = (bound, and_bound) if and_bound else bound
 
     @builder
-    def rows(self, bound: Union[str, EdgeT], and_bound: Optional[EdgeT] = None) -> "WindowFrameAnalyticFunction":
+    def rows(self, bound: Union[str, EdgeT], and_bound: Optional[EdgeT] = None) -> None:
         self._set_frame_and_bounds("ROWS", bound, and_bound)
 
     @builder
-    def range(self, bound: Union[str, EdgeT], and_bound: Optional[EdgeT] = None) -> "WindowFrameAnalyticFunction":
+    def range(self, bound: Union[str, EdgeT], and_bound: Optional[EdgeT] = None) -> None:
         self._set_frame_and_bounds("RANGE", bound, and_bound)
 
     def get_frame_sql(self) -> str:
@@ -1643,7 +1643,7 @@ class IgnoreNullsAnalyticFunction(AnalyticFunction):
         self._ignore_nulls = False
 
     @builder
-    def ignore_nulls(self) -> "IgnoreNullsAnalyticFunction":
+    def ignore_nulls(self) -> None:
         self._ignore_nulls = True
 
     def get_special_params_sql(self, **kwargs: Any) -> Optional[str]:
