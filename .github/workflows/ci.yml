@@ -32,16 +32,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: python -m pip install -U pip -r requirements-dev.txt "coveralls<3.0.0"
+        run: python -m pip install -U pip -r requirements-dev.txt coveralls
 
       - name: Run test suite
         env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_PARALLEL: "true"
+          OVERALLS_SERVICE_JOB_ID: ${{ github.run_id }}
         run: |
           coverage run -m pytest
           coverage xml
-          coveralls
+          coveralls --service=github
   
   mypy:
     name: Type Check
@@ -53,5 +55,5 @@ jobs:
           python-version: "3.12"
       - run: pip install mypy
       - run: |
-          pip install types-setuptools
+          pip install 
           mypy .
