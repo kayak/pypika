@@ -52,4 +52,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install mypy
-      - run: mypy .
+      - run: |
+          pip install types-setuptools
+          mypy .
