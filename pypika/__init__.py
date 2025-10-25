@@ -71,6 +71,7 @@ from pypika.queries import (
     Query,
     Schema,
     Table,
+    Values,
     Column,
     Database,
     make_tables as Tables,
