@@ -20,6 +20,15 @@ class InsertTests(unittest.TestCase):
         self.assertEqual("INSERT INTO \"abc\" VALUES (1,ARRAY[1,'a',true])", str(q))
 
 
+class UpdateTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_postgresquery(self):
+        q = PostgreSQLQuery.update(self.table_abc).set(1, [1, "a", True])
+
+        self.assertEqual("UPDATE \"abc\" SET \"1\"=ARRAY[1,'a',true]", str(q))
+
+
 class JSONObjectTests(unittest.TestCase):
     def test_alias_set_correctly(self):
         table = Table('jsonb_table')

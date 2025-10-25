@@ -1167,7 +1167,7 @@ class AliasTests(unittest.TestCase):
     def test_null_value_with_alias(self):
         q = Query.select(NullValue().as_("abcdef"))
 
-        self.assertEqual('SELECT NULL "abcdef"', str(q))
+        self.assertEqual('SELECT null "abcdef"', str(q))
 
 
 class SubqueryTests(unittest.TestCase):
