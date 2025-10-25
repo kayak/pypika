@@ -80,3 +80,25 @@ class AtTimezoneTests(TestCase):
             'FROM "customers" JOIN "accounts" ON "customers"."account_id"="accounts"."account_id"',
             query.get_sql(with_namespace=True),
         )
+
+
+class IdentifierEscapingTests(TestCase):
+    def test_escape_identifier_quotes(self):
+        customers = Table('customers"')
+        customer_id = getattr(customers, '"id')
+        email = getattr(customers, 'email"').as_('customer_email"')
+
+        query = (
+            Query.from_(customers)
+            .select(customer_id, email)
+            .where(customer_id == "abc")
+            .where(email == "abc@abc.com")
+            .orderby(email, customer_id)
+        )
+
+        self.assertEqual(
+            'SELECT """id","email""" "customer_email""" '
+            'FROM "customers""" WHERE """id"=\'abc\' AND "email"""=\'abc@abc.com\' '
+            'ORDER BY "customer_email""","""id"',
+            query.get_sql(),
+        )
