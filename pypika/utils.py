@@ -50,13 +50,11 @@ R = TypeVar("R")
 
 
 @overload
-def builder(func: Callable[Concatenate[_Self, P], None]) -> Callable[Concatenate[_Self, P], _Self]:
-    ...
+def builder(func: Callable[Concatenate[_Self, P], None]) -> Callable[Concatenate[_Self, P], _Self]: ...
 
 
 @overload
-def builder(func: Callable[Concatenate[_Self, P], R]) -> Callable[Concatenate[_Self, P], R]:
-    ...
+def builder(func: Callable[Concatenate[_Self, P], R]) -> Callable[Concatenate[_Self, P], R]: ...
 
 
 def builder(func: Callable[Concatenate[_Self, P], Optional[R]]) -> Callable[Concatenate[_Self, P], Union[_Self, R]]:
