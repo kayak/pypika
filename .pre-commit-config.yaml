@@ -1,10 +1,10 @@
 exclude: '.git'
-default_stages: [commit]
+default_stages: [pre-commit]
 fail_fast: false
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         files: "pypika.*"
@@ -20,6 +20,6 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/psf/black
-    rev: 23.9.1
+    rev: 25.9.0
     hooks:
       - id: black
