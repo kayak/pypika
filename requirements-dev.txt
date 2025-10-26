@@ -11,6 +11,3 @@ numpydoc==1.1.0
 parameterized==0.7.0
 coverage==5.1
 pytest
-
-# Type Checking
-typing-extensions==4.13.2;python_version<'3.11'

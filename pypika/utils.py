@@ -1,6 +1,11 @@
+import sys
 from functools import wraps
 from typing import Any, Callable, List, Optional, Type, TypeVar, Union, overload
-from typing_extensions import Concatenate, ParamSpec
+
+if sys.version_info >= (3, 10):
+    from typing import Concatenate, ParamSpec
+else:
+    from typing_extensions import Concatenate, ParamSpec
 
 
 __author__ = "Timothy Heys"
@@ -121,7 +126,7 @@ def resolve_is_aggregate(values: List[Optional[bool]]) -> Optional[bool]:
 
 def format_quotes(value: Any, quote_char: Optional[str]) -> str:
     if quote_char:
-        value = value.replace(quote_char, quote_char * 2)
+        value = str(value).replace(quote_char, quote_char * 2)
 
     return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
 

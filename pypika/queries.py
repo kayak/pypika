@@ -1,7 +1,7 @@
+import sys
 from copy import copy
 from functools import reduce
-from typing import Any, Generic, List, Optional, Sequence, Tuple as TypedTuple, Type, TypeVar, Union
-from typing_extensions import Self, Type
+from typing import TYPE_CHECKING, Any, Generic, List, Optional, Sequence, Tuple as TypedTuple, Type, TypeVar, Union
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -29,6 +29,12 @@ from pypika.utils import (
     format_quotes,
     ignore_copy,
 )
+
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
