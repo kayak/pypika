@@ -1,12 +1,8 @@
-import sys
+from __future__ import annotations
+
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, List, Optional, Type, TypeVar, Union, overload
-
-if sys.version_info >= (3, 10):
-    from typing import Concatenate, ParamSpec
-else:
-    from typing_extensions import Concatenate, ParamSpec
-
+from typing import Any, Concatenate, ParamSpec, TypeVar, overload
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -57,7 +53,7 @@ def builder(func: Callable[Concatenate[_Self, P], None]) -> Callable[Concatenate
 def builder(func: Callable[Concatenate[_Self, P], R]) -> Callable[Concatenate[_Self, P], R]: ...
 
 
-def builder(func: Callable[Concatenate[_Self, P], Optional[R]]) -> Callable[Concatenate[_Self, P], Union[_Self, R]]:
+def builder(func: Callable[Concatenate[_Self, P], R | None]) -> Callable[Concatenate[_Self, P], _Self | R]:
     """
     Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
     building queries which mutate the query and return self.  To make the build functions immutable, this decorator is
@@ -67,7 +63,7 @@ def builder(func: Callable[Concatenate[_Self, P], Optional[R]]) -> Callable[Conc
     import copy
 
     @wraps(func)
-    def _copy(self: _Self, *args: P.args, **kwargs: P.kwargs) -> Union[_Self, R]:
+    def _copy(self: _Self, *args: P.args, **kwargs: P.kwargs) -> _Self | R:
         self_copy = copy.copy(self) if getattr(self, "immutable", True) else self
         result = func(self_copy, *args, **kwargs)
 
@@ -100,14 +96,14 @@ def ignore_copy(func: Callable[[_Self, str], R]) -> Callable[[_Self, str], R]:
             "__setstate__",
             "__getnewargs__",
         ]:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
         return func(self, name)
 
     return _getattr
 
 
-def resolve_is_aggregate(values: List[Optional[bool]]) -> Optional[bool]:
+def resolve_is_aggregate(values: list[bool | None]) -> bool | None:
     """
     Resolves the is_aggregate flag for an expression that contains multiple terms.  This works like a voter system,
     each term votes True or False or abstains with None.
@@ -122,7 +118,7 @@ def resolve_is_aggregate(values: List[Optional[bool]]) -> Optional[bool]:
     return None
 
 
-def format_quotes(value: Any, quote_char: Optional[str]) -> str:
+def format_quotes(value: Any, quote_char: str | None) -> str:
     if quote_char:
         value = str(value).replace(quote_char, quote_char * 2)
 
@@ -131,9 +127,9 @@ def format_quotes(value: Any, quote_char: Optional[str]) -> str:
 
 def format_alias_sql(
     sql: str,
-    alias: Optional[str],
-    quote_char: Optional[str] = None,
-    alias_quote_char: Optional[str] = None,
+    alias: str | None,
+    quote_char: str | None = None,
+    alias_quote_char: str | None = None,
     as_keyword: bool = False,
     **kwargs: Any,
 ) -> str:
@@ -144,7 +140,7 @@ def format_alias_sql(
     )
 
 
-def validate(*args: Any, exc: Optional[Exception] = None, type: Optional[Type] = None) -> None:
+def validate(*args: Any, exc: Exception | None = None, type: type | None = None) -> None:
     if type is not None:
         for arg in args:
             if not isinstance(arg, type):

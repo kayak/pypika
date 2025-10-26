@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 
 from pypika.terms import (
@@ -49,8 +51,8 @@ class HasAny(Function):
         right = self._right_array.get_sql()
         sql = "{name}({left},{right})".format(
             name=self.name,
-            left='"%s"' % left if isinstance(self._left_array, Field) else left,
-            right='"%s"' % right if isinstance(self._right_array, Field) else right,
+            left=f'"{left}"' if isinstance(self._left_array, Field) else left,
+            right=f'"{right}"' if isinstance(self._right_array, Field) else right,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -66,7 +68,7 @@ class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
         array = self._array.get_sql()
         sql = "{name}({array})".format(
             name=self.name,
-            array='"%s"' % array if isinstance(self._array, Field) else array,
+            array=f'"{array}"' if isinstance(self._array, Field) else array,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 

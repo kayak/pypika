@@ -1,6 +1,13 @@
 import unittest
 
-from pypika import AliasedQuery, PostgreSQLQuery, Query, SQLLiteQuery, SYSTEM_TIME, Table
+from pypika import (
+    SYSTEM_TIME,
+    AliasedQuery,
+    PostgreSQLQuery,
+    Query,
+    SQLLiteQuery,
+    Table,
+)
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

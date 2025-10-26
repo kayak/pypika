@@ -3,12 +3,16 @@ import unittest
 from pypika import (
     AliasedQuery,
     Case,
-    Field as F,
     MySQLQuery,
     PostgreSQLQuery,
     Query,
     Table,
     Tables,
+)
+from pypika import (
+    Field as F,
+)
+from pypika import (
     functions as fn,
 )
 from pypika.functions import (
@@ -259,11 +263,11 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
 
     def test_insert_on_conflict_no_handler(self):
         with self.assertRaises(QueryException):
-            query = str(PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict(self.table_abc.id))
+            str(PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict(self.table_abc.id))
 
     def test_insert_on_conflict_two_handlers_do_nothing(self):
         with self.assertRaises(QueryException):
-            query = (
+            (
                 PostgreSQLQuery.into(self.table_abc)
                 .insert(1)
                 .on_conflict("id")
@@ -273,7 +277,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
 
     def test_insert_on_conflict_two_handlers_do_update(self):
         with self.assertRaises(QueryException):
-            query = (
+            (
                 PostgreSQLQuery.into(self.table_abc)
                 .insert(1)
                 .on_conflict(self.table_abc.id)
@@ -283,13 +287,11 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
 
     def test_non_insert_on_conflict_do_nothing(self):
         with self.assertRaises(QueryException):
-            query = PostgreSQLQuery.update(self.table_abc).set("foo", "bar").on_conflict("id").do_nothing()
+            PostgreSQLQuery.update(self.table_abc).set("foo", "bar").on_conflict("id").do_nothing()
 
     def test_non_insert_on_conflict_do_update(self):
         with self.assertRaises(QueryException):
-            query = (
-                PostgreSQLQuery.update(self.table_abc).set("foo", "bar").on_conflict("id").do_update(["name"], ["m"])
-            )
+            (PostgreSQLQuery.update(self.table_abc).set("foo", "bar").on_conflict("id").do_update(["name"], ["m"]))
 
     def test_insert_on_fieldless_conflict_do_nothing(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1).on_conflict(None).do_nothing()
@@ -298,7 +300,7 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
 
     def test_insert_on_fieldless_conflict_do_update_field(self):
         with self.assertRaises(QueryException):
-            query = str(
+            str(
                 PostgreSQLQuery.into(self.table_abc)
                 .insert(1, "m")
                 .on_conflict(None)

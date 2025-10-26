@@ -2,6 +2,8 @@ import unittest
 
 from pypika import (
     Field as F,
+)
+from pypika import (
     Interval,
 )
 from pypika.enums import Dialects

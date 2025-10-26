@@ -3,11 +3,11 @@ from datetime import date
 from enum import Enum
 
 from pypika import (
+    SYSTEM_TIME,
     AliasedQuery,
     Case,
     ClickHouseQuery,
     EmptyCriterion,
-    Field as F,
     Index,
     MSSQLQuery,
     MySQLQuery,
@@ -22,8 +22,12 @@ from pypika import (
     Table,
     Tables,
     VerticaQuery,
+)
+from pypika import (
+    Field as F,
+)
+from pypika import (
     functions as fn,
-    SYSTEM_TIME,
 )
 from pypika.terms import ValueWrapper
 
@@ -398,11 +402,9 @@ class WhereTests(unittest.TestCase):
             q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(nowait=True)
             self.assertEqual(
                 'SELECT * '
-                'FROM {quote_char}abc{quote_char} '
-                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
-                'FOR UPDATE NOWAIT'.format(
-                    quote_char=quote_char,
-                ),
+                f'FROM {quote_char}abc{quote_char} '
+                f'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE NOWAIT',
                 str(q),
             )
 
@@ -415,11 +417,9 @@ class WhereTests(unittest.TestCase):
             q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(skip_locked=True)
             self.assertEqual(
                 'SELECT * '
-                'FROM {quote_char}abc{quote_char} '
-                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
-                'FOR UPDATE SKIP LOCKED'.format(
-                    quote_char=quote_char,
-                ),
+                f'FROM {quote_char}abc{quote_char} '
+                f'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                'FOR UPDATE SKIP LOCKED',
                 str(q),
             )
 
@@ -432,11 +432,9 @@ class WhereTests(unittest.TestCase):
             q = query_cls.from_(self.t).select("*").where(self.t.foo == self.t.bar).for_update(of=("abc",))
             self.assertEqual(
                 'SELECT * '
-                'FROM {quote_char}abc{quote_char} '
-                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
-                'FOR UPDATE OF {quote_char}abc{quote_char}'.format(
-                    quote_char=quote_char,
-                ),
+                f'FROM {quote_char}abc{quote_char} '
+                f'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                f'FOR UPDATE OF {quote_char}abc{quote_char}',
                 str(q),
             )
 
@@ -458,25 +456,21 @@ class WhereTests(unittest.TestCase):
                 str(q),
                 [
                     'SELECT * '
-                    'FROM {quote_char}abc{quote_char} '
-                    'JOIN {quote_char}cba{quote_char} '
-                    'ON {quote_char}abc{quote_char}.{quote_char}id{quote_char}='
-                    '{quote_char}cba{quote_char}.{quote_char}abc_id{quote_char} '
-                    'WHERE {quote_char}abc{quote_char}.{quote_char}foo{quote_char}='
-                    '{quote_char}abc{quote_char}.{quote_char}bar{quote_char} '
-                    'FOR UPDATE OF {quote_char}cba{quote_char}, {quote_char}abc{quote_char}'.format(
-                        quote_char=quote_char,
-                    ),
+                    f'FROM {quote_char}abc{quote_char} '
+                    f'JOIN {quote_char}cba{quote_char} '
+                    f'ON {quote_char}abc{quote_char}.{quote_char}id{quote_char}='
+                    f'{quote_char}cba{quote_char}.{quote_char}abc_id{quote_char} '
+                    f'WHERE {quote_char}abc{quote_char}.{quote_char}foo{quote_char}='
+                    f'{quote_char}abc{quote_char}.{quote_char}bar{quote_char} '
+                    f'FOR UPDATE OF {quote_char}cba{quote_char}, {quote_char}abc{quote_char}',
                     'SELECT * '
-                    'FROM {quote_char}abc{quote_char} '
-                    'JOIN {quote_char}cba{quote_char} '
-                    'ON {quote_char}abc{quote_char}.{quote_char}id{quote_char}='
-                    '{quote_char}cba{quote_char}.{quote_char}abc_id{quote_char} '
-                    'WHERE {quote_char}abc{quote_char}.{quote_char}foo{quote_char}='
-                    '{quote_char}abc{quote_char}.{quote_char}bar{quote_char} '
-                    'FOR UPDATE OF {quote_char}abc{quote_char}, {quote_char}cba{quote_char}'.format(
-                        quote_char=quote_char,
-                    ),
+                    f'FROM {quote_char}abc{quote_char} '
+                    f'JOIN {quote_char}cba{quote_char} '
+                    f'ON {quote_char}abc{quote_char}.{quote_char}id{quote_char}='
+                    f'{quote_char}cba{quote_char}.{quote_char}abc_id{quote_char} '
+                    f'WHERE {quote_char}abc{quote_char}.{quote_char}foo{quote_char}='
+                    f'{quote_char}abc{quote_char}.{quote_char}bar{quote_char} '
+                    f'FOR UPDATE OF {quote_char}abc{quote_char}, {quote_char}cba{quote_char}',
                 ],
             )
 
@@ -489,11 +483,9 @@ class WhereTests(unittest.TestCase):
             quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
             self.assertEqual(
                 'SELECT * '
-                'FROM {quote_char}abc{quote_char} '
-                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
-                'FOR UPDATE OF {quote_char}abc{quote_char} NOWAIT'.format(
-                    quote_char=quote_char,
-                ),
+                f'FROM {quote_char}abc{quote_char} '
+                f'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                f'FOR UPDATE OF {quote_char}abc{quote_char} NOWAIT',
                 str(q),
             )
 
@@ -511,11 +503,9 @@ class WhereTests(unittest.TestCase):
             quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
             self.assertEqual(
                 'SELECT * '
-                'FROM {quote_char}abc{quote_char} '
-                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
-                'FOR UPDATE OF {quote_char}abc{quote_char} SKIP LOCKED'.format(
-                    quote_char=quote_char,
-                ),
+                f'FROM {quote_char}abc{quote_char} '
+                f'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                f'FOR UPDATE OF {quote_char}abc{quote_char} SKIP LOCKED',
                 str(q),
             )
 
@@ -533,11 +523,9 @@ class WhereTests(unittest.TestCase):
             quote_char = query_cls._builder().QUOTE_CHAR if isinstance(query_cls._builder().QUOTE_CHAR, str) else '"'
             self.assertEqual(
                 'SELECT * '
-                'FROM {quote_char}abc{quote_char} '
-                'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
-                'FOR UPDATE OF {quote_char}abc{quote_char} SKIP LOCKED'.format(
-                    quote_char=quote_char,
-                ),
+                f'FROM {quote_char}abc{quote_char} '
+                f'WHERE {quote_char}foo{quote_char}={quote_char}bar{quote_char} '
+                f'FOR UPDATE OF {quote_char}abc{quote_char} SKIP LOCKED',
                 str(q),
             )
 

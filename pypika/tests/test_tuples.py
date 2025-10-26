@@ -3,8 +3,8 @@ import unittest
 from pypika import (
     Array,
     Bracket,
-    Query,
     PostgreSQLQuery,
+    Query,
     Table,
     Tables,
     Tuple,

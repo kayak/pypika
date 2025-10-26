@@ -9,15 +9,15 @@ from pypika.clickhouse.type_conversion import (
     ToFixedString,
     ToFloat32,
     ToFloat64,
+    ToInt8,
     ToInt16,
     ToInt32,
     ToInt64,
-    ToInt8,
     ToString,
+    ToUInt8,
     ToUInt16,
     ToUInt32,
     ToUInt64,
-    ToUInt8,
 )
 
 

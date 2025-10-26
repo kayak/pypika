@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import MySQLQuery, QueryException, Table, Column
+from pypika import Column, MySQLQuery, QueryException, Table
 
 
 class SelectTests(unittest.TestCase):

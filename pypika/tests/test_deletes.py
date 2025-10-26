@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import PostgreSQLQuery, Query, SYSTEM_TIME, Table
+from pypika import SYSTEM_TIME, PostgreSQLQuery, Query, Table
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

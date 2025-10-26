@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pypika import Query, Table, Field
+from pypika import Field, Query, Table
 from pypika.terms import AtTimezone
 
 

@@ -1,6 +1,7 @@
 import unittest
 
-from pypika import Criterion, JoinType, Order, Query, Tables, analytics as an
+from pypika import Criterion, JoinType, Order, Query, Tables
+from pypika import analytics as an
 from pypika.analytics import Lag, Lead
 
 __author__ = "Timothy Heys"
@@ -148,7 +149,7 @@ class RankTests(unittest.TestCase):
     def test_filter(self):
         expr = (
             an.LastValue(self.table_abc.fizz)
-            .filter(Criterion.all([self.table_abc.bar == True]))
+            .filter(Criterion.all([self.table_abc.bar]))
             .over(self.table_abc.foo)
             .orderby(self.table_abc.date)
         )
