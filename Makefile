@@ -12,7 +12,8 @@ install:         ## Install development dependencies
 	pre-commit install
 
 test:            ## Run tests
-	tox
+	coverage run -m pytest
+	coverage report -m
 
 docs.build:      ## Build the documentation
 	$(SPHINXBUILD) $(SOURCEDIR) $(BUILDDIR) -b html -E

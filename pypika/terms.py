@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import inspect
 import re
+import sys
 import uuid
 from datetime import (
     date,
@@ -21,6 +24,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    overload,
 )
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
@@ -35,6 +39,10 @@ from pypika.utils import (
 )
 
 if TYPE_CHECKING:
+    if sys.version_info < (3, 11):
+        from typing_extensions import Self
+    else:
+        from typing import Self
     from pypika.queries import QueryBuilder, Selectable, Table
 
 
@@ -593,23 +601,30 @@ class SystemTimeValue(LiteralValue):
 
 
 class Criterion(Term):
-    def __and__(self, other: Any) -> "ComplexCriterion":
-        if isinstance(other, EmptyCriterion):
-            return self
-        return ComplexCriterion(Boolean.and_, self, other)
+    @overload
+    def _compare(self, comparator: Comparator, other: EmptyCriterion) -> "Self":
+        ...
 
-    def __or__(self, other: Any) -> "ComplexCriterion":
-        if isinstance(other, EmptyCriterion):
-            return self
-        return ComplexCriterion(Boolean.or_, self, other)
+    @overload
+    def _compare(self, comparator: Comparator, other: Any) -> "ComplexCriterion":
+        ...
 
-    def __xor__(self, other: Any) -> "ComplexCriterion":
+    def _compare(self, comparator: Comparator, other: Any) -> "Self | ComplexCriterion":
         if isinstance(other, EmptyCriterion):
             return self
-        return ComplexCriterion(Boolean.xor_, self, other)
+        return ComplexCriterion(comparator, self, other)
+
+    def __and__(self, other: Any) -> "Self | ComplexCriterion":
+        return self._compare(Boolean.and_, other)
+
+    def __or__(self, other: Any) -> "Self | ComplexCriterion":
+        return self._compare(Boolean.or_, other)
+
+    def __xor__(self, other: Any) -> "Self | ComplexCriterion":
+        return self._compare(Boolean.xor_, other)
 
     @staticmethod
-    def any(terms: Iterable[Term] = ()) -> "EmptyCriterion":
+    def any(terms: Iterable[Term] = ()) -> "EmptyCriterion | Term | ComplexCriterion":
         crit = EmptyCriterion()
 
         for term in terms:
@@ -618,7 +633,7 @@ class Criterion(Term):
         return crit
 
     @staticmethod
-    def all(terms: Iterable[Any] = ()) -> "EmptyCriterion":
+    def all(terms: Iterable[Any] = ()) -> "EmptyCriterion | Any | ComplexCriterion":
         crit = EmptyCriterion()
 
         for term in terms:
