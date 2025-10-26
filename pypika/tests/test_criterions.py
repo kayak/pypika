@@ -10,8 +10,6 @@ from pypika import (
     EmptyCriterion,
     Field,
     Table,
-)
-from pypika import (
     functions as fn,
 )
 from pypika.queries import QueryBuilder
@@ -47,9 +45,9 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"crit"."foo"=0.5', str(c2))
 
     def test__criterion_eq_bool(self):
-        c1 = Field("foo")
+        c1 = Field("foo") == True
         c2 = Field("foo", table=self.t).eq(True)
-        c3 = not Field("foo")
+        c3 = Field("foo") == False
         c4 = Field("foo", table=self.t).eq(False)
 
         self.assertEqual('"foo"=true', str(c1))
@@ -86,8 +84,8 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"crit"."foo"=\'12:30:55\'', str(c2))
 
     def test__criterion_eq_right(self):
-        c1 = Field("foo") == 1
-        c2 = Field("foo", table=self.t) == -1
+        c1 = 1 == Field("foo")
+        c2 = -1 == Field("foo", table=self.t)
 
         self.assertEqual('"foo"=1', str(c1))
         self.assertEqual('"crit"."foo"=-1', str(c2))
@@ -144,8 +142,8 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"crit"."foo"<>\'12:30:55\'', str(c2))
 
     def test__criterion_ne_right(self):
-        c1 = Field("foo") != 1
-        c2 = Field("foo", table=self.t) != -1
+        c1 = 1 != Field("foo")
+        c2 = -1 != Field("foo", table=self.t)
 
         self.assertEqual('"foo"<>1', str(c1))
         self.assertEqual('"crit"."foo"<>-1', str(c2))
@@ -181,8 +179,8 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"crit"."foo"<\'12:30:55\'', str(c2))
 
     def test__criterion_lt_right(self):
-        c1 = Field("foo") < 1
-        c2 = Field("foo", table=self.t) < -1
+        c1 = 1 > Field("foo")
+        c2 = -1 > Field("foo", table=self.t)
 
         self.assertEqual('"foo"<1', str(c1))
         self.assertEqual('"crit"."foo"<-1', str(c2))
@@ -218,8 +216,8 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"crit"."foo">\'12:30:55\'', str(c2))
 
     def test__criterion_gt_right(self):
-        c1 = Field("foo") > 1
-        c2 = Field("foo", table=self.t) > -1
+        c1 = 1 < Field("foo")
+        c2 = -1 < Field("foo", table=self.t)
 
         self.assertEqual('"foo">1', str(c1))
         self.assertEqual('"crit"."foo">-1', str(c2))
@@ -255,8 +253,8 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"crit"."foo"<=\'12:30:55\'', str(c2))
 
     def test__criterion_lte_right(self):
-        c1 = Field("foo") <= 1
-        c2 = Field("foo", table=self.t) <= -1
+        c1 = 1 >= Field("foo")
+        c2 = -1 >= Field("foo", table=self.t)
 
         self.assertEqual('"foo"<=1', str(c1))
         self.assertEqual('"crit"."foo"<=-1', str(c2))
@@ -292,8 +290,8 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"crit"."foo">=\'12:30:55\'', str(c2))
 
     def test__criterion_gte_right(self):
-        c1 = Field("foo") >= 1
-        c2 = Field("foo", table=self.t) >= -1
+        c1 = 1 <= Field("foo")
+        c2 = -1 <= Field("foo", table=self.t)
 
         self.assertEqual('"foo">=1', str(c1))
         self.assertEqual('"crit"."foo">=-1', str(c2))
@@ -437,7 +435,7 @@ class BetweenTests(unittest.TestCase):
         )
         self.assertEqual("\"foo\" BETWEEN '2000-01-01T00:00:00' AND '2000-12-31T23:59:59'", str(c3))
 
-    def test__between_time(self):
+    def test__between_datetime(self):
         c1 = Field("foo").between(time(0, 0, 0), time(23, 59, 59))
         c2 = Field("foo", table=self.t).between(time(0, 0, 0), time(23, 59, 59))
         c3 = Field("foo")[time(0, 0, 0) : time(23, 59, 59)]
@@ -529,8 +527,8 @@ class IsInTests(unittest.TestCase):
         self.assertRaises(AttributeError, lambda: str(fn.Coalesce(Field("foo"), 0).isin('SHOULD_FAIL')))
 
     def test__in_unicode(self):
-        c1 = Field("foo").isin(["a", "b"])
-        c2 = Field("foo", table=self.t).isin(["a", "b"])
+        c1 = Field("foo").isin([u"a", u"b"])
+        c2 = Field("foo", table=self.t).isin([u"a", u"b"])
 
         self.assertEqual("\"foo\" IN ('a','b')", str(c1))
         self.assertEqual("\"isin\".\"foo\" IN ('a','b')", str(c2))

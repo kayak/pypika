@@ -8,18 +8,10 @@ from pypika import (
     Schema,
     VerticaQuery,
 )
-from pypika import (
-    Field as F,
-)
-from pypika import (
-    Query as Q,
-)
-from pypika import (
-    Table as T,
-)
-from pypika import (
-    functions as fn,
-)
+from pypika import Field as F
+from pypika import Query as Q
+from pypika import Table as T
+from pypika import functions as fn
 from pypika.enums import Dialects, SqlTypes
 
 __author__ = "Timothy Heys"
@@ -355,8 +347,8 @@ class ArithmeticTests(unittest.TestCase):
         self.assertEqual('SELECT FLOOR("a"/("b"/2)) FROM "abc"', str(q4))
 
     def test__complex_op_nested_parentheses(self):
-        q1 = Q.from_("abc").select(F("a") / (F("b") / (F("c") / 2)))
-        q2 = Q.from_("abc").select(self.t.a / (self.t.b / (self.t.c / 2)))
+        q1 = Q.from_("abc").select(F("a") / (F("b") / ((F("c") / 2))))
+        q2 = Q.from_("abc").select(self.t.a / (self.t.b / ((self.t.c / 2))))
 
         self.assertEqual('SELECT "a"/("b"/("c"/2)) FROM "abc"', str(q1))
         self.assertEqual('SELECT "a"/("b"/("c"/2)) FROM "abc"', str(q2))
@@ -736,7 +728,7 @@ class DateFunctionsTests(unittest.TestCase):
         q = Q.from_(self.t).select(fn.Extract(date_part, self.t.foo))
 
         value = getattr(date_part, 'value', date_part)
-        self.assertEqual(f'SELECT EXTRACT({value} FROM "foo") FROM "abc"', str(q))
+        self.assertEqual('SELECT EXTRACT(%s FROM "foo") FROM "abc"' % value, str(q))
 
     def test_extract_microsecond(self):
         self._test_extract_datepart(DatePart.microsecond)

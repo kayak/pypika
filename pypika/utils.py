@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 from functools import wraps
 from typing import Any, Concatenate, ParamSpec, TypeVar, overload
+
+if sys.version_info >= (3, 10):
+    from typing import Concatenate, ParamSpec
+else:
+    from typing_extensions import Concatenate, ParamSpec
+
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

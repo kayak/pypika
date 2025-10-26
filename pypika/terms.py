@@ -5,18 +5,9 @@ import re
 import sys
 import uuid
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from datetime import (
-    date,
-    datetime,
-    time,
-)
+from datetime import date, datetime, time
 from enum import Enum
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    TypeVar,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from pypika.enums import (
     Arithmetic,

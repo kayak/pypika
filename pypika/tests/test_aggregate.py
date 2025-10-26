@@ -4,8 +4,6 @@ from pypika import (
     Case,
     Field,
     Table,
-)
-from pypika import (
     functions as fn,
 )
 from pypika.terms import (
