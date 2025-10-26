@@ -17,16 +17,14 @@ def version():
                 name = node.targets[0]
                 if isinstance(name, ast.Name) and name.id in ('__version__', '__version_info__', 'VERSION'):
                     v = node.value
-                    if isinstance(v, ast.Str):
-                        return v.s
+                    if isinstance(v, ast.Constant):
+                        return str(v.value)
 
                     if isinstance(v, ast.Tuple):
                         r = []
                         for e in v.elts:
-                            if isinstance(e, ast.Str):
-                                r.append(e.s)
-                            elif isinstance(e, ast.Num):
-                                r.append(str(e.n))
+                            if isinstance(e, ast.Constant):
+                                r.append(str(e.value))
                         return '.'.join(r)
 
 
@@ -51,7 +49,7 @@ setup(
       package_data={"pypika": ["py.typed"]},
       include_package_data=True,
 
-      install_requires=[],
+      install_requires=["typing_extensions>=4.5.0"],
 
       # Details
       url="https://github.com/kayak/pypika",

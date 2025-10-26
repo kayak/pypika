@@ -10,32 +10,50 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
       - uses: pre-commit/action@v3.0.0
 
   test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
+    name: Unit tests on Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 5
+      fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.9", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "pypy3.9", "pypy3.10"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: python -m pip install -U pip -r requirements-dev.txt "coveralls<3.0.0"
+        run: python -m pip install -U pip -r requirements-dev.txt coveralls
 
       - name: Run test suite
         env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_PARALLEL: "true"
+          OVERALLS_SERVICE_JOB_ID: ${{ github.run_id }}
         run: |
-          tox
-          coveralls
+          coverage run -m pytest
+          coverage xml
+          coveralls --service=github
+  
+  mypy:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install mypy
+      - run: |
+          pip install 
+          mypy .

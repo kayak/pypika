@@ -1,4 +1,7 @@
-from typing import Any, Callable, List, Optional, Type, TypeVar
+from functools import wraps
+from typing import Any, Callable, List, Optional, Type, TypeVar, Union, overload
+from typing_extensions import Concatenate, ParamSpec
+
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -36,10 +39,22 @@ class FunctionException(Exception):
     pass
 
 
-C = TypeVar("C")
+_Self = TypeVar("_Self")
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
-def builder(func: C) -> C:
+@overload
+def builder(func: Callable[Concatenate[_Self, P], None]) -> Callable[Concatenate[_Self, P], _Self]:
+    ...
+
+
+@overload
+def builder(func: Callable[Concatenate[_Self, P], R]) -> Callable[Concatenate[_Self, P], R]:
+    ...
+
+
+def builder(func: Callable[Concatenate[_Self, P], Optional[R]]) -> Callable[Concatenate[_Self, P], Union[_Self, R]]:
     """
     Decorator for wrapper "builder" functions.  These are functions on the Query class or other classes used for
     building queries which mutate the query and return self.  To make the build functions immutable, this decorator is
@@ -48,7 +63,8 @@ def builder(func: C) -> C:
     """
     import copy
 
-    def _copy(self, *args, **kwargs):
+    @wraps(func)
+    def _copy(self: _Self, *args: P.args, **kwargs: P.kwargs) -> Union[_Self, R]:
         self_copy = copy.copy(self) if getattr(self, "immutable", True) else self
         result = func(self_copy, *args, **kwargs)
 
@@ -62,7 +78,7 @@ def builder(func: C) -> C:
     return _copy
 
 
-def ignore_copy(func: Callable) -> Callable:
+def ignore_copy(func: Callable[[_Self, str], R]) -> Callable[[_Self, str], R]:
     """
     Decorator for wrapping the __getattr__ function for classes that are copied via deepcopy.  This prevents infinite
     recursion caused by deepcopy looking for magic functions in the class. Any class implementing __getattr__ that is
@@ -72,7 +88,8 @@ def ignore_copy(func: Callable) -> Callable:
     model type class (stored in the Query instance) is copied.
     """
 
-    def _getattr(self, name):
+    @wraps(func)
+    def _getattr(self, name: str) -> R:
         if name in [
             "__copy__",
             "__deepcopy__",
@@ -103,6 +120,9 @@ def resolve_is_aggregate(values: List[Optional[bool]]) -> Optional[bool]:
 
 
 def format_quotes(value: Any, quote_char: Optional[str]) -> str:
+    if quote_char:
+        value = value.replace(quote_char, quote_char * 2)
+
     return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
 
 
