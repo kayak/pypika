@@ -11,7 +11,9 @@ from pypika.utils import format_alias_sql
 
 
 class Array(Term):
-    def __init__(self, values: list, converter_cls=None, converter_options: dict = None, alias: str = None):
+    def __init__(
+        self, values: list, converter_cls=None, converter_options: dict | None = None, alias: str | None = None
+    ):
         super().__init__(alias)
         self._values = values
         self._converter_cls = converter_cls
@@ -36,8 +38,8 @@ class HasAny(Function):
         self,
         left_array: Array or Field,
         right_array: Array or Field,
-        alias: str = None,
-        schema: str = None,
+        alias: str | None = None,
+        schema: str | None = None,
     ):
         self._left_array = left_array
         self._right_array = right_array
@@ -51,14 +53,14 @@ class HasAny(Function):
         right = self._right_array.get_sql()
         sql = "{name}({left},{right})".format(
             name=self.name,
-            left=f'"{left}"' if isinstance(self._left_array, Field) else left,
-            right=f'"{right}"' if isinstance(self._right_array, Field) else right,
+            left='"%s"' % left if isinstance(self._left_array, Field) else left,
+            right='"%s"' % right if isinstance(self._right_array, Field) else right,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
-    def __init__(self, array: Array or Field, alias: str = None, schema: str = None):
+    def __init__(self, array: Array or Field, alias: str | None = None, schema: str | None = None):
         self.schema = schema
         self.alias = alias
         self.name = self.clickhouse_function()
@@ -68,7 +70,7 @@ class _AbstractArrayFunction(Function, metaclass=abc.ABCMeta):
         array = self._array.get_sql()
         sql = "{name}({array})".format(
             name=self.name,
-            array=f'"{array}"' if isinstance(self._array, Field) else array,
+            array='"%s"' % array if isinstance(self._array, Field) else array,
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 

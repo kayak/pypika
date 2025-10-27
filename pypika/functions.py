@@ -39,7 +39,7 @@ class DistinctOptionFunction(AggregateFunction):
 
 class Count(DistinctOptionFunction):
     def __init__(self, param: str | Field, alias: str | None = None) -> None:
-        is_star = isinstance(param, str) and param == "*"
+        is_star = isinstance(param, str) and "*" == param
         super().__init__("COUNT", Star() if is_star else param, alias=alias)
 
 
@@ -105,7 +105,7 @@ class ApproximatePercentile(AggregateFunction):
         self.percentile = float(percentile)
 
     def get_special_params_sql(self, **kwargs):
-        return f"USING PARAMETERS percentile={self.percentile}"
+        return "USING PARAMETERS percentile={percentile}".format(percentile=self.percentile)
 
 
 # Type Functions
@@ -116,8 +116,7 @@ class Cast(Function):
 
     def get_special_params_sql(self, **kwargs):
         type_sql = self.as_type.get_sql(**kwargs) if hasattr(self.as_type, "get_sql") else str(self.as_type).upper()
-
-        return f"AS {type_sql}"
+        return "AS {type}".format(type=type_sql)
 
 
 class Convert(Function):
@@ -126,7 +125,7 @@ class Convert(Function):
         self.encoding = encoding
 
     def get_special_params_sql(self, **kwargs):
-        return f"USING {self.encoding.value}"
+        return "USING {type}".format(type=self.encoding.value)
 
 
 class ToChar(Function):
@@ -296,7 +295,7 @@ class Extract(Function):
         self.field = field
 
     def get_special_params_sql(self, **kwargs):
-        return f"FROM {self.field.get_sql(**kwargs)}"
+        return "FROM {field}".format(field=self.field.get_sql(**kwargs))
 
 
 # Null Functions

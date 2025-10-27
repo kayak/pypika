@@ -103,7 +103,7 @@ def ignore_copy(func: Callable[[_Self, str], R]) -> Callable[[_Self, str], R]:
             "__setstate__",
             "__getnewargs__",
         ]:
-            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
 
         return func(self, name)
 

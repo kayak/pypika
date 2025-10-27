@@ -164,7 +164,8 @@ class MySQLQueryBuilder(QueryBuilder):
     def _on_duplicate_key_update_sql(self, **kwargs: Any) -> str:
         return " ON DUPLICATE KEY UPDATE {updates}".format(
             updates=",".join(
-                f"{field.get_sql(**kwargs)}={value.get_sql(**kwargs)}" for field, value in self._duplicate_updates
+                "{field}={value}".format(field=field.get_sql(**kwargs), value=value.get_sql(**kwargs))
+                for field, value in self._duplicate_updates
             )
         )
 
@@ -218,10 +219,10 @@ class MySQLLoadQueryBuilder:
         return querystring
 
     def _load_file_sql(self, **kwargs: Any) -> str:
-        return f"LOAD DATA LOCAL INFILE '{self._load_file}'"
+        return "LOAD DATA LOCAL INFILE '{}'".format(self._load_file)
 
     def _into_table_sql(self, **kwargs: Any) -> str:
-        return f" INTO TABLE `{self._into_table.get_sql(**kwargs)}`"
+        return " INTO TABLE `{}`".format(self._into_table.get_sql(**kwargs))
 
     def _options_sql(self, **kwargs: Any) -> str:
         return " FIELDS TERMINATED BY ','"
@@ -271,7 +272,7 @@ class VerticaQueryBuilder(QueryBuilder):
         sql = super().get_sql(*args, **kwargs)
 
         if self._hint is not None:
-            sql = "".join([sql[:7], f"/*+label({self._hint})*/", sql[6:]])
+            sql = "".join([sql[:7], "/*+label({hint})*/".format(hint=self._hint), sql[6:]])
 
         return sql
 
@@ -311,7 +312,10 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
         return table_options
 
     def _as_select_sql(self, **kwargs: Any) -> str:
-        return f"{self._preserve_rows_sql()} AS ({self._as_select.get_sql(**kwargs)})"
+        return "{preserve_rows} AS ({query})".format(
+            preserve_rows=self._preserve_rows_sql(),
+            query=self._as_select.get_sql(**kwargs),
+        )
 
     def _preserve_rows_sql(self) -> str:
         return " ON COMMIT PRESERVE ROWS" if self._preserve_rows else ""
@@ -342,10 +346,10 @@ class VerticaCopyQueryBuilder:
         return querystring
 
     def _copy_table_sql(self, **kwargs: Any) -> str:
-        return f'COPY "{self._copy_table.get_sql(**kwargs)}"'
+        return 'COPY "{}"'.format(self._copy_table.get_sql(**kwargs))
 
     def _from_file_sql(self, **kwargs: Any) -> str:
-        return f" FROM LOCAL '{self._from_file}'"
+        return " FROM LOCAL '{}'".format(self._from_file)
 
     def _options_sql(self, **kwargs: Any) -> str:
         return " PARSER fcsvparser(header=false)"
@@ -356,10 +360,10 @@ class VerticaCopyQueryBuilder:
 
 class FetchNextAndOffsetRowsQueryBuilder(QueryBuilder):
     def _limit_sql(self) -> str:
-        return f" FETCH NEXT {self._limit} ROWS ONLY"
+        return " FETCH NEXT {limit} ROWS ONLY".format(limit=self._limit)
 
     def _offset_sql(self) -> str:
-        return f" OFFSET {self._offset or 0} ROWS"
+        return " OFFSET {offset} ROWS".format(offset=self._offset or 0)
 
     @builder
     def fetch_next(self, limit: int) -> None:
@@ -544,7 +548,7 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             conflict_query += " (" + ', '.join(fields) + ")"
 
         if self._on_conflict_wheres:
-            conflict_query += f" WHERE {self._on_conflict_wheres.get_sql(subquery=True, **kwargs)}"
+            conflict_query += " WHERE {where}".format(where=self._on_conflict_wheres.get_sql(subquery=True, **kwargs))
 
         return conflict_query
 
@@ -569,14 +573,24 @@ class PostgreSQLQueryBuilder(QueryBuilder):
             updates = []
             for field, value in self._on_conflict_do_updates:
                 if value:
-                    updates.append(f"{field.get_sql(**kwargs)}={value.get_sql(with_namespace=True, **kwargs)}")
+                    updates.append(
+                        "{field}={value}".format(
+                            field=field.get_sql(**kwargs),
+                            value=value.get_sql(with_namespace=True, **kwargs),
+                        )
+                    )
                 else:
-                    updates.append(f"{field.get_sql(**kwargs)}=EXCLUDED.{field.get_sql(**kwargs)}")
+                    updates.append(
+                        "{field}=EXCLUDED.{value}".format(
+                            field=field.get_sql(**kwargs),
+                            value=field.get_sql(**kwargs),
+                        )
+                    )
             action_sql = " DO UPDATE SET {updates}".format(updates=",".join(updates))
 
             if self._on_conflict_do_update_wheres:
-                action_sql += (
-                    f" WHERE {self._on_conflict_do_update_wheres.get_sql(subquery=True, with_namespace=True, **kwargs)}"
+                action_sql += " WHERE {where}".format(
+                    where=self._on_conflict_do_update_wheres.get_sql(subquery=True, with_namespace=True, **kwargs)
                 )
             return action_sql
 
@@ -816,7 +830,7 @@ class ClickHouseQueryBuilder(QueryBuilder):
         return 'ALTER TABLE'
 
     def _update_sql(self, **kwargs: Any) -> str:
-        return f"ALTER TABLE {self._update_table.get_sql(**kwargs)}"
+        return "ALTER TABLE {table}".format(table=self._update_table.get_sql(**kwargs))
 
     def _from_sql(self, with_namespace: bool = False, **kwargs: Any) -> str:
         selectable = ",".join(clause.get_sql(subquery=True, with_alias=True, **kwargs) for clause in self._from)
@@ -834,7 +848,9 @@ class ClickHouseQueryBuilder(QueryBuilder):
     def _set_sql(self, **kwargs: Any) -> str:
         return " UPDATE {set}".format(
             set=",".join(
-                f"{field.get_sql(**dict(kwargs, with_namespace=False))}={value.get_sql(**kwargs)}"
+                "{field}={value}".format(
+                    field=field.get_sql(**dict(kwargs, with_namespace=False)), value=value.get_sql(**kwargs)
+                )
                 for field, value in self._updates
             )
         )
@@ -1021,14 +1037,18 @@ class JiraQueryBuilder(QueryBuilder):
 class JiraEmptyCriterion(NullCriterion):
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         del with_alias
-        sql = f"{self.term.get_sql(**kwargs)} is EMPTY"
+        sql = "{term} is EMPTY".format(
+            term=self.term.get_sql(**kwargs),
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class JiraNotEmptyCriterion(JiraEmptyCriterion):
     def get_sql(self, with_alias: bool = False, **kwargs) -> str:
         del with_alias
-        sql = f"{self.term.get_sql(**kwargs)} is not EMPTY"
+        sql = "{term} is not EMPTY".format(
+            term=self.term.get_sql(**kwargs),
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 

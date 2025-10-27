@@ -7,7 +7,7 @@ from pypika.utils import format_alias_sql
 
 
 class _AbstractSearchString(Function, metaclass=abc.ABCMeta):
-    def __init__(self, name, pattern: str, alias: str = None):
+    def __init__(self, name, pattern: str, alias: str | None = None):
         super().__init__(self.clickhouse_function(), name, alias=alias)
 
         self._pattern = pattern
@@ -21,7 +21,7 @@ class _AbstractSearchString(Function, metaclass=abc.ABCMeta):
         args = []
         for p in self.args:
             if hasattr(p, "get_sql"):
-                args.append(f'toString("{p.get_sql(with_alias=False, **kwargs)}")')
+                args.append('toString("{arg}")'.format(arg=p.get_sql(with_alias=False, **kwargs)))
             else:
                 args.append(str(p))
 
@@ -52,7 +52,7 @@ class NotLike(_AbstractSearchString):
 
 
 class _AbstractMultiSearchString(Function, metaclass=abc.ABCMeta):
-    def __init__(self, name, patterns: list, alias: str = None):
+    def __init__(self, name, patterns: list, alias: str | None = None):
         super().__init__(self.clickhouse_function(), name, alias=alias)
 
         self._patterns = patterns
@@ -66,14 +66,14 @@ class _AbstractMultiSearchString(Function, metaclass=abc.ABCMeta):
         args = []
         for p in self.args:
             if hasattr(p, "get_sql"):
-                args.append(f'toString("{p.get_sql(with_alias=False, **kwargs)}")')
+                args.append('toString("{arg}")'.format(arg=p.get_sql(with_alias=False, **kwargs)))
             else:
                 args.append(str(p))
 
         sql = "{name}({args},[{patterns}])".format(
             name=self.name,
             args=",".join(args),
-            patterns=",".join([f"'{i}'" for i in self._patterns]),
+            patterns=",".join(["'%s'" % i for i in self._patterns]),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 

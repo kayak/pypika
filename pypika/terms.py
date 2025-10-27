@@ -9,16 +9,7 @@ from datetime import date, datetime, time
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
-from pypika.enums import (
-    Arithmetic,
-    Boolean,
-    Comparator,
-    Dialects,
-    Equality,
-    JSONOperators,
-    Matching,
-    Order,
-)
+from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
 from pypika.utils import (
     CaseException,
     FunctionException,
@@ -387,7 +378,7 @@ class NumericParameter(ListParameter):
     """Numeric, positional style, e.g. ...WHERE name=:1"""
 
     def get_sql(self, **kwargs: Any) -> str:
-        return f":{self.placeholder}"
+        return ":{placeholder}".format(placeholder=self.placeholder)
 
 
 class FormatParameter(ListParameter):
@@ -401,14 +392,14 @@ class NamedParameter(DictParameter):
     """Named style, e.g. ...WHERE name=:name"""
 
     def get_sql(self, **kwargs: Any) -> str:
-        return f":{self.placeholder}"
+        return ":{placeholder}".format(placeholder=self.placeholder)
 
 
 class PyformatParameter(DictParameter):
     """Python extended format codes, e.g. ...WHERE name=%(name)s"""
 
     def get_sql(self, **kwargs: Any) -> str:
-        return f"%({self.placeholder})s"
+        return "%({placeholder})s".format(placeholder=self.placeholder)
 
     def get_param_key(self, placeholder: Any, **kwargs):
         return placeholder[2:-2]
@@ -424,7 +415,7 @@ class Negative(Term):
         return self.term.is_aggregate
 
     def get_sql(self, **kwargs: Any) -> str:
-        return f"-{self.term.get_sql(**kwargs)}"
+        return "-{term}".format(term=self.term.get_sql(**kwargs))
 
 
 class ValueWrapper(Term):
@@ -515,7 +506,8 @@ class JSON(Term):
 
     def _get_dict_sql(self, value: dict, **kwargs: Any) -> str:
         pairs = [
-            f"{self._recursive_get_sql(k, **kwargs)}:{self._recursive_get_sql(v, **kwargs)}" for k, v in value.items()
+            "{key}:{value}".format(key=self._recursive_get_sql(k, **kwargs), value=self._recursive_get_sql(v, **kwargs))
+            for k, v in value.items()
         ]
         return "".join(["{", ",".join(pairs), "}"])
 
@@ -565,7 +557,7 @@ class Values(Term):
         self.field = Field(field) if not isinstance(field, Field) else field
 
     def get_sql(self, quote_char: str | None = None, **kwargs: Any) -> str:
-        return f"VALUES({self.field.get_sql(quote_char=quote_char, **kwargs)})"
+        return "VALUES({value})".format(value=self.field.get_sql(quote_char=quote_char, **kwargs))
 
 
 class LiteralValue(Term):
@@ -690,7 +682,10 @@ class Field(Criterion, JSON):
         # Need to add namespace if the table has an alias
         if self.table and (with_namespace or self.table.alias):
             table_name = self.table.get_table_name()
-            field_sql = f"{format_quotes(table_name, quote_char)}.{field_sql}"
+            field_sql = "{namespace}.{name}".format(
+                namespace=format_quotes(table_name, quote_char),
+                name=field_sql,
+            )
 
         field_alias = getattr(self, "alias", None)
         if with_alias:
@@ -721,7 +716,7 @@ class Star(Field):
     ) -> str:
         if self.table and (with_namespace or self.table.alias):
             namespace = self.table.alias or getattr(self.table, "_table_name")
-            return f"{format_quotes(namespace, quote_char)}.*"
+            return "{}.*".format(format_quotes(namespace, quote_char))
 
         return "*"
 
@@ -764,9 +759,9 @@ class Array(Tuple):
         dialect = kwargs.get("dialect")
         values = ",".join(term.get_sql(**kwargs) for term in self.values)
 
-        sql = f"[{values}]"
+        sql = "[{}]".format(values)
         if dialect in (Dialects.POSTGRESQL, Dialects.REDSHIFT):
-            sql = f"ARRAY[{values}]" if len(values) > 0 else "'{}'"
+            sql = "ARRAY[{}]".format(values) if len(values) > 0 else "'{}'"
 
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -820,7 +815,13 @@ class NestedCriterion(Criterion):
         self.nested = self.right.replace_table(current_table, new_table)
 
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
-        sql = f"{self.left.get_sql(**kwargs)}{self.comparator.value}{self.right.get_sql(**kwargs)}{self.nested_comparator.value}{self.nested.get_sql(**kwargs)}"
+        sql = "{left}{comparator}{right}{nested_comparator}{nested}".format(
+            left=self.left.get_sql(**kwargs),
+            comparator=self.comparator.value,
+            right=self.right.get_sql(**kwargs),
+            nested_comparator=self.nested_comparator.value,
+            nested=self.nested.get_sql(**kwargs),
+        )
 
         if with_alias:
             return format_alias_sql(sql=sql, alias=self.alias, **kwargs)
@@ -873,7 +874,11 @@ class BasicCriterion(Criterion):
         self.right = self.right.replace_table(current_table, new_table)
 
     def get_sql(self, quote_char: str = '"', with_alias: bool = False, **kwargs: Any) -> str:
-        sql = f"{self.left.get_sql(quote_char=quote_char, **kwargs)}{self.comparator.value}{self.right.get_sql(quote_char=quote_char, **kwargs)}"
+        sql = "{left}{comparator}{right}".format(
+            comparator=self.comparator.value,
+            left=self.left.get_sql(quote_char=quote_char, **kwargs),
+            right=self.right.get_sql(quote_char=quote_char, **kwargs),
+        )
         if with_alias:
             return format_alias_sql(sql, self.alias, **kwargs)
         return sql
@@ -982,13 +987,21 @@ class BetweenCriterion(RangeCriterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = f"{self.term.get_sql(**kwargs)} BETWEEN {self.start.get_sql(**kwargs)} AND {self.end.get_sql(**kwargs)}"
+        sql = "{term} BETWEEN {start} AND {end}".format(
+            term=self.term.get_sql(**kwargs),
+            start=self.start.get_sql(**kwargs),
+            end=self.end.get_sql(**kwargs),
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class PeriodCriterion(RangeCriterion):
     def get_sql(self, **kwargs: Any) -> str:
-        sql = f"{self.term.get_sql(**kwargs)} FROM {self.start.get_sql(**kwargs)} TO {self.end.get_sql(**kwargs)}"
+        sql = "{term} FROM {start} TO {end}".format(
+            term=self.term.get_sql(**kwargs),
+            start=self.start.get_sql(**kwargs),
+            end=self.end.get_sql(**kwargs),
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
@@ -1018,7 +1031,10 @@ class BitwiseAndCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = f"({self.term.get_sql(**kwargs)} & {self.value})"
+        sql = "({term} & {value})".format(
+            term=self.term.get_sql(**kwargs),
+            value=self.value,
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
@@ -1048,7 +1064,10 @@ class BitwiseOrCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = f"({self.term.get_sql(**kwargs)} | {self.value})"
+        sql = "({term} | {value})".format(
+            term=self.term.get_sql(**kwargs),
+            value=self.value,
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
@@ -1076,27 +1095,35 @@ class NullCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
-        sql = f"{self.term.get_sql(**kwargs)} IS NULL"
+        sql = "{term} IS NULL".format(
+            term=self.term.get_sql(**kwargs),
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class NotNullCriterion(NullCriterion):
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
-        sql = f"{self.term.get_sql(**kwargs)} IS NOT NULL"
+        sql = "{term} IS NOT NULL".format(
+            term=self.term.get_sql(**kwargs),
+        )
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
 class ComplexCriterion(BasicCriterion):
     def get_sql(self, subcriterion: bool = False, **kwargs: Any) -> str:
-        sql = f"{self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs)} {self.comparator.value} {self.right.get_sql(subcriterion=self.needs_brackets(self.right), **kwargs)}"
+        sql = "{left} {comparator} {right}".format(
+            comparator=self.comparator.value,
+            left=self.left.get_sql(subcriterion=self.needs_brackets(self.left), **kwargs),
+            right=self.right.get_sql(subcriterion=self.needs_brackets(self.right), **kwargs),
+        )
 
         if subcriterion:
-            return f"({sql})"
+            return "({criterion})".format(criterion=sql)
 
         return sql
 
     def needs_brackets(self, term: Term) -> bool:
-        return isinstance(term, ComplexCriterion) and term.comparator != self.comparator
+        return isinstance(term, ComplexCriterion) and not term.comparator == self.comparator
 
 
 class ArithmeticExpression(Term):
@@ -1274,9 +1301,10 @@ class Case(Criterion):
             raise CaseException("At least one 'when' case is required for a CASE statement.")
 
         cases = " ".join(
-            f"WHEN {criterion.get_sql(**kwargs)} THEN {term.get_sql(**kwargs)}" for criterion, term in self._cases
+            "WHEN {when} THEN {then}".format(when=criterion.get_sql(**kwargs), then=term.get_sql(**kwargs))
+            for criterion, term in self._cases
         )
-        else_ = f" ELSE {self._else.get_sql(**kwargs)}" if self._else else ""
+        else_ = " ELSE {}".format(self._else.get_sql(**kwargs)) if self._else else ""
 
         case_sql = f"CASE {cases}{else_} END"
 
@@ -1297,7 +1325,7 @@ class Not(Criterion):
 
     def get_sql(self, **kwargs: Any) -> str:
         kwargs["subcriterion"] = True
-        sql = f"NOT {self.term.get_sql(**kwargs)}"
+        sql = "NOT {term}".format(term=self.term.get_sql(**kwargs))
         return format_alias_sql(sql, self.alias, **kwargs)
 
     @ignore_copy
@@ -1344,7 +1372,7 @@ class All(Criterion):
         yield from self.term.nodes_()
 
     def get_sql(self, **kwargs: Any) -> str:
-        sql = f"{self.term.get_sql(**kwargs)} ALL"
+        sql = "{term} ALL".format(term=self.term.get_sql(**kwargs))
         return format_alias_sql(sql, self.alias, **kwargs)
 
 
@@ -1444,7 +1472,10 @@ class Function(Criterion):
         function_sql = self.get_function_sql(with_namespace=with_namespace, quote_char=quote_char, dialect=dialect)
 
         if self.schema is not None:
-            function_sql = f"{self.schema.get_sql(quote_char=quote_char, dialect=dialect, **kwargs)}.{function_sql}"
+            function_sql = "{schema}.{function}".format(
+                schema=self.schema.get_sql(quote_char=quote_char, dialect=dialect, **kwargs),
+                function=function_sql,
+            )
 
         if with_alias:
             return format_alias_sql(function_sql, self.alias, quote_char=quote_char, **kwargs)
@@ -1468,14 +1499,14 @@ class AggregateFunction(Function):
 
     def get_filter_sql(self, **kwargs: Any) -> str:
         if self._include_filter:
-            return f"WHERE {Criterion.all(self._filters).get_sql(**kwargs)}"
+            return "WHERE {criterions}".format(criterions=Criterion.all(self._filters).get_sql(**kwargs))
 
     def get_function_sql(self, **kwargs: Any):
         sql = super().get_function_sql(**kwargs)
         filter_sql = self.get_filter_sql(**kwargs)
 
         if self._include_filter:
-            sql += f" FILTER({filter_sql})"
+            sql += " FILTER({filter_sql})".format(filter_sql=filter_sql)
 
         return sql
 
@@ -1506,7 +1537,10 @@ class AnalyticFunction(AggregateFunction):
         if orient is None:
             return field.get_sql(**kwargs)
 
-        return f"{field.get_sql(**kwargs)} {orient.value}"
+        return "{field} {orient}".format(
+            field=field.get_sql(**kwargs),
+            orient=orient.value,
+        )
 
     def get_partition_sql(self, **kwargs: Any) -> str:
         terms = []
@@ -1573,10 +1607,14 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
 
     def get_frame_sql(self) -> str:
         if not isinstance(self.bound, tuple):
-            return f"{self.frame} {self.bound}"
+            return "{frame} {bound}".format(frame=self.frame, bound=self.bound)
 
         lower, upper = self.bound
-        return f"{self.frame} BETWEEN {lower} AND {upper}"
+        return "{frame} BETWEEN {lower} AND {upper}".format(
+            frame=self.frame,
+            lower=lower,
+            upper=upper,
+        )
 
     def get_partition_sql(self, **kwargs: Any) -> str:
         partition_sql = super().get_partition_sql(**kwargs)
@@ -1584,7 +1622,7 @@ class WindowFrameAnalyticFunction(AnalyticFunction):
         if not self.frame and not self.bound:
             return partition_sql
 
-        return f"{partition_sql} {self.get_frame_sql()}"
+        return "{over} {frame}".format(over=partition_sql, frame=self.get_frame_sql())
 
 
 class IgnoreNullsAnalyticFunction(AnalyticFunction):
@@ -1692,7 +1730,14 @@ class Interval(Term):
             if self.is_negative:
                 expr = "-" + expr
 
-            unit = f"{self.largest}_{self.smallest}" if self.largest != self.smallest else self.largest
+            unit = (
+                "{largest}_{smallest}".format(
+                    largest=self.largest,
+                    smallest=self.smallest,
+                )
+                if self.largest != self.smallest
+                else self.largest
+            )
 
             # Set default unit with DAY
             if unit is None:
