@@ -435,7 +435,7 @@ class BetweenTests(unittest.TestCase):
         )
         self.assertEqual("\"foo\" BETWEEN '2000-01-01T00:00:00' AND '2000-12-31T23:59:59'", str(c3))
 
-    def test__between_datetime(self):
+    def test__between_time(self):
         c1 = Field("foo").between(time(0, 0, 0), time(23, 59, 59))
         c2 = Field("foo", table=self.t).between(time(0, 0, 0), time(23, 59, 59))
         c3 = Field("foo")[time(0, 0, 0) : time(23, 59, 59)]
