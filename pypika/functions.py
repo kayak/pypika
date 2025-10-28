@@ -6,12 +6,7 @@ from __future__ import annotations
 
 from pypika import Field
 from pypika.enums import SqlTypes
-from pypika.terms import (
-    AggregateFunction,
-    Function,
-    LiteralValue,
-    Star,
-)
+from pypika.terms import AggregateFunction, Function, LiteralValue, Star
 from pypika.utils import builder
 
 __author__ = "Timothy Heys"
