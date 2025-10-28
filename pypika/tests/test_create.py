@@ -99,6 +99,31 @@ class CreateTableTests(unittest.TestCase):
                 str(q),
             )
 
+        with self.subTest("with multiple foreign key constrains"):
+            secondary_table = Table("secondary_table")
+            cref, dref = Columns(("c", "INT"), ("d", "VARCHAR(100)"))
+            q = (
+                Query.create_table(self.new_table)
+                .columns(self.foo, self.bar)
+                .foreign_key([self.foo], self.existing_table, [cref])
+                .foreign_key(
+                    [self.bar],
+                    secondary_table,
+                    [dref],
+                    on_delete=ReferenceOption.cascade,
+                    on_update=ReferenceOption.restrict,
+                )
+            )
+
+            self.assertEqual(
+                'CREATE TABLE "abc" ('
+                '"a" INT,'
+                '"b" VARCHAR(100),'
+                'FOREIGN KEY ("a") REFERENCES "efg" ("c"),'
+                'FOREIGN KEY ("b") REFERENCES "secondary_table" ("d") ON DELETE CASCADE ON UPDATE RESTRICT)',
+                str(q),
+            )
+
         with self.subTest("with unique keys"):
             q = (
                 Query.create_table(self.new_table)
@@ -155,12 +180,6 @@ class CreateTableTests(unittest.TestCase):
         with self.subTest("for as_select before columns"):
             with self.assertRaises(AttributeError):
                 Query.create_table(self.new_table).as_select(select).columns(self.foo, self.bar)
-
-        with self.subTest("repeated foreign key"):
-            with self.assertRaises(AttributeError):
-                Query.create_table(self.new_table).foreign_key([self.foo], self.existing_table, [self.bar]).foreign_key(
-                    [self.foo], self.existing_table, [self.bar]
-                )
 
     def test_create_table_as_select_not_query_raises_error(self):
         with self.assertRaises(TypeError):
