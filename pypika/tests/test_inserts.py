@@ -3,18 +3,15 @@ import unittest
 from pypika import (
     AliasedQuery,
     Case,
-    Field as F,
     MySQLQuery,
     PostgreSQLQuery,
     Query,
     Table,
     Tables,
-    functions as fn,
 )
-from pypika.functions import (
-    Avg,
-    Cast,
-)
+from pypika import Field as F
+from pypika import functions as fn
+from pypika.functions import Avg, Cast
 from pypika.terms import Values
 from pypika.utils import QueryException
 

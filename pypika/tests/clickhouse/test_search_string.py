@@ -4,11 +4,11 @@ from parameterized import parameterized
 
 from pypika import Field
 from pypika.clickhouse.search_string import (
-    Match,
     Like,
-    NotLike,
-    MultiSearchAny,
+    Match,
     MultiMatchAny,
+    MultiSearchAny,
+    NotLike,
 )
 
 

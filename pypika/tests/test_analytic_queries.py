@@ -1,6 +1,7 @@
 import unittest
 
-from pypika import Criterion, JoinType, Order, Query, Tables, analytics as an
+from pypika import Criterion, JoinType, Order, Query, Tables
+from pypika import analytics as an
 from pypika.analytics import Lag, Lead
 
 __author__ = "Timothy Heys"

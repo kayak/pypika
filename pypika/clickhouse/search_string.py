@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 
 from pypika.terms import Function
@@ -5,8 +7,8 @@ from pypika.utils import format_alias_sql
 
 
 class _AbstractSearchString(Function, metaclass=abc.ABCMeta):
-    def __init__(self, name, pattern: str, alias: str = None):
-        super(_AbstractSearchString, self).__init__(self.clickhouse_function(), name, alias=alias)
+    def __init__(self, name, pattern: str, alias: str | None = None):
+        super().__init__(self.clickhouse_function(), name, alias=alias)
 
         self._pattern = pattern
 
@@ -50,8 +52,8 @@ class NotLike(_AbstractSearchString):
 
 
 class _AbstractMultiSearchString(Function, metaclass=abc.ABCMeta):
-    def __init__(self, name, patterns: list, alias: str = None):
-        super(_AbstractMultiSearchString, self).__init__(self.clickhouse_function(), name, alias=alias)
+    def __init__(self, name, patterns: list, alias: str | None = None):
+        super().__init__(self.clickhouse_function(), name, alias=alias)
 
         self._patterns = patterns
 

@@ -1,11 +1,10 @@
 import unittest
 
-from pypika import AliasedQuery, PostgreSQLQuery, Query, SQLLiteQuery, SYSTEM_TIME, Table
+from pypika import SYSTEM_TIME, AliasedQuery, PostgreSQLQuery, Query, SQLLiteQuery, Table
+from pypika.terms import Star
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-
-from pypika.terms import Star
 
 
 class UpdateTests(unittest.TestCase):

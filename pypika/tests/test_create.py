@@ -1,8 +1,8 @@
 import unittest
 
-from pypika import Column, Columns, Query, Tables, Table
-from pypika.terms import ValueWrapper, Index
+from pypika import Column, Columns, Query, Table, Tables
 from pypika.enums import ReferenceOption
+from pypika.terms import Index, ValueWrapper
 
 
 class CreateTableTests(unittest.TestCase):

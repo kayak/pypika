@@ -4,14 +4,14 @@ from pypika import (
     Case,
     CaseException,
     DatePart,
-    Field as F,
     Query,
-    Query as Q,
     Schema,
-    Table as T,
     VerticaQuery,
-    functions as fn,
 )
+from pypika import Field as F
+from pypika import Query as Q
+from pypika import Table as T
+from pypika import functions as fn
 from pypika.enums import Dialects, SqlTypes
 
 __author__ = "Timothy Heys"

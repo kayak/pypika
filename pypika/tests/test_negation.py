@@ -2,6 +2,8 @@ import unittest
 
 from pypika import (
     Tables,
+)
+from pypika import (
     functions as fn,
 )
 from pypika.terms import ValueWrapper

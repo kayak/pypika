@@ -2,9 +2,9 @@ import unittest
 from collections import OrderedDict
 
 from pypika import (
+    JSON,
     Array,
     Field,
-    JSON,
     QueryException,
     Table,
 )

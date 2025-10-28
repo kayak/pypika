@@ -1,7 +1,7 @@
 # from pypika.terms import ValueWrapper, SystemTimeValue
 import unittest
 
-from pypika import Database, Dialects, Schema, SQLLiteQuery, Table, Tables, Query, SYSTEM_TIME
+from pypika import SYSTEM_TIME, Database, Dialects, Query, Schema, SQLLiteQuery, Table, Tables
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"

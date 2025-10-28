@@ -15,7 +15,7 @@ from pypika.terms import PseudoColumn
 class PseudoColumnsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        super(PseudoColumnsTest, cls).setUpClass()
+        super().setUpClass()
         cls.table1 = Table("table1")
 
     def test_column_value(self):
