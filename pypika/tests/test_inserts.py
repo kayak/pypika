@@ -464,6 +464,11 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
             str(qs),
         )
 
+    def test_on_conflict_no_inserts(self):
+        query = PostgreSQLQuery.into(self.table_abc).on_conflict("id").do_nothing()
+
+        self.assertEqual('', str(query))
+
 
 class PostgresInsertIntoReturningTests(unittest.TestCase):
     table_abc = Table("abc")
@@ -563,6 +568,11 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
         table_cba = Table("cba")
         with self.assertRaises(QueryException):
             PostgreSQLQuery.into(self.table_abc).insert(1).returning(table_cba.id)
+
+    def test_insert_returning_no_inserts(self):
+        query = PostgreSQLQuery.into(self.table_abc).returning(self.table_abc.star)
+
+        self.assertEqual('', str(query))
 
 
 class InsertIntoOnDuplicateTests(unittest.TestCase):
