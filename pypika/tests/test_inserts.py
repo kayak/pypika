@@ -3,18 +3,15 @@ import unittest
 from pypika import (
     AliasedQuery,
     Case,
-    Field as F,
     MySQLQuery,
     PostgreSQLQuery,
     Query,
     Table,
     Tables,
-    functions as fn,
 )
-from pypika.functions import (
-    Avg,
-    Cast,
-)
+from pypika import Field as F
+from pypika import functions as fn
+from pypika.functions import Avg, Cast
 from pypika.terms import Values
 from pypika.utils import QueryException
 
@@ -149,7 +146,7 @@ class InsertIntoTests(unittest.TestCase):
     def test_insert_null(self):
         query = Query.into(self.table_abc).insert(None)
 
-        self.assertEqual('INSERT INTO "abc" VALUES (NULL)', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (null)', str(query))
 
     def test_insert_column_using_table_alias(self):
         q = self.table_abc.insert(1)
@@ -541,7 +538,7 @@ class PostgresInsertIntoReturningTests(unittest.TestCase):
     def test_insert_returning_null(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1).returning(None)
 
-        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING NULL', str(query))
+        self.assertEqual('INSERT INTO "abc" VALUES (1) RETURNING null', str(query))
 
     def test_insert_returning_tuple(self):
         query = PostgreSQLQuery.into(self.table_abc).insert(1).returning((1, 2, 3))

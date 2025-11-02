@@ -2,9 +2,9 @@ import unittest
 from collections import OrderedDict
 
 from pypika import (
+    JSON,
     Array,
     Field,
-    JSON,
     QueryException,
     Table,
 )
@@ -18,6 +18,15 @@ class InsertTests(unittest.TestCase):
         q = PostgreSQLQuery.into(self.table_abc).insert(1, [1, "a", True])
 
         self.assertEqual("INSERT INTO \"abc\" VALUES (1,ARRAY[1,'a',true])", str(q))
+
+
+class UpdateTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_postgresquery(self):
+        q = PostgreSQLQuery.update(self.table_abc).set(1, [1, "a", True])
+
+        self.assertEqual("UPDATE \"abc\" SET \"1\"=ARRAY[1,'a',true]", str(q))
 
 
 class JSONObjectTests(unittest.TestCase):

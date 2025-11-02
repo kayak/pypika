@@ -2,6 +2,7 @@ import unittest
 from datetime import (
     date,
     datetime,
+    time,
 )
 
 from pypika import (
@@ -75,6 +76,13 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual("\"foo\"='2000-01-01T12:30:55'", str(c1))
         self.assertEqual('"crit"."foo"=\'2000-01-01T12:30:55\'', str(c2))
 
+    def test__criterion_eq_time(self):
+        c1 = Field("foo") == time(12, 30, 55)
+        c2 = Field("foo", table=self.t).eq(time(12, 30, 55))
+
+        self.assertEqual("\"foo\"='12:30:55'", str(c1))
+        self.assertEqual('"crit"."foo"=\'12:30:55\'', str(c2))
+
     def test__criterion_eq_right(self):
         c1 = 1 == Field("foo")
         c2 = -1 == Field("foo", table=self.t)
@@ -126,6 +134,13 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual("\"foo\"<>'2000-01-01T12:30:55'", str(c1))
         self.assertEqual('"crit"."foo"<>\'2000-01-01T12:30:55\'', str(c2))
 
+    def test__criterion_ne_time(self):
+        c1 = Field("foo") != time(12, 30, 55)
+        c2 = Field("foo", table=self.t).ne(time(12, 30, 55))
+
+        self.assertEqual("\"foo\"<>'12:30:55'", str(c1))
+        self.assertEqual('"crit"."foo"<>\'12:30:55\'', str(c2))
+
     def test__criterion_ne_right(self):
         c1 = 1 != Field("foo")
         c2 = -1 != Field("foo", table=self.t)
@@ -155,6 +170,13 @@ class CriterionTests(unittest.TestCase):
 
         self.assertEqual("\"foo\"<'2000-01-01T12:30:55'", str(c1))
         self.assertEqual('"crit"."foo"<\'2000-01-01T12:30:55\'', str(c2))
+
+    def test__criterion_lt_time(self):
+        c1 = Field("foo") < time(12, 30, 55)
+        c2 = Field("foo", table=self.t).lt(time(12, 30, 55))
+
+        self.assertEqual("\"foo\"<'12:30:55'", str(c1))
+        self.assertEqual('"crit"."foo"<\'12:30:55\'', str(c2))
 
     def test__criterion_lt_right(self):
         c1 = 1 > Field("foo")
@@ -186,6 +208,13 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual("\"foo\">'2000-01-01T12:30:55'", str(c1))
         self.assertEqual('"crit"."foo">\'2000-01-01T12:30:55\'', str(c2))
 
+    def test__criterion_gt_time(self):
+        c1 = Field("foo") > time(12, 30, 55)
+        c2 = Field("foo", table=self.t).gt(time(12, 30, 55))
+
+        self.assertEqual("\"foo\">'12:30:55'", str(c1))
+        self.assertEqual('"crit"."foo">\'12:30:55\'', str(c2))
+
     def test__criterion_gt_right(self):
         c1 = 1 < Field("foo")
         c2 = -1 < Field("foo", table=self.t)
@@ -215,6 +244,13 @@ class CriterionTests(unittest.TestCase):
 
         self.assertEqual("\"foo\"<='2000-01-01T12:30:55'", str(c1))
         self.assertEqual('"crit"."foo"<=\'2000-01-01T12:30:55\'', str(c2))
+
+    def test__criterion_lte_time(self):
+        c1 = Field("foo") <= time(12, 30, 55)
+        c2 = Field("foo", table=self.t).lte(time(12, 30, 55))
+
+        self.assertEqual("\"foo\"<='12:30:55'", str(c1))
+        self.assertEqual('"crit"."foo"<=\'12:30:55\'', str(c2))
 
     def test__criterion_lte_right(self):
         c1 = 1 >= Field("foo")
@@ -246,6 +282,13 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual("\"foo\">='2000-01-01T12:30:55'", str(c1))
         self.assertEqual('"crit"."foo">=\'2000-01-01T12:30:55\'', str(c2))
 
+    def test__criterion_gte_time(self):
+        c1 = Field("foo") >= time(12, 30, 55)
+        c2 = Field("foo", table=self.t).gte(time(12, 30, 55))
+
+        self.assertEqual("\"foo\">='12:30:55'", str(c1))
+        self.assertEqual('"crit"."foo">=\'12:30:55\'', str(c2))
+
     def test__criterion_gte_right(self):
         c1 = 1 <= Field("foo")
         c2 = -1 <= Field("foo", table=self.t)
@@ -269,6 +312,23 @@ class CriterionTests(unittest.TestCase):
         q = QueryBuilder().from_('items').select('abc').where(Field("foo").bitwiseand(1) == 1)
 
         self.assertEqual('SELECT "abc" FROM "items" WHERE ("foo" & 1)=1', str(q))
+
+    def test__criterion_bitwise_or(self):
+        c1 = Field("foo").bitwiseor(2)
+        c2 = Field("foo", table=self.t).bitwiseor(10) == 2
+
+        self.assertEqual('("foo" | 2)', str(c1))
+        self.assertEqual('("crit"."foo" | 10)=2', str(c2))
+
+    def test__criterion_bitwise_or_with_alias(self):
+        c1 = Field("foo").bitwiseor(2).as_('alias')
+
+        self.assertEqual('("foo" | 2) "alias"', str(c1))
+
+    def test__bitwise_or_in_where_clause(self):
+        q = QueryBuilder().from_('items').select('abc').where(Field("foo").bitwiseor(1) == 1)
+
+        self.assertEqual('SELECT "abc" FROM "items" WHERE ("foo" | 1)=1', str(q))
 
 
 class NotTests(unittest.TestCase):
@@ -375,6 +435,18 @@ class BetweenTests(unittest.TestCase):
         )
         self.assertEqual("\"foo\" BETWEEN '2000-01-01T00:00:00' AND '2000-12-31T23:59:59'", str(c3))
 
+    def test__between_time(self):
+        c1 = Field("foo").between(time(0, 0, 0), time(23, 59, 59))
+        c2 = Field("foo", table=self.t).between(time(0, 0, 0), time(23, 59, 59))
+        c3 = Field("foo")[time(0, 0, 0) : time(23, 59, 59)]
+
+        self.assertEqual("\"foo\" BETWEEN '00:00:00' AND '23:59:59'", str(c1))
+        self.assertEqual(
+            "\"btw\".\"foo\" BETWEEN '00:00:00' AND '23:59:59'",
+            str(c2),
+        )
+        self.assertEqual("\"foo\" BETWEEN '00:00:00' AND '23:59:59'", str(c3))
+
     def test__function_between(self):
         c1 = fn.Coalesce(Field("foo"), 0)[0:1]
         c2 = fn.Coalesce(Field("foo", table=self.t), 0)[0:1]
@@ -391,6 +463,9 @@ class BetweenTests(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             Field("foo")[datetime(2000, 1, 1, 0, 0, 0)]
+
+        with self.assertRaises(TypeError):
+            Field("foo")[time(0, 0, 0)]
 
 
 class IsInTests(unittest.TestCase):
@@ -430,6 +505,13 @@ class IsInTests(unittest.TestCase):
 
         self.assertEqual("\"foo\" IN ('2000-01-01T00:00:00','2000-12-31T23:59:59')", str(c1))
         self.assertEqual("\"isin\".\"foo\" IN ('2000-01-01T00:00:00','2000-12-31T23:59:59')", str(c2))
+
+    def test__in_time(self):
+        c1 = Field("foo").isin([time(0, 0, 0), time(23, 59, 59)])
+        c2 = Field("foo", table=self.t).isin([time(0, 0, 0), time(23, 59, 59)])
+
+        self.assertEqual("\"foo\" IN ('00:00:00','23:59:59')", str(c1))
+        self.assertEqual("\"isin\".\"foo\" IN ('00:00:00','23:59:59')", str(c2))
 
     def test__function_isin(self):
         c1 = fn.Coalesce(Field("foo"), 0).isin([0, 1])
@@ -506,6 +588,16 @@ class NotInTests(unittest.TestCase):
         self.assertEqual("\"foo\" NOT IN ('2000-01-01T00:00:00','2000-12-31T23:59:59')", str(c1))
         self.assertEqual(
             "\"notin\".\"foo\" NOT IN ('2000-01-01T00:00:00','2000-12-31T23:59:59')",
+            str(c2),
+        )
+
+    def test__notin_time(self):
+        c1 = Field("foo").notin([time(0, 0, 0), time(23, 59, 59)])
+        c2 = Field("foo", table=self.t).notin([time(0, 0, 0), time(23, 59, 59)])
+
+        self.assertEqual("\"foo\" NOT IN ('00:00:00','23:59:59')", str(c1))
+        self.assertEqual(
+            "\"notin\".\"foo\" NOT IN ('00:00:00','23:59:59')",
             str(c2),
         )
 
@@ -639,6 +731,16 @@ class ExistsCriterionTests(unittest.TestCase):
             'SELECT "t1"."field1" FROM "def" "t1" WHERE NOT EXISTS (SELECT "t2"."field2" FROM "abc" "t2")', str(q1)
         )
 
+    def test_exists_with_double_quotes(self):
+        t3 = Table('abc"', alias='t3"')
+        q3 = QueryBuilder().from_(t3).select(t3.field2)
+        t1 = Table("def", alias="t1")
+        q1 = QueryBuilder().from_(t1).where(ExistsCriterion(q3)).select(t1.field1)
+
+        self.assertEqual(
+            'SELECT "t1"."field1" FROM "def" "t1" WHERE EXISTS (SELECT "t3"""."field2" FROM "abc""" "t3""")', str(q1)
+        )
+
 
 class ComplexCriterionTests(unittest.TestCase):
     table_abc, table_efg = Table("abc", alias="cx0"), Table("efg", alias="cx1")
@@ -705,6 +807,11 @@ class ComplexCriterionTests(unittest.TestCase):
 
         self.assertEqual('"foo" BETWEEN 0 AND 1 AND "bool_field"', str(c1 & c2))
         self.assertEqual('"bool_field" AND "foo" BETWEEN 0 AND 1', str(c2 & c1))
+
+    def test__between_with_quotes(self):
+        c = Field('foo"\'').between("a'", "c'")
+
+        self.assertEqual('"foo""\'" BETWEEN \'a\'\'\' AND \'c\'\'\'', str(c))
 
 
 class FieldsAsCriterionTests(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import Case, Query, Tables, Tuple, functions, Field
+from pypika import Case, Field, Query, Tables, Tuple, functions
 from pypika.dialects import (
     ClickHouseQuery,
     ClickHouseQueryBuilder,
@@ -13,12 +13,12 @@ from pypika.dialects import (
     OracleQueryBuilder,
     PostgreSQLQuery,
     PostgreSQLQueryBuilder,
-    RedShiftQueryBuilder,
     RedshiftQuery,
-    SQLLiteQuery,
-    SQLLiteQueryBuilder,
+    RedShiftQueryBuilder,
     SnowflakeQuery,
     SnowflakeQueryBuilder,
+    SQLLiteQuery,
+    SQLLiteQueryBuilder,
     VerticaCopyQueryBuilder,
     VerticaCreateQueryBuilder,
     VerticaQuery,

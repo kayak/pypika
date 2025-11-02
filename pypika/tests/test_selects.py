@@ -3,11 +3,11 @@ from datetime import date
 from enum import Enum
 
 from pypika import (
+    SYSTEM_TIME,
     AliasedQuery,
     Case,
     ClickHouseQuery,
     EmptyCriterion,
-    Field as F,
     Index,
     MSSQLQuery,
     MySQLQuery,
@@ -22,9 +22,9 @@ from pypika import (
     Table,
     Tables,
     VerticaQuery,
-    functions as fn,
-    SYSTEM_TIME,
 )
+from pypika import Field as F
+from pypika import functions as fn
 from pypika.terms import ValueWrapper
 
 __author__ = "Timothy Heys"
@@ -49,6 +49,11 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT 1 "test"', str(q))
 
+    def test_select_literal_with_alias_with_quotes(self):
+        q = Query.select(ValueWrapper("contains'\"quotes", "contains'\"quotes"))
+
+        self.assertEqual('SELECT \'contains\'\'"quotes\' "contains\'""quotes"', str(q))
+
     def test_select_no_from_with_field_raises_exception(self):
         with self.assertRaises(QueryException):
             Query.select("asdf")
@@ -72,6 +77,11 @@ class SelectTests(unittest.TestCase):
         q = Query.from_(Table("abc", ["schema1", "schema2"])).select("*")
 
         self.assertEqual('SELECT * FROM "schema1"."schema2"."abc"', str(q))
+
+    def test_select__table_schema_escape_double_quote(self):
+        q = Query.from_(Table("abc", 'schema_with_double_quote"')).select("*")
+
+        self.assertEqual('SELECT * FROM "schema_with_double_quote"""."abc"', str(q))
 
     def test_select__star__replacement(self):
         q = Query.from_("abc").select("foo").select("*")
@@ -954,6 +964,60 @@ class HavingTests(unittest.TestCase):
         self.assertEqual('SELECT "foo" FROM "abc" GROUP BY "foo" HAVING "buz"=\'fiz\'', str(q))
 
 
+class QualifyTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_qualify_greater_than(self):
+        q = (
+            Query.from_(self.table_abc)
+            .select(self.table_abc.foo, fn.Sum(self.table_abc.bar))
+            .groupby(self.table_abc.foo)
+            .qualify(self.table_abc.bar > 1)
+        )
+
+        self.assertEqual(
+            'SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" QUALIFY "bar">1',
+            str(q),
+        )
+
+    def test_qualify_and(self):
+        q = (
+            Query.from_(self.table_abc)
+            .select(self.table_abc.foo, fn.Sum(self.table_abc.bar))
+            .groupby(self.table_abc.foo)
+            .qualify((self.table_abc.bar > 1) & (self.table_abc.bar < 100))
+        )
+
+        self.assertEqual(
+            'SELECT "foo",SUM("bar") FROM "abc" GROUP BY "foo" QUALIFY "bar">1 AND "bar"<100',
+            str(q),
+        )
+
+    def test_mysql_query_uses_backtick_quote_chars(self):
+        q = MySQLQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual("SELECT `foo` FROM `abc` QUALIFY `buz`='fiz'", str(q))
+
+    def test_vertica_query_uses_double_quote_chars(self):
+        q = VerticaQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+    def test_mssql_query_uses_double_quote_chars(self):
+        q = MSSQLQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+    def test_oracle_query_uses_no_quote_chars(self):
+        q = OracleQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT foo FROM abc QUALIFY buz=\'fiz\'', str(q))
+
+    def test_postgres_query_uses_double_quote_chars(self):
+        q = PostgreSQLQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+    def test_redshift_query_uses_double_quote_chars(self):
+        q = RedshiftQuery.from_(self.table_abc).select(self.table_abc.foo).qualify(self.table_abc.buz == "fiz")
+        self.assertEqual('SELECT "foo" FROM "abc" QUALIFY "buz"=\'fiz\'', str(q))
+
+
 class OrderByTests(unittest.TestCase):
     t = Table("abc")
 
@@ -1113,7 +1177,7 @@ class AliasTests(unittest.TestCase):
     def test_null_value_with_alias(self):
         q = Query.select(NullValue().as_("abcdef"))
 
-        self.assertEqual('SELECT NULL "abcdef"', str(q))
+        self.assertEqual('SELECT null "abcdef"', str(q))
 
 
 class SubqueryTests(unittest.TestCase):

@@ -1,7 +1,7 @@
 # from pypika.terms import ValueWrapper, SystemTimeValue
 import unittest
 
-from pypika import Database, Dialects, Schema, SQLLiteQuery, Table, Tables, Query, SYSTEM_TIME
+from pypika import SYSTEM_TIME, Database, Dialects, Query, Schema, SQLLiteQuery, Table, Tables
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -13,10 +13,32 @@ class TableStructureTests(unittest.TestCase):
 
         self.assertEqual('"test_table"', str(table))
 
+    def test_table_sql_with_double_quote(self):
+        table = Table('test_table_with_double_quote"')
+
+        self.assertEqual('"test_table_with_double_quote"""', str(table))
+
+    def test_table_sql_with_several_double_quotes(self):
+        table = Table('test"table""with"""double"quotes')
+
+        self.assertEqual('"test""table""""with""""""double""quotes"', str(table))
+
+    def test_table_sql_with_single_quote(self):
+        table = Table("test_table_with_single_quote'")
+
+        self.assertEqual('"test_table_with_single_quote\'"', str(table))
+
     def test_table_with_alias(self):
         table = Table("test_table").as_("my_table")
 
         self.assertEqual('"test_table" "my_table"', table.get_sql(with_alias=True, quote_char='"'))
+
+    def test_table_with_alias_with_double_quote(self):
+        table = Table('test_table_with_double_quote"').as_("my_alias\"")
+
+        self.assertEqual(
+            '"test_table_with_double_quote""" "my_alias"""', table.get_sql(with_alias=True, quote_char='"')
+        )
 
     def test_schema_table_attr(self):
         table = Schema("x_schema").test_table

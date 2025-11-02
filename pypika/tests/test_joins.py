@@ -1,6 +1,7 @@
 import unittest
 
 from pypika import (
+    SYSTEM_TIME,
     Field,
     Interval,
     JoinException,
@@ -10,8 +11,9 @@ from pypika import (
     SetOperationException,
     Table,
     Tables,
+)
+from pypika import (
     functions as fn,
-    SYSTEM_TIME,
 )
 
 __author__ = "Timothy Heys"
