@@ -76,6 +76,7 @@ from pypika.queries import (
 )
 from pypika.queries import (
     make_columns as Columns,
+    table_class,
 )
 from pypika.queries import (
     make_tables as Tables,
@@ -145,6 +146,7 @@ __all__ = (
     'Database',
     'Tables',
     'Columns',
+    'table_class',
     'Array',
     'Bracket',
     'Case',
