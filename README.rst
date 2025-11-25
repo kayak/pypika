@@ -94,7 +94,7 @@ referenced as attributes on instances of ``pypika.Table``.
     customers = Table('customers')
     q = Query.from_(customers).select(customers.id, customers.fname, customers.lname, customers.phone)
 
-The table also can create via class-style:
+The table can also be created via class-style:
 
 .. code-block:: python
 
