@@ -119,7 +119,7 @@ from pypika.utils import (
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
-__version__ = "0.48.9"
+__version__ = "0.49.0"
 
 NULL = NullValue()
 SYSTEM_TIME = SystemTimeValue()
@@ -127,6 +127,7 @@ SYSTEM_TIME = SystemTimeValue()
 __all__ = (
     'ClickHouseQuery',
     'Dialects',
+    'JiraQuery',
     'MSSQLQuery',
     'MySQLQuery',
     'OracleQuery',
