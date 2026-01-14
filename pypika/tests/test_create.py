@@ -129,7 +129,10 @@ class CreateTableTests(unittest.TestCase):
             b = Column("b", "VARCHAR(100)", default="foo")
             q = Query.create_table(self.new_table).columns(a, b).primary_key(a)
 
-            self.assertEqual('CREATE TABLE "abc" ("a" INTEGER AUTO_INCREMENT NOT NULL,"b" VARCHAR(100) DEFAULT \'foo\',PRIMARY KEY ("a"))', str(q))
+            self.assertEqual(
+                'CREATE TABLE "abc" ("a" INTEGER AUTO_INCREMENT NOT NULL,"b" VARCHAR(100) DEFAULT \'foo\',PRIMARY KEY ("a"))',
+                str(q),
+            )
 
     def test_create_table_with_select(self):
         select = Query.from_(self.existing_table).select(self.existing_table.foo, self.existing_table.bar)
