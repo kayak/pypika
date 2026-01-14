@@ -4,7 +4,7 @@ import sys
 from collections.abc import Sequence
 from copy import copy
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, Type
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -250,6 +250,35 @@ class Table(Selectable):
         :return: QueryBuilder
         """
         return self._query_cls.into(self).insert(*terms)
+
+
+T = TypeVar("T", bound=Table)
+
+
+def table_class(
+    name: str,
+    schema: Schema | str | None = None,
+    alias: str | None = None,
+    query_cls: Type[Query] | None = None,
+):
+    """
+    A decorator for creating a new table via class-style syntax.
+
+    >>> @table_class("user")
+    ... class User(Table):
+    ...     id = Field("_id")
+    ...     name = Field("name", alias="username")
+    """
+    def builder(cls: Type[T]) -> T:
+        if not issubclass(cls, Table):
+            raise TypeError(f"{cls.__name__} must be a subclass of Table.")
+        table = cls(name=name, schema=schema, alias=alias, query_cls=query_cls)
+        for field in cls.__dict__.values():
+            if isinstance(field, Field):
+                field.table = table
+        return table
+
+    return builder
 
 
 def make_tables(*names: tuple[str, str] | str, **kwargs: Any) -> list[Table]:
