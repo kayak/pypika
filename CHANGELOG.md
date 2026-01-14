@@ -49,7 +49,7 @@
 
 - Refactored `Interval` to inherit from `Term` (#838)
 - Refactored shared logic for `Criterion` comparisons (#849)
-- Updated CI to test Python 3.8-3.14 and PyPy on Ubuntu and macOS
+- Updated CI to test Python 3.8-3.14 and PyPy 3.9-3.11 on Ubuntu and macOS
 - Added GitHub Actions release workflow for PyPI publishing
 - Removed tox dependency, simplified test running
 - Updated Sphinx and other dev dependencies
