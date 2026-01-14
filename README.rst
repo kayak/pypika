@@ -211,6 +211,26 @@ More arithmetic examples
 
     SELECT foo+bar,foo-bar,foo*bar,foo/bar,(foo+bar)/fiz FROM table
 
+Bitwise operations are also supported using the ``bitwiseand`` and ``bitwiseor`` methods.
+
+.. code-block:: python
+
+    from pypika import Query, Field
+
+    q = Query.from_('flags').select('name').where(Field('permissions').bitwiseand(4) == 4)
+
+.. code-block:: sql
+
+    SELECT "name" FROM "flags" WHERE ("permissions" & 4)=4
+
+.. code-block:: python
+
+    q = Query.from_('flags').select('name').where(Field('permissions').bitwiseor(2) == 3)
+
+.. code-block:: sql
+
+    SELECT "name" FROM "flags" WHERE ("permissions" | 2)=3
+
 
 Filtering
 """""""""
@@ -377,6 +397,40 @@ After adding a ``GROUP BY`` clause to a query, the ``HAVING`` clause becomes ava
     SELECT customer_id,SUM(total) FROM payments
     WHERE transacted BETWEEN '2015-01-01' AND '2016-01-01'
     GROUP BY customer_id HAVING SUM(total)>=1000
+
+The ``QUALIFY`` clause can be used to filter rows based on window function results. This is particularly useful
+when you want to filter after window functions have been evaluated.
+
+.. code-block:: python
+
+    from pypika import Query, Table, analytics as an
+
+    table = Table('events')
+    rank_expr = an.Rank().over(table.user_id).orderby(table.created_at)
+
+    q = Query.from_(table).select('*').qualify(rank_expr == 1)
+
+.. code-block:: sql
+
+    SELECT * FROM "events" QUALIFY RANK() OVER(PARTITION BY "user_id" ORDER BY "created_at")=1
+
+GROUP BY Modifiers
+""""""""""""""""""
+
+The ``ROLLUP`` modifier allows for aggregating to higher levels than the given groups, called super-aggregates.
+
+.. code-block:: python
+
+    from pypika import Query, Table, Rollup, functions as fn
+
+    products = Table('products')
+    q = Query.from_(products).select(
+        products.id, products.category, fn.Sum(products.price)
+    ).rollup(products.id, products.category)
+
+.. code-block:: sql
+
+    SELECT "id","category",SUM("price") FROM "products" GROUP BY ROLLUP("id","category")
 
 
 Joining Tables and Subqueries
@@ -779,6 +833,25 @@ using the ``when`` method and to set the default value using ``else_``.
     SELECT "id",CASE WHEN "fname"='Tom' THEN 'It was Tom' WHEN "fname"='John' THEN 'It was John' ELSE 'It was someone else.' END "who_was_it" FROM "customers"
 
 
+Pseudo Columns
+""""""""""""""
+
+A pseudo-column is an SQL assigned value (pseudo-field) used in the same context as a column, but not stored on disk.
+The pseudo-column can change from database to database, so here it's possible to define them.
+
+.. code-block:: python
+
+    from pypika import Query
+    from pypika.terms import PseudoColumn
+
+    CurrentDate = PseudoColumn('current_date')
+    q = Query.from_('products').select(CurrentDate)
+
+.. code-block:: sql
+
+    SELECT current_date FROM "products"
+
+
 With Clause
 """""""""""""""
 
@@ -1039,6 +1112,84 @@ Using ``limit`` for performing update
 
     UPDATE "customers" SET "lname"='smith' LIMIT 2
 
+.. _advanced_start:
+
+Analytic Queries
+^^^^^^^^^^^^^^^^
+
+The ``pypika.analytics`` module contains analytic/window function wrappers. These can be used in ``SELECT`` clauses
+when building queries for databases that support them.
+
+NTILE and RANK
+""""""""""""""
+
+The ``NTILE`` function requires a constant integer argument while the ``RANK`` function takes no arguments.
+
+.. code-block:: python
+
+    from pypika import Query, Table, analytics as an, functions as fn
+
+    sales = Table('sales')
+    q = Query.from_(sales).select(
+        sales.region,
+        fn.Sum(sales.amount).as_('total'),
+        an.NTile(4).over(sales.region).orderby(fn.Sum(sales.amount)).as_('quartile')
+    ).groupby(sales.region)
+
+FIRST_VALUE and LAST_VALUE
+""""""""""""""""""""""""""
+
+``FIRST_VALUE`` and ``LAST_VALUE`` both expect a single argument. They also support an additional ``IGNORE NULLS`` clause.
+
+.. code-block:: python
+
+    from pypika import Query, Table, analytics as an
+
+    t = Table('monthly_data')
+    first_val = an.FirstValue(t.value).over(t.category).orderby(t.month)
+    last_val = an.LastValue(t.value).over(t.category).orderby(t.month).ignore_nulls()
+
+    q = Query.from_(t).select(first_val, last_val)
+
+.. code-block:: sql
+
+    SELECT FIRST_VALUE("value") OVER(PARTITION BY "category" ORDER BY "month"),LAST_VALUE("value" IGNORE NULLS) OVER(PARTITION BY "category" ORDER BY "month") FROM "monthly_data"
+
+MEDIAN, AVG and STDDEV
+""""""""""""""""""""""
+
+These analytic functions take one or more arguments with window partitioning.
+
+.. code-block:: python
+
+    from pypika import Query, Table, analytics as an
+
+    customers = Table('customers')
+    median_income = an.Median(customers.income).over(customers.state).as_('median')
+    avg_income = an.Avg(customers.income).over(customers.state).as_('avg')
+
+    q = Query.from_(customers).select(median_income, avg_income)
+
+Window Frames
+"""""""""""""
+
+Functions which use window aggregation expose the ``rows()`` and ``range()`` methods to define the window frame.
+Boundaries can be set using ``an.CURRENT_ROW``, ``an.Preceding(n)``, or ``an.Following(n)``.
+Unbounded ranges use ``an.Preceding()`` or ``an.Following()`` without arguments.
+
+.. code-block:: python
+
+    from pypika import Query, Table, analytics as an
+
+    t = Table('transactions')
+    rolling_sum = an.Sum(t.amount).over(t.account_id).orderby(t.date).rows(an.Preceding(7), an.CURRENT_ROW)
+
+    q = Query.from_(t).select(t.date, t.amount, rolling_sum.as_('rolling_7_day'))
+
+.. code-block:: sql
+
+    SELECT "date","amount",SUM("amount") OVER(PARTITION BY "account_id" ORDER BY "date" ROWS BETWEEN 7 PRECEDING AND CURRENT ROW) "rolling_7_day" FROM "transactions"
+
 
 Parametrized Queries
 ^^^^^^^^^^^^^^^^^^^^
@@ -1078,6 +1229,44 @@ MSSQL:
     ``%(name)s`` OR ``:name`` + ``:number`` (depending on driver)
 
 You can find out what parameter style is needed for DBAPI compliant drivers here: https://www.python.org/dev/peps/pep-0249/#paramstyle or in the DB driver documentation.
+
+Extracting Parameter Values
+"""""""""""""""""""""""""""
+
+When building parameterized queries, you can pass a parameter object to ``get_sql()`` to automatically collect
+parameter values. This is useful for executing queries with database drivers that require separate parameter lists.
+
+.. code-block:: python
+
+    from pypika import Query, Table, QmarkParameter
+
+    customers = Table('customers')
+    q = Query.from_(customers).select('*').where(
+        (customers.status == 'active') & (customers.age >= 18)
+    )
+
+    parameter = QmarkParameter()
+    sql = q.get_sql(parameter=parameter)
+    params = parameter.get_parameters()
+
+    # sql: SELECT * FROM "customers" WHERE "status"=? AND "age">=?
+    # params: ['active', 18]
+
+This works with all parameter types. For dict-based parameters like ``NamedParameter``:
+
+.. code-block:: python
+
+    from pypika import Query, Table, NamedParameter
+
+    customers = Table('customers')
+    q = Query.from_(customers).select('*').where(customers.status == 'active')
+
+    parameter = NamedParameter()
+    sql = q.get_sql(parameter=parameter)
+    params = parameter.get_parameters()
+
+    # sql: SELECT * FROM "customers" WHERE "status"=:param1
+    # params: {'param1': 'active'}
 
 Temporal support
 ^^^^^^^^^^^^^^^^
@@ -1274,6 +1463,23 @@ This produces:
 
         CREATE TABLE "names" AS (SELECT "last_name","first_name" FROM "person")
 
+TEMPORARY and UNLOGGED tables can also be created:
+
+.. code-block:: python
+
+    from pypika import Query, Table, Columns
+
+    columns = Columns(('id', 'INT'), ('name', 'VARCHAR(100)'))
+
+    Query.create_table('temp_items').columns(*columns).temporary()
+    Query.create_table('fast_items').columns(*columns).unlogged()
+
+.. code-block:: sql
+
+    CREATE TEMPORARY TABLE "temp_items" ("id" INT,"name" VARCHAR(100))
+
+    CREATE UNLOGGED TABLE "fast_items" ("id" INT,"name" VARCHAR(100))
+
 Managing Table Indices
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1368,6 +1574,165 @@ This produces:
 
     DROP INDEX IF EXISTS my_index
 
+
+Handling Different Database Platforms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There can sometimes be differences between how database vendors implement SQL in their platform, for example
+which quote characters are used. To ensure that the correct SQL standard is used for your platform,
+the platform-specific Query classes can be used.
+
+.. code-block:: python
+
+    from pypika import MySQLQuery, MSSQLQuery, PostgreSQLQuery, OracleQuery, VerticaQuery, ClickHouseQuery
+
+You can use these query classes as a drop in replacement for the default ``Query`` class shown in the other examples.
+
+
+ClickHouse-Specific Features
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|Brand| provides several ClickHouse-specific query features through the ``ClickHouseQuery`` class.
+
+FINAL
+"""""
+
+The ``FINAL`` modifier forces ClickHouse to fully merge data before returning results, useful with
+ReplacingMergeTree and CollapsingMergeTree tables.
+
+.. code-block:: python
+
+    from pypika import ClickHouseQuery, Table
+
+    t = Table('events')
+    q = ClickHouseQuery.from_(t).select(t.user_id, t.event).final()
+
+.. code-block:: sql
+
+    SELECT "user_id","event" FROM "events" FINAL
+
+SAMPLE
+""""""
+
+The ``SAMPLE`` clause enables approximate query processing on a fraction of data.
+
+.. code-block:: python
+
+    from pypika import ClickHouseQuery, Table
+
+    t = Table('events')
+    q = ClickHouseQuery.from_(t).select(t.user_id).sample(10)
+
+.. code-block:: sql
+
+    SELECT "user_id" FROM "events" SAMPLE 10
+
+You can also specify an offset:
+
+.. code-block:: python
+
+    q = ClickHouseQuery.from_(t).select(t.user_id).sample(10, 5)
+
+.. code-block:: sql
+
+    SELECT "user_id" FROM "events" SAMPLE 10 OFFSET 5
+
+DISTINCT ON
+"""""""""""
+
+ClickHouse supports ``DISTINCT ON`` to return distinct rows based on specific columns.
+
+.. code-block:: python
+
+    from pypika import ClickHouseQuery, Table
+
+    t = Table('users')
+    q = ClickHouseQuery.from_(t).distinct_on('department', t.role).select('name', 'department', 'role')
+
+.. code-block:: sql
+
+    SELECT DISTINCT ON("department","role") "name","department","role" FROM "users"
+
+LIMIT BY
+""""""""
+
+The ``LIMIT BY`` clause limits the number of rows per group of column values.
+
+.. code-block:: python
+
+    from pypika import ClickHouseQuery, Table
+
+    t = Table('events')
+    q = ClickHouseQuery.from_(t).select('user_id', 'event', 'timestamp').limit_by(3, 'user_id')
+
+.. code-block:: sql
+
+    SELECT "user_id","event","timestamp" FROM "events" LIMIT 3 BY ("user_id")
+
+You can also specify an offset with ``limit_offset_by``:
+
+.. code-block:: python
+
+    q = ClickHouseQuery.from_(t).select('user_id', 'event').limit_offset_by(3, 1, 'user_id')
+
+.. code-block:: sql
+
+    SELECT "user_id","event" FROM "events" LIMIT 3 OFFSET 1 BY ("user_id")
+
+
+Oracle-Specific Features
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+LIMIT and OFFSET
+""""""""""""""""
+
+Oracle queries support ``LIMIT`` and ``OFFSET`` using the ``FETCH NEXT ... ROWS ONLY`` and ``OFFSET ... ROWS`` syntax.
+
+.. code-block:: python
+
+    from pypika import OracleQuery, Table
+
+    t = Table('employees')
+    q = OracleQuery.from_(t).select(t.name).limit(10)
+
+.. code-block:: sql
+
+    SELECT name FROM employees FETCH NEXT 10 ROWS ONLY
+
+With offset:
+
+.. code-block:: python
+
+    q = OracleQuery.from_(t).select(t.name).limit(10).offset(20)
+
+.. code-block:: sql
+
+    SELECT name FROM employees OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY
+
+
+Jira Query Language (JQL)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|Brand| supports generating Jira Query Language expressions through the ``JiraQuery`` class.
+
+.. code-block:: python
+
+    from pypika import JiraQuery
+
+    J = JiraQuery.Table()
+    query = (
+        JiraQuery.where(J.project.isin(["PROJ1", "PROJ2"]))
+        .where(J.issuetype == "Bug")
+        .where(J.labels.isempty() | J.labels.notin(["stale", "wontfix"]))
+    )
+
+.. code-block:: sql
+
+    project IN ("PROJ1","PROJ2") AND issuetype="Bug" AND (labels is EMPTY OR labels NOT IN ("stale","wontfix"))
+
+JQL fields support ``isempty()`` and ``notempty()`` methods for checking empty/non-empty values.
+
+.. _advanced_end:
 
 Chaining Functions
 ^^^^^^^^^^^^^^^^^^
