@@ -48,6 +48,10 @@ class UpdateTests(unittest.TestCase):
             str(q),
         )
 
+    def test_update_with_order_by(self):
+        q = Query.update(self.table_abc).set(self.table_abc.lname, "test").orderby(self.table_abc.foo)
+        self.assertEqual('UPDATE "abc" SET "lname"=\'test\' ORDER BY "foo"', str(q))
+
     def test_update_with_limit(self):
         q = Query.update(self.table_abc).set(self.table_abc.lname, "test").limit(1)
         self.assertEqual('UPDATE "abc" SET "lname"=\'test\' LIMIT 1', str(q))
