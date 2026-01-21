@@ -1400,7 +1400,8 @@ class QueryBuilder(Selectable, Term):
 
     def _with_sql(self, **kwargs: Any) -> str:
         return "WITH " + ",".join(
-            clause.name + " AS (" + clause.get_sql(subquery=False, with_alias=False, **kwargs) + ") "
+            format_quotes(clause.name, kwargs.get('alias_quote_char') or kwargs.get('quote_char')) +
+            " AS (" + clause.get_sql(subquery=False, with_alias=False, **kwargs) + ") "
             for clause in self._with
         )
 
