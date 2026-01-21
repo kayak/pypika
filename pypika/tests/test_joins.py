@@ -113,20 +113,15 @@ class SelectQueryJoinTests(unittest.TestCase):
             self.assertEqual(expected, str(query))
 
     def test_cross_join(self):
-        expected = 'SELECT * FROM "abc" CROSS JOIN "efg" ON "abc"."foo"="efg"."bar"'
+        expected = 'SELECT * FROM "abc" CROSS JOIN "efg"'
 
         with self.subTest("join with enum"):
-            query = (
-                Query.from_(self.table0)
-                .join(self.table1, how=JoinType.cross)
-                .on(self.table0.foo == self.table1.bar)
-                .select("*")
-            )
+            query = Query.from_(self.table0).join(self.table1, how=JoinType.cross).cross().select("*")
 
             self.assertEqual(expected, str(query))
 
         with self.subTest("join function"):
-            query = Query.from_(self.table0).cross_join(self.table1).on(self.table0.foo == self.table1.bar).select("*")
+            query = Query.from_(self.table0).cross_join(self.table1).cross().select("*")
             self.assertEqual(expected, str(query))
 
     def test_left_outer_join(self):

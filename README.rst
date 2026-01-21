@@ -532,6 +532,22 @@ Example of a join using `USING`
 
     SELECT "history".* FROM "history" JOIN "customers" USING "customer_id" WHERE "customers"."id"=5
 
+Example of a cross join
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    history, customers = Tables('history', 'meta')
+    q = Query \
+        .from_(history) \
+        .cross_join(meta) \
+        .cross() \
+        .select(history.star)
+
+.. code-block:: sql
+
+    SELECT "history".* FROM "history" CROSS JOIN "meta"
+
 
 Example of a correlated subquery in the `SELECT`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
