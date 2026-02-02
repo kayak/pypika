@@ -656,7 +656,6 @@ class Field(Criterion, JSON):
     def nodes_(self) -> Iterator[NodeT]:
         yield self
         if self.table is not None:
-            assert isinstance(self.table, Selectable)
             yield from self.table.nodes_()
 
     @builder
