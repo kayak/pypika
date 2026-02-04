@@ -489,7 +489,7 @@ class ParameterValueWrapper(ValueWrapper):
 
 
 class JSON(Term):
-    table = None
+    table: str | Selectable | None = None
 
     def __init__(self, value: Any = None, alias: str | None = None) -> None:
         super().__init__(alias)
@@ -651,7 +651,7 @@ class Field(Criterion, JSON):
             from pypika.queries import Table
 
             table = Table(table)
-        self.table = table
+        self.table: str | Selectable | None = table
 
     def nodes_(self) -> Iterator[NodeT]:
         yield self
