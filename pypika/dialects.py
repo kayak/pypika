@@ -956,7 +956,12 @@ class SQLLiteQueryBuilder(QueryBuilder):
     QUERY_CLS = SQLLiteQuery
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+        super().__init__(
+            dialect=Dialects.SQLLITE,
+            wrap_set_operation_queries=False,
+            wrapper_cls=SQLLiteValueWrapper,
+            **kwargs,
+        )
         self._insert_or_replace = False
 
     @builder
