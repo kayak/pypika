@@ -956,7 +956,9 @@ class SQLLiteQueryBuilder(QueryBuilder):
     QUERY_CLS = SQLLiteQuery
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+        if kwargs.get("wrapper_cls") is None:
+            kwargs["wrapper_cls"] = SQLLiteValueWrapper
+        super().__init__(dialect=Dialects.SQLLITE, **kwargs)
         self._insert_or_replace = False
 
     @builder
@@ -968,6 +970,19 @@ class SQLLiteQueryBuilder(QueryBuilder):
     def _replace_sql(self, **kwargs: Any) -> str:
         prefix = "INSERT OR " if self._insert_or_replace else ""
         return prefix + super()._replace_sql(**kwargs)
+
+    @builder
+    def for_update(
+        self, nowait: bool = False, skip_locked: bool = False, of: TypedTuple[str, ...] = ()
+    ) -> "QueryBuilder":
+        self._for_update = False
+
+    def _insert_sql(self, **kwargs: Any) -> str:
+        return "INSERT {ignore}INTO {table}".format(
+            table=self._insert_table.get_sql(**kwargs),
+            ignore="OR IGNORE " if self._ignore else "",
+        )
+
 
 
 class JiraQuery(Query):
