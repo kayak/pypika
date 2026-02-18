@@ -65,6 +65,7 @@ class JoinType(Enum):
     full_outer = "FULL OUTER"
     cross = "CROSS"
     hash = "HASH"
+    asof = "ASOF"
 
 
 class ReferenceOption(Enum):
