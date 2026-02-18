@@ -87,7 +87,7 @@ class UpdateTests(unittest.TestCase):
             .where(self.table_abc.comp.eq(an_alias.alias_comp))
         )
         self.assertEqual(
-            'WITH an_alias AS (SELECT "fizz" FROM "efg") '
+            'WITH "an_alias" AS (SELECT "fizz" FROM "efg") '
             'UPDATE "abc" SET "lname"="an_alias"."long_name" FROM an_alias '
             'WHERE "abc"."comp"="an_alias"."alias_comp"',
             str(q),
