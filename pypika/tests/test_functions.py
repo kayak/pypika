@@ -395,6 +395,21 @@ class ArithmeticTests(unittest.TestCase):
         self.assertEqual('SELECT FLOOR("foo") FROM "abc"', str(q1))
         self.assertEqual('SELECT FLOOR("foo") FROM "abc"', str(q2))
 
+    def test__logarithm(self):
+        base = 5
+        q1 = Q.from_("abc").select(fn.Log(F("foo"), base=base))
+        q2 = Q.from_(self.t).select(fn.Log(self.t.foo, base=base))
+
+        self.assertEqual('SELECT LOG(5,"foo") FROM "abc"', str(q1))
+        self.assertEqual('SELECT LOG(5,"foo") FROM "abc"', str(q2))
+
+    def test__log_10(self):
+        q1 = Q.from_("abc").select(fn.Log10(F("foo")))
+        q2 = Q.from_(self.t).select(fn.Log10(self.t.foo))
+
+        self.assertEqual('SELECT LOG("foo") FROM "abc"', str(q1))
+        self.assertEqual('SELECT LOG("foo") FROM "abc"', str(q2))
+
 
 class AggregationTests(unittest.TestCase):
     def test__count(self):
