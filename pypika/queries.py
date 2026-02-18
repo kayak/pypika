@@ -1305,6 +1305,9 @@ class QueryBuilder(Selectable, Term):
             if self._wheres:
                 querystring += self._where_sql(**kwargs)
 
+            if self._orderbys:
+                querystring += self._orderby_sql(**kwargs)
+
             if self._limit is not None:
                 querystring += self._limit_sql()
 
