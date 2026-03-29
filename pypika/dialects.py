@@ -935,28 +935,28 @@ class ClickHouseDropQueryBuilder(DropQueryBuilder):
         return query
 
 
-class SQLLiteValueWrapper(ValueWrapper):
+class SQLiteValueWrapper(ValueWrapper):
     def get_value_sql(self, **kwargs: Any) -> str:
         if isinstance(self.value, bool):
             return "1" if self.value else "0"
         return super().get_value_sql(**kwargs)
 
 
-class SQLLiteQuery(Query):
+class SQLiteQuery(Query):
     """
     Defines a query class for use with SQLite.
     """
 
     @classmethod
-    def _builder(cls, **kwargs: Any) -> SQLLiteQueryBuilder:
-        return SQLLiteQueryBuilder(**kwargs)
+    def _builder(cls, **kwargs: Any) -> SQLiteQueryBuilder:
+        return SQLiteQueryBuilder(**kwargs)
 
 
-class SQLLiteQueryBuilder(QueryBuilder):
-    QUERY_CLS = SQLLiteQuery
+class SQLiteQueryBuilder(QueryBuilder):
+    QUERY_CLS = SQLiteQuery
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(dialect=Dialects.SQLLITE, wrapper_cls=SQLLiteValueWrapper, **kwargs)
+        super().__init__(dialect=Dialects.SQLITE, wrapper_cls=SQLiteValueWrapper, **kwargs)
         self._insert_or_replace = False
 
     @builder

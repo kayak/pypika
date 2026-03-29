@@ -18,7 +18,7 @@ from pypika import (
     Query,
     QueryException,
     RedshiftQuery,
-    SQLLiteQuery,
+    SQLiteQuery,
     Table,
     Tables,
     VerticaQuery,
@@ -772,7 +772,7 @@ class GroupByTests(unittest.TestCase):
             PostgreSQLQuery,
             RedshiftQuery,
             ClickHouseQuery,
-            SQLLiteQuery,
+            SQLiteQuery,
         ]:
             q = query_cls.from_(self.t).select(fn.Sum(self.t.foo), bar).groupby(bar)
 

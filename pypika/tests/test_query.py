@@ -17,8 +17,8 @@ from pypika.dialects import (
     RedShiftQueryBuilder,
     SnowflakeQuery,
     SnowflakeQueryBuilder,
-    SQLLiteQuery,
-    SQLLiteQueryBuilder,
+    SQLiteQuery,
+    SQLiteQueryBuilder,
     VerticaCopyQueryBuilder,
     VerticaCreateQueryBuilder,
     VerticaQuery,
@@ -199,8 +199,8 @@ class QueryBuilderTests(unittest.TestCase):
         with self.subTest('RedShiftQueryBuilder'):
             self.assertEqual(RedshiftQuery, RedShiftQueryBuilder.QUERY_CLS)
 
-        with self.subTest('SQLLiteQueryBuilder'):
-            self.assertEqual(SQLLiteQuery, SQLLiteQueryBuilder.QUERY_CLS)
+        with self.subTest('SQLiteQueryBuilder'):
+            self.assertEqual(SQLiteQuery, SQLiteQueryBuilder.QUERY_CLS)
 
         with self.subTest('OracleQueryBuilder'):
             self.assertEqual(OracleQuery, OracleQueryBuilder.QUERY_CLS)

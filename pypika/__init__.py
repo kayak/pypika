@@ -54,7 +54,7 @@ from pypika.dialects import (
     OracleQuery,
     PostgreSQLQuery,
     RedshiftQuery,
-    SQLLiteQuery,
+    SQLiteQuery,
     VerticaQuery,
 )
 
@@ -133,7 +133,7 @@ __all__ = (
     'OracleQuery',
     'PostgreSQLQuery',
     'RedshiftQuery',
-    'SQLLiteQuery',
+    'SQLiteQuery',
     'VerticaQuery',
     'DatePart',
     'JoinType',
