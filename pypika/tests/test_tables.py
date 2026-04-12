@@ -1,7 +1,7 @@
 # from pypika.terms import ValueWrapper, SystemTimeValue
 import unittest
 
-from pypika import SYSTEM_TIME, Database, Dialects, Query, Schema, SQLiteQuery, Table, Tables
+from pypika import SYSTEM_TIME, Database, Dialects, Query, Schema, SQLLiteQuery, Table, Tables
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -175,9 +175,9 @@ class TableDialectTests(unittest.TestCase):
         self.assertIs(q.dialect, None)
 
     def test_table_with_dialect_query_cls(self):
-        table = Table("abc", query_cls=SQLiteQuery)
+        table = Table("abc", query_cls=SQLLiteQuery)
         q = table.select("1")
-        self.assertIs(q.dialect, Dialects.SQLITE)
+        self.assertIs(q.dialect, Dialects.SQLLITE)
 
     def test_table_factory_with_default_query_cls(self):
         table = Query.Table("abc")
@@ -185,9 +185,9 @@ class TableDialectTests(unittest.TestCase):
         self.assertIs(q.dialect, None)
 
     def test_table_factory_with_dialect_query_cls(self):
-        table = SQLiteQuery.Table("abc")
+        table = SQLLiteQuery.Table("abc")
         q = table.select("1")
-        self.assertIs(q.dialect, Dialects.SQLITE)
+        self.assertIs(q.dialect, Dialects.SQLLITE)
 
     def test_make_tables_factory_with_default_query_cls(self):
         t1, t2 = Query.Tables("abc", "def")
@@ -197,11 +197,11 @@ class TableDialectTests(unittest.TestCase):
         self.assertIs(q2.dialect, None)
 
     def test_make_tables_factory_with_dialect_query_cls(self):
-        t1, t2 = SQLiteQuery.Tables("abc", "def")
+        t1, t2 = SQLLiteQuery.Tables("abc", "def")
         q1 = t1.select("1")
         q2 = t2.select("2")
-        self.assertIs(q1.dialect, Dialects.SQLITE)
-        self.assertIs(q2.dialect, Dialects.SQLITE)
+        self.assertIs(q1.dialect, Dialects.SQLLITE)
+        self.assertIs(q2.dialect, Dialects.SQLLITE)
 
     def test_table_with_bad_query_cls(self):
         with self.assertRaises(TypeError):

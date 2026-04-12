@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import SYSTEM_TIME, AliasedQuery, PostgreSQLQuery, Query, SQLiteQuery, Table
+from pypika import SYSTEM_TIME, AliasedQuery, PostgreSQLQuery, Query, SQLLiteQuery, Table
 from pypika.terms import Star
 
 __author__ = "Timothy Heys"
@@ -152,10 +152,10 @@ class PostgresUpdateTests(unittest.TestCase):
         self.assertEqual('UPDATE "abc" SET "foo"=\'bar\' WHERE "foo"=0 RETURNING *', str(q))
 
 
-class SQLiteUpdateTests(unittest.TestCase):
+class SQLLiteUpdateTests(unittest.TestCase):
     table_abc = Table("abc")
 
     def test_update_with_bool(self):
-        q = SQLiteQuery.update(self.table_abc).set(self.table_abc.foo, True)
+        q = SQLLiteQuery.update(self.table_abc).set(self.table_abc.foo, True)
 
         self.assertEqual('UPDATE "abc" SET "foo"=1', str(q))
