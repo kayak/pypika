@@ -715,6 +715,43 @@ class ExistsCriterionTests(unittest.TestCase):
     t2 = Table("abc", alias="t2")
     q2 = QueryBuilder().from_(t2).select(t2.field2)
 
+    def test_exists_alias_in_select(self):
+        criterion = ExistsCriterion(self.q2).as_("has_rows")
+        query = QueryBuilder().select(criterion)
+
+        self.assertEqual('SELECT EXISTS (SELECT "t2"."field2" FROM "abc" "t2") "has_rows"', str(query))
+
+    def test_not_exists_alias_in_select(self):
+        criterion = ExistsCriterion(self.q2, alias="no_rows").negate()
+        query = QueryBuilder().select(criterion)
+
+        self.assertEqual('SELECT NOT EXISTS (SELECT "t2"."field2" FROM "abc" "t2") "no_rows"', str(query))
+
+    def test_exists_alias_omitted_in_where(self):
+        criterion = ExistsCriterion(self.q2, alias="has_rows")
+        query = QueryBuilder().from_("def").select("field1").where(criterion)
+
+        self.assertEqual('SELECT "field1" FROM "def" WHERE EXISTS (SELECT "t2"."field2" FROM "abc" "t2")', str(query))
+
+    def test_exists_alias_quoting(self):
+        criterion = ExistsCriterion(self.q2, alias='has"rows')
+
+        self.assertEqual(
+            'EXISTS (SELECT "t2"."field2" FROM "abc" "t2") "has""rows"',
+            criterion.get_sql(with_alias=True, subquery=True, quote_char='"', alias_quote_char='"'),
+        )
+
+    def test_exists_does_not_render_subquery_alias(self):
+        criterion = ExistsCriterion(self.q2.as_("inner_query"), alias="has_rows")
+        query = QueryBuilder().select(criterion)
+
+        self.assertEqual('SELECT EXISTS (SELECT "t2"."field2" FROM "abc" "t2") "has_rows"', str(query))
+
+    def test_exists_without_alias_in_select(self):
+        query = QueryBuilder().select(ExistsCriterion(self.q2))
+
+        self.assertEqual('SELECT EXISTS (SELECT "t2"."field2" FROM "abc" "t2")', str(query))
+
     def test_exists(self):
         t1 = Table("def", alias="t1")
         q1 = QueryBuilder().from_(t1).where(ExistsCriterion(self.q2)).select(t1.field1)
