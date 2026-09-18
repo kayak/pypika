@@ -943,10 +943,13 @@ class ExistsCriterion(Criterion):
         self.container = container
         self._is_negated = False
 
-    def get_sql(self, **kwargs):
-        return "{not_}EXISTS {container}".format(
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
+        sql = "{not_}EXISTS {container}".format(
             container=self.container.get_sql(**kwargs), not_='NOT ' if self._is_negated else ''
         )
+        if with_alias:
+            return format_alias_sql(sql, self.alias, **kwargs)
+        return sql
 
     def negate(self):
         self._is_negated = True
