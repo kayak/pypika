@@ -1095,6 +1095,7 @@ class NullCriterion(Criterion):
         self.term = self.term.replace_table(current_table, new_table)
 
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
+        kwargs["subcriterion"] = True
         sql = "{term} IS NULL".format(
             term=self.term.get_sql(**kwargs),
         )
@@ -1103,6 +1104,7 @@ class NullCriterion(Criterion):
 
 class NotNullCriterion(NullCriterion):
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
+        kwargs["subcriterion"] = True
         sql = "{term} IS NOT NULL".format(
             term=self.term.get_sql(**kwargs),
         )
