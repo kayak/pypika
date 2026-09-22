@@ -104,6 +104,24 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('"foo" IS NULL "alias"', str(c1))
         self.assertEqual('"crit"."foo" IS NULL "alias"', str(c2))
 
+    def test__compound_null_predicates(self):
+        for compound in (
+            (Field("foo") == 1) & (Field("bar") == 2),
+            (Field("foo") == 1) | (Field("bar") == 2),
+            ((Field("foo") == 1) | (Field("bar") == 2)) & (Field("baz") == 3),
+        ):
+            for method, prefix, suffix in (
+                ("isnull", "", "IS NULL"),
+                ("isnotnull", "", "IS NOT NULL"),
+                ("notnull", "NOT ", "IS NULL"),
+            ):
+                with self.subTest(compound=str(compound), method=method):
+                    predicate = getattr(compound, method)()
+                    expected = "{}({}) {}".format(prefix, compound, suffix)
+                    self.assertEqual(expected, str(predicate))
+                    self.assertEqual(expected + ' "result"', str(predicate.as_("result")))
+                    self.assertEqual(expected + ' AND "other"=4', str(predicate & (Field("other") == 4)))
+
     def test__criterion_ne_number(self):
         c1 = Field("foo") != 1
         c2 = Field("foo", table=self.t).ne(0)
