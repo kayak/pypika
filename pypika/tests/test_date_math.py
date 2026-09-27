@@ -148,6 +148,20 @@ class DialectIntervalTests(unittest.TestCase):
 
 
 class TestNegativeIntervals(unittest.TestCase):
+    def test_microsecond(self):
+        for value in (1, 10, 999999, 1000000):
+            with self.subTest(value=value):
+                interval = Interval(microseconds=-value)
+                self.assertEqual("INTERVAL '-{} MICROSECOND'".format(value), interval.get_sql())
+
+    def test_microsecond_dialects(self):
+        interval = Interval(microseconds=-7)
+        self.assertEqual("INTERVAL '-7' MICROSECOND", interval.get_sql(dialect=Dialects.MYSQL))
+        self.assertEqual("INTERVAL '-7 MICROSECOND'", interval.get_sql(dialect=Dialects.POSTGRESQL))
+
+    def test_microsecond_in_date_expression(self):
+        self.assertEqual('"dt"+INTERVAL \'-1 MICROSECOND\'', str(dt + Interval(microseconds=-1)))
+
     def test_day(self):
         c = Interval(days=-1).get_sql()
         self.assertEqual("INTERVAL '-1 DAY'", c)
