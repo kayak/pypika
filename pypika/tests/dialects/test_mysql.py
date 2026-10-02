@@ -89,3 +89,9 @@ class TableTests(unittest.TestCase):
             'DROP TABLE `abc`',
             str(q),
         )
+
+
+class MergeTests(unittest.TestCase):
+    def test_merge_is_not_supported(self):
+        with self.assertRaisesRegex(QueryException, "on_duplicate_key_update"):
+            MySQLQuery.merge_into("abc")
