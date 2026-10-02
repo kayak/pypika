@@ -79,3 +79,34 @@ class SelectTests(unittest.TestCase):
         self.assertEqual(
             'SELECT "sq0"."abc" "a",COUNT(\'*\') FROM (SELECT "abc" FROM "table1") "sq0" GROUP BY "sq0"."abc"', str(q)
         )
+
+
+class MergeTests(unittest.TestCase):
+    target, source = Table("target"), Table("source")
+
+    def test_merge_ends_with_semicolon(self):
+        q = (
+            MSSQLQuery.merge_into(self.target)
+            .using(self.source)
+            .on(self.target.id == self.source.id)
+            .when_matched()
+            .then_update(self.target.name, self.source.name)
+            .when_not_matched()
+            .then_insert(("id", "name"), (self.source.id, self.source.name))
+            .when_not_matched_by_source()
+            .then_delete()
+        )
+
+        self.assertEqual(
+            'MERGE INTO "target" USING "source" ON ("target"."id"="source"."id") '
+            'WHEN MATCHED THEN UPDATE SET "name"="source"."name" '
+            'WHEN NOT MATCHED THEN INSERT ("id","name") VALUES ("source"."id","source"."name") '
+            'WHEN NOT MATCHED BY SOURCE THEN DELETE;',
+            str(q),
+        )
+
+    def test_merge_does_not_support_do_nothing(self):
+        q = MSSQLQuery.merge_into(self.target).using(self.source).on(self.target.id == self.source.id).when_matched()
+
+        with self.assertRaises(QueryException):
+            q.then_do_nothing()

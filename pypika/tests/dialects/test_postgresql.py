@@ -269,3 +269,38 @@ class ReturningClauseTests(unittest.TestCase):
             'RETURNING "xyz"."a"',
             str(q),
         )
+
+
+class MergeTests(unittest.TestCase):
+    target, source = Table("target"), Table("source")
+
+    def test_merge(self):
+        q = (
+            PostgreSQLQuery.merge_into(self.target)
+            .using(self.source)
+            .on(self.target.id == self.source.id)
+            .when_matched()
+            .then_update(self.target.name, self.source.name)
+            .when_not_matched()
+            .then_insert(("id", "name"), (self.source.id, self.source.name))
+        )
+
+        self.assertEqual(
+            'MERGE INTO "target" USING "source" ON ("target"."id"="source"."id") '
+            'WHEN MATCHED THEN UPDATE SET "name"="source"."name" '
+            'WHEN NOT MATCHED THEN INSERT ("id","name") VALUES ("source"."id","source"."name")',
+            str(q),
+        )
+
+    def test_merge_with_do_nothing_and_not_matched_by_source(self):
+        q = (
+            PostgreSQLQuery.merge_into(self.target)
+            .using(self.source)
+            .on(self.target.id == self.source.id)
+            .when_matched()
+            .then_do_nothing()
+            .when_not_matched_by_source()
+            .then_delete()
+        )
+
+        self.assertTrue(str(q).endswith('WHEN MATCHED THEN DO NOTHING WHEN NOT MATCHED BY SOURCE THEN DELETE'))

@@ -4,7 +4,7 @@ import sys
 from collections.abc import Sequence
 from copy import copy
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeVar
 
 from pypika.enums import Dialects, JoinType, ReferenceOption, SetOperation
 from pypika.terms import (
@@ -466,6 +466,22 @@ class Query:
         function, the query becomes a DROP statement.
         """
         return DropQueryBuilder().drop_index(index)
+
+    @classmethod
+    def merge_into(cls, table: Table | str, **kwargs: Any) -> MergeQueryBuilder:
+        """
+        Query builder entry point. Initializes query building and sets the target table of a MERGE statement. When
+        using this function, the query becomes a MERGE statement.
+
+        :param table: An instance of a Table object or a string table name.
+
+        :return: MergeQueryBuilder
+        """
+        return cls._merge_builder(**kwargs).merge_into(table)
+
+    @classmethod
+    def _merge_builder(cls, **kwargs: Any) -> MergeQueryBuilder:
+        return MergeQueryBuilder(**kwargs)
 
     @classmethod
     def into(cls, table: Table | str, **kwargs: Any) -> QueryBuilder:
@@ -2255,6 +2271,262 @@ class DropQueryBuilder:
         return "DROP {kind} {if_exists}{name}".format(
             kind=self._drop_target_kind, if_exists=if_exists, name=target_name
         )
+
+    def __str__(self) -> str:
+        return self.get_sql()
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class _MergeClause(NamedTuple):
+    kind: str
+    condition: Term | None
+    action: str
+    updates: tuple[tuple[Field, Term], ...] = ()
+    columns: tuple[Field, ...] = ()
+    values: tuple[Term, ...] = ()
+
+
+class MergeQueryBuilder:
+    """
+    Query builder used to build MERGE queries. A merge statement joins a target table with a source and applies one or
+    more actions depending on whether a row of the target matches a row of the source.
+
+    The ``when_*`` methods start a new WHEN clause and the ``then_*`` methods give the action of that clause.
+    """
+
+    QUOTE_CHAR: str | None = '"'
+    SECONDARY_QUOTE_CHAR = "'"
+    QUERY_CLS = Query
+
+    _MATCHED = "MATCHED"
+    _NOT_MATCHED = "NOT MATCHED"
+    _NOT_MATCHED_BY_SOURCE = "NOT MATCHED BY SOURCE"
+
+    def __init__(self, dialect: Dialects | None = None) -> None:
+        self._target_table: Table | None = None
+        self._source: Table | QueryBuilder | None = None
+        self._on_criterion: Term | None = None
+        self._clauses: list[_MergeClause] = []
+        self._pending_kind: str | None = None
+        self._pending_condition: Term | None = None
+        self.dialect = dialect
+
+    def _set_kwargs_defaults(self, kwargs: dict) -> None:
+        kwargs.setdefault("quote_char", self.QUOTE_CHAR)
+        kwargs.setdefault("secondary_quote_char", self.SECONDARY_QUOTE_CHAR)
+        kwargs.setdefault("dialect", self.dialect)
+
+    @builder
+    def merge_into(self, table: Table | str) -> None:
+        """
+        Sets the target table that is modified by the MERGE statement.
+
+        :param table: An instance of a Table object or a string table name.
+        """
+        if self._target_table is not None:
+            raise QueryException("Target table is already set")
+        self._target_table = table if isinstance(table, Table) else Table(table)
+
+    @builder
+    def using(self, source: Table | QueryBuilder | str) -> None:
+        """
+        Sets the source of the rows that are merged into the target table.
+
+        :param source: A Table, a string table name or a sub-query. A sub-query is wrapped in parentheses and followed by
+            its alias.
+        """
+        if self._source is not None:
+            raise QueryException("Source is already set")
+        self._source = Table(source) if isinstance(source, str) else source
+
+    @builder
+    def on(self, criterion: Term) -> None:
+        """
+        Sets the condition that decides whether a row of the target matches a row of the source.
+
+        :param criterion: The join condition.
+        """
+        if self._on_criterion is not None:
+            raise QueryException("ON criterion is already set")
+        self._on_criterion = criterion
+
+    @builder
+    def when_matched(self) -> None:
+        """
+        Starts a WHEN MATCHED clause, applied to target rows that match a source row.
+        """
+        self._start_clause(self._MATCHED)
+
+    @builder
+    def when_not_matched(self) -> None:
+        """
+        Starts a WHEN NOT MATCHED clause, applied to source rows that have no matching target row.
+        """
+        self._start_clause(self._NOT_MATCHED)
+
+    @builder
+    def when_not_matched_by_source(self) -> None:
+        """
+        Starts a WHEN NOT MATCHED BY SOURCE clause, applied to target rows that have no matching source row.
+        """
+        self._start_clause(self._NOT_MATCHED_BY_SOURCE)
+
+    @builder
+    def and_(self, criterion: Term) -> None:
+        """
+        Adds an extra condition to the WHEN clause that was just started.
+
+        :param criterion: The condition that must hold for the clause to apply.
+        """
+        if self._pending_kind is None:
+            raise QueryException(
+                "Call when_matched(), when_not_matched() or when_not_matched_by_source() before and_()"
+            )
+        self._pending_condition = criterion
+
+    @builder
+    def then_update(self, field: Field | str, value: Any) -> None:
+        """
+        Adds a ``field = value`` pair to the UPDATE action of the current WHEN clause. Calling this repeatedly in the
+        same clause adds more pairs to the same SET list.
+
+        :param field: The column to set, as a Field or a string column name.
+        :param value: The new value. Values that are not terms are wrapped as constants.
+        """
+        kind = self._require_clause("then_update", (self._MATCHED, self._NOT_MATCHED_BY_SOURCE))
+        pair = (Field(field) if isinstance(field, str) else field, self._wrap(value))
+
+        last = self._clauses[-1] if self._clauses else None
+        if (
+            last is not None
+            and last.action == "UPDATE"
+            and last.kind == kind
+            and last.condition is self._pending_condition
+        ):
+            self._clauses = self._clauses[:-1] + [last._replace(updates=last.updates + (pair,))]
+        else:
+            self._clauses = self._clauses + [_MergeClause(kind, self._pending_condition, "UPDATE", updates=(pair,))]
+
+    @builder
+    def then_delete(self) -> None:
+        """
+        Sets the action of the current WHEN clause to DELETE.
+        """
+        kind = self._require_clause("then_delete", (self._MATCHED, self._NOT_MATCHED_BY_SOURCE))
+        self._finish_clause(kind, "DELETE")
+
+    @builder
+    def then_do_nothing(self) -> None:
+        """
+        Sets the action of the current WHEN clause to DO NOTHING.
+        """
+        kind = self._require_clause("then_do_nothing", (self._MATCHED, self._NOT_MATCHED, self._NOT_MATCHED_BY_SOURCE))
+        self._finish_clause(kind, "DO NOTHING")
+
+    @builder
+    def then_insert(self, *args: Any) -> None:
+        """
+        Sets the action of the current WHEN clause to INSERT. It takes either a sequence of columns followed by a
+        sequence of values, or just the values to insert, in which case no column list is rendered.
+
+        .. code-block:: python
+
+            .then_insert(("id", "name"), (source.id, source.name))
+            .then_insert(source.id, source.name)
+
+        :param args: ``(columns, values)`` as two lists or tuples, or the values as positional arguments.
+        """
+        kind = self._require_clause("then_insert", (self._NOT_MATCHED,))
+        columns: tuple[Field, ...] = ()
+        if len(args) == 2 and isinstance(args[0], (list, tuple)) and isinstance(args[1], (list, tuple)):
+            columns = tuple(Field(column) if isinstance(column, str) else column for column in args[0])
+            args = tuple(args[1])
+        self._finish_clause(kind, "INSERT", columns=columns, values=tuple(self._wrap(value) for value in args))
+
+    def _start_clause(self, kind: str) -> None:
+        self._pending_kind = kind
+        self._pending_condition = None
+
+    def _require_clause(self, method: str, kinds: tuple[str, ...]) -> str:
+        names = {
+            self._MATCHED: "when_matched()",
+            self._NOT_MATCHED: "when_not_matched()",
+            self._NOT_MATCHED_BY_SOURCE: "when_not_matched_by_source()",
+        }
+        required = " or ".join(names[kind] for kind in kinds)
+        if self._pending_kind not in kinds:
+            raise QueryException("Call {required} before {method}()".format(required=required, method=method))
+        return self._pending_kind
+
+    def _finish_clause(
+        self, kind: str, action: str, columns: tuple[Field, ...] = (), values: tuple[Term, ...] = ()
+    ) -> None:
+        clause = _MergeClause(kind, self._pending_condition, action, columns=columns, values=values)
+        self._clauses = self._clauses + [clause]
+        self._pending_kind = None
+        self._pending_condition = None
+
+    @staticmethod
+    def _wrap(value: Any) -> Term:
+        return value if isinstance(value, Term) else ValueWrapper(value)
+
+    def get_sql(self, **kwargs: Any) -> str:
+        self._set_kwargs_defaults(kwargs)
+        kwargs["with_namespace"] = True
+
+        if self._target_table is None:
+            raise QueryException("A MERGE query requires a target table")
+        if self._source is None:
+            raise QueryException("A MERGE query requires a source, set it with using()")
+        if self._on_criterion is None:
+            raise QueryException("A MERGE query requires an ON criterion, set it with on()")
+        if not self._clauses:
+            raise QueryException("A MERGE query requires at least one WHEN clause")
+
+        querystring = "MERGE INTO {target} USING {source} ON ({condition})".format(
+            target=self._target_table.get_sql(**kwargs),
+            source=self._source_sql(self._source, **kwargs),
+            condition=self._on_criterion.get_sql(subquery=True, **kwargs),
+        )
+        for clause in self._clauses:
+            querystring += self._clause_sql(clause, **kwargs)
+        return querystring
+
+    @staticmethod
+    def _source_sql(source: Table | QueryBuilder, **kwargs: Any) -> str:
+        if not isinstance(source, QueryBuilder):
+            return source.get_sql(**kwargs)
+
+        sql = "({source})".format(source=source.get_sql(**kwargs))
+        if source.alias:
+            sql += " " + format_quotes(source.alias, kwargs.get("quote_char"))
+        return sql
+
+    @staticmethod
+    def _clause_sql(clause: _MergeClause, **kwargs: Any) -> str:
+        sql = " WHEN " + clause.kind
+        if clause.condition is not None:
+            sql += " AND " + clause.condition.get_sql(subquery=True, **kwargs)
+
+        # The columns being assigned or inserted always belong to the target table, so they are never qualified.
+        quote_char = kwargs.get("quote_char")
+        if clause.action == "UPDATE":
+            sql += " THEN UPDATE SET " + ",".join(
+                "{field}={value}".format(field=format_quotes(field.name, quote_char), value=value.get_sql(**kwargs))
+                for field, value in clause.updates
+            )
+        elif clause.action == "INSERT":
+            sql += " THEN INSERT"
+            if clause.columns:
+                sql += " ({columns})".format(
+                    columns=",".join(format_quotes(field.name, quote_char) for field in clause.columns)
+                )
+            sql += " VALUES ({values})".format(values=",".join(value.get_sql(**kwargs) for value in clause.values))
+        else:
+            sql += " THEN " + clause.action
+        return sql
 
     def __str__(self) -> str:
         return self.get_sql()

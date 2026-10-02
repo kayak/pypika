@@ -1112,6 +1112,40 @@ Using ``limit`` for performing update
 
     UPDATE "customers" SET "lname"='smith' LIMIT 2
 
+Merging Data
+^^^^^^^^^^^^
+``Query.merge_into`` builds a ``MERGE`` statement. Use ``using`` to set the source table or sub-query and ``on`` to set
+the matching condition. Each ``when_matched``, ``when_not_matched`` or ``when_not_matched_by_source`` call starts a new
+``WHEN`` clause, ``and_`` adds an extra condition to it, and a ``then_*`` call sets its action.
+
+.. code-block:: python
+
+    customers, staging = Tables('customers', 'staging_customers')
+
+    Query.merge_into(customers)
+         .using(staging)
+         .on(customers.id == staging.id)
+         .when_matched().and_(staging.deleted == True).then_delete()
+         .when_matched().then_update(customers.fname, staging.fname).then_update(customers.lname, staging.lname)
+         .when_not_matched().then_insert(('id', 'fname', 'lname'), (staging.id, staging.fname, staging.lname))
+
+.. code-block:: sql
+
+    MERGE INTO "customers" USING "staging_customers" ON ("customers"."id"="staging_customers"."id")
+    WHEN MATCHED AND "staging_customers"."deleted"=true THEN DELETE
+    WHEN MATCHED THEN UPDATE SET "fname"="staging_customers"."fname","lname"="staging_customers"."lname"
+    WHEN NOT MATCHED THEN INSERT ("id","fname","lname") VALUES ("staging_customers"."id","staging_customers"."fname","staging_customers"."lname")
+
+Repeated ``then_update`` calls in the same clause add more assignments to its ``SET`` list. ``then_insert`` also accepts
+only the values, as ``then_insert(staging.id, staging.fname)``, to omit the column list. The actions that are accepted
+depend on the clause: ``then_update`` and ``then_delete`` follow ``when_matched`` or ``when_not_matched_by_source``,
+``then_insert`` follows ``when_not_matched``, and ``then_do_nothing`` follows any of them.
+
+``MSSQLQuery.merge_into`` ends the statement with a semicolon, as SQL Server requires, and does not support
+``then_do_nothing``. ``MySQLQuery.merge_into`` raises an exception because MySQL has no ``MERGE`` statement; use
+``on_duplicate_key_update`` instead. Not every database supports every clause. For example PostgreSQL supports
+``MERGE`` from version 15 and ``when_not_matched_by_source`` from version 17.
+
 .. _advanced_start:
 
 Analytic Queries
