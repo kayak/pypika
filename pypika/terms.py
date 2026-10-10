@@ -42,7 +42,7 @@ class Node:
         yield self
 
     def find_(self, type: type[NodeT]) -> list[NodeT]:
-        return [node for node in self.nodes_() if isinstance(node, type)]
+        return list(filter(lambda x: isinstance(x, type), self.nodes_()))
 
 
 class Term(Node):
