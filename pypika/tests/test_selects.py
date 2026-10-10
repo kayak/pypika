@@ -63,6 +63,30 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc"', str(q))
 
+    def test_get_sql_with_namespace_true_qualifies_columns(self):
+        q = Query.from_("abc").select("foo", "bar")
+
+        self.assertEqual(
+            'SELECT "abc"."foo","abc"."bar" FROM "abc"',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_get_sql_with_namespace_false_unqualified_columns(self):
+        q = Query.from_("abc").select("foo", "bar")
+
+        self.assertEqual(
+            'SELECT "foo","bar" FROM "abc"',
+            q.get_sql(),
+        )
+
+    def test_get_sql_with_namespace_default_unchanged_when_no_joins(self):
+        q = Query.from_("abc").select("foo", "bar")
+
+        self.assertEqual(
+            'SELECT "foo","bar" FROM "abc"',
+            q.get_sql(with_namespace=False),
+        )
+
     def test_select__table_schema(self):
         q = Query.from_(Table("abc", "schema1")).select("*")
 
