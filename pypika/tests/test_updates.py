@@ -26,6 +26,18 @@ class UpdateTests(unittest.TestCase):
 
         self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar''foo'", str(q))
 
+    def test_trailing_backslash_escape_in_set(self):
+        # https://github.com/kayak/pypika/issues/366 - a trailing backslash used to
+        # escape the closing quote, producing invalid SQL
+        q = Query.update(self.table_abc).set("foo", "bar\\")
+
+        self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar\\\\'", str(q))
+
+    def test_backslash_and_quote_escape_in_set(self):
+        q = Query.update(self.table_abc).set("foo", "it\\'s")
+
+        self.assertEqual("UPDATE \"abc\" SET \"foo\"='it\\\\''s'", str(q))
+
     def test_update__table_schema(self):
         table = Table("abc", "schema1")
         q = Query.update(table).set(table.foo, 1).where(table.foo == 0)
