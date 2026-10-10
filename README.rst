@@ -1679,6 +1679,47 @@ You can also specify an offset with ``limit_offset_by``:
 
     SELECT "user_id","event" FROM "events" LIMIT 3 OFFSET 1 BY ("user_id")
 
+Gotcha: alias names that shadow column names
+""""""""""""""""""""""""""""""""""""""""""""
+
+Unlike most SQL dialects, ClickHouse substitutes select aliases into **every** occurrence of
+the aliased name in the query body, including inside other select expressions (see
+`ClickHouse issue #9715 <https://github.com/ClickHouse/ClickHouse/issues/9715>`_ for the
+upstream discussion). When a pypika alias shadows a real column name, the generated SQL can
+therefore be rejected by the server. For example:
+
+.. code-block:: python
+
+    from pypika import ClickHouseQuery, Field
+    from pypika.terms import CustomFunction
+
+    anyIf = CustomFunction("anyIf", ["field", "cond"])
+
+    q = (
+        ClickHouseQuery.from_("events")
+        .select(
+            anyIf(Field("connection_t"), Field("initiator_type") == "navigation").as_("connection_t"),
+            anyIf(Field("connection_t"), Field("initiator_type") == "dns").as_("dns_t"),
+        )
+    )
+
+.. code-block:: sql
+
+    SELECT anyIf("connection_t","initiator_type"='navigation') AS "connection_t",anyIf("connection_t","initiator_type"='dns') AS "dns_t" FROM "events"
+
+On ClickHouse the second select item is parsed as
+``anyIf(anyIf("connection_t", ...), ...)``, because the alias ``"connection_t"`` is
+substituted into the bare reference to the column of the same name, producing:
+
+.. code-block:: text
+
+    DB::Exception: Aggregate function anyIf(connection_t, equals(initiator_type, 'navigation'))
+    is found inside another aggregate function in query. (ILLEGAL_AGGREGATION, version 23.3.22.3)
+
+To avoid this, alias such expressions to a name that does not collide with an existing
+column (for example ``as_("connection_t_nav")``). Other engines such as PostgreSQL do not
+substitute aliases this way, so the same query is accepted there.
+
 
 Oracle-Specific Features
 ^^^^^^^^^^^^^^^^^^^^^^^^
