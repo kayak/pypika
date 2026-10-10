@@ -2115,7 +2115,7 @@ class CreateQueryBuilder:
 
     def _as_select_sql(self, **kwargs: Any) -> str:
         return " AS ({query})".format(
-            query=self._as_select.get_sql(**kwargs),
+            query=self._as_select.get_sql(**dict(kwargs, with_namespace=False)),
         )
 
     def _prepare_columns_input(self, columns: list[str | Column]) -> list[Column]:
