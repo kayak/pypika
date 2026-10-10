@@ -58,6 +58,13 @@ class ClickHouseUpdateTests(TestCase):
 
         self.assertEqual('ALTER TABLE "abc" UPDATE "foo"=\'bar\' WHERE "foo"=0', str(q))
 
+    def test_backslashes_in_values_are_escaped(self):
+        # ClickHouse treats a backslash as an escape character in string literals,
+        # so a trailing backslash must be doubled to round-trip
+        q = ClickHouseQuery.update(self.table_abc).set("foo", "bar\\")
+
+        self.assertEqual('ALTER TABLE "abc" UPDATE "foo"=\'bar\\\\\'', str(q))
+
 
 class ClickHouseDropQuery(TestCase):
     table_abc = Table("abc")

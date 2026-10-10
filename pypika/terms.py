@@ -14,6 +14,7 @@ from pypika.utils import (
     CaseException,
     FunctionException,
     builder,
+    escape_backslashes,
     format_alias_sql,
     format_quotes,
     ignore_copy,
@@ -443,10 +444,7 @@ class ValueWrapper(Term):
             # string literals by default, so it must be doubled for the value to
             # round-trip; otherwise a trailing backslash would escape the closing
             # quote. Other dialects treat it literally, so it is left untouched.
-            # NO_BACKSLASH_ESCAPES server modes cannot be detected client-side;
-            # escaping follows the dialects' default mode.
-            if kwargs.get("dialect") in (Dialects.MYSQL, Dialects.CLICKHOUSE):
-                value = value.replace("\\", "\\\\")
+            value = escape_backslashes(value, kwargs.get("dialect"))
             return format_quotes(value, quote_char)
         if isinstance(value, bool):
             return str.lower(str(value))

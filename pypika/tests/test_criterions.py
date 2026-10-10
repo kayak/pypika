@@ -700,10 +700,8 @@ class LikeTests(unittest.TestCase):
         c1 = Field("foo").rlike("\\\\d+$")
         c2 = Field("foo", table=self.t).rlike("\\\\d+$")
 
-        # Backslashes in the value are now escaped (doubled) so the SQL literal
-        # decodes back to the original pattern; previously they were emitted raw.
-        self.assertEqual("\"foo\" RLIKE '\\\\\\\\d+$'", str(c1))
-        self.assertEqual('"like"."foo" RLIKE \'\\\\\\\\d+$\'', str(c2))
+        self.assertEqual("\"foo\" RLIKE '\\\\d+$'", str(c1))
+        self.assertEqual('"like"."foo" RLIKE \'\\\\d+$\'', str(c2))
 
     def test_glob_single_chars_and_various_chars(self):
         c1 = Field("foo").glob("a_b*")

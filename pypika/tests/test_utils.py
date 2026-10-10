@@ -1,28 +1,35 @@
 import unittest
 
 from pypika import utils
-from pypika.utils import format_quotes
+from pypika.enums import Dialects
+from pypika.utils import escape_backslashes
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
-class FormatQuotesTests(unittest.TestCase):
-    def test_backslashes_are_escaped(self):
-        self.assertEqual("'a\\\\b'", format_quotes("a\\b", "'"))
+class EscapeBackslashesTests(unittest.TestCase):
+    def test_backslashes_doubled_for_mysql(self):
+        self.assertEqual("a\\\\b", escape_backslashes("a\\b", Dialects.MYSQL))
 
-    def test_trailing_backslash_keeps_closing_quote_intact(self):
-        self.assertEqual("'bar\\\\'", format_quotes("bar\\", "'"))
+    def test_backslashes_doubled_for_clickhouse(self):
+        self.assertEqual("a\\\\b", escape_backslashes("a\\b", Dialects.CLICKHOUSE))
 
-    def test_backslash_and_quote_char_are_both_escaped(self):
-        self.assertEqual("'it\\\\''s'", format_quotes("it\\'s", "'"))
+    def test_trailing_backslash_doubled_for_mysql(self):
+        self.assertEqual("bar\\\\", escape_backslashes("bar\\", Dialects.MYSQL))
 
-    def test_custom_quote_char_with_backslash_and_quote(self):
-        self.assertEqual("`it\\\\``s`", format_quotes("it\\`s", "`"))
+    def test_multiple_consecutive_backslashes_all_doubled(self):
+        self.assertEqual("a\\\\\\\\b", escape_backslashes("a\\\\b", Dialects.MYSQL))
 
-    def test_no_quote_char_leaves_value_untouched(self):
-        self.assertEqual("a\\b", format_quotes("a\\b", None))
-        self.assertEqual("a\\b", format_quotes("a\\b", ""))
+    def test_backslash_and_quote_only_backslash_doubled(self):
+        self.assertEqual("it\\\\'s", escape_backslashes("it\\'s", Dialects.MYSQL))
+
+    def test_literal_backslash_for_other_dialects(self):
+        for dialect in (Dialects.POSTGRESQL, Dialects.SQLLITE, Dialects.MSSQL, Dialects.ORACLE, Dialects.SNOWFLAKE):
+            self.assertEqual("a\\b", escape_backslashes("a\\b", dialect), dialect)
+
+    def test_literal_backslash_without_dialect(self):
+        self.assertEqual("a\\b", escape_backslashes("a\\b", None))
 
 
 class ImmutabilityTests(unittest.TestCase):

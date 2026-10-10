@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import SYSTEM_TIME, AliasedQuery, PostgreSQLQuery, Query, SQLLiteQuery, Table
+from pypika import SYSTEM_TIME, AliasedQuery, MySQLQuery, PostgreSQLQuery, Query, SQLLiteQuery, Table
 from pypika.terms import Star
 
 __author__ = "Timothy Heys"
@@ -26,22 +26,29 @@ class UpdateTests(unittest.TestCase):
 
         self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar''foo'", str(q))
 
-    def test_trailing_backslash_escape_in_set(self):
-        # https://github.com/kayak/pypika/issues/366 - a trailing backslash used to
-        # escape the closing quote, producing invalid SQL
+    def test_trailing_backslash_literal_without_escaping_dialect(self):
+        # Without a backslash-escaping dialect (base Query, PostgreSQL, SQLite,
+        # ...), backslashes stay literal, exactly as on master
         q = Query.update(self.table_abc).set("foo", "bar\\")
 
-        self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar\\\\'", str(q))
+        self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar\\'", str(q))
 
-    def test_backslash_and_quote_escape_in_set(self):
-        q = Query.update(self.table_abc).set("foo", "it\\'s")
+    def test_trailing_backslash_escape_in_set_mysql(self):
+        # https://github.com/kayak/pypika/issues/366 - on MySQL a trailing
+        # backslash escapes the closing quote, producing invalid SQL
+        q = MySQLQuery.update(self.table_abc).set("foo", "bar\\")
 
-        self.assertEqual("UPDATE \"abc\" SET \"foo\"='it\\\\''s'", str(q))
+        self.assertEqual("UPDATE `abc` SET `foo`='bar\\\\'", str(q))
 
-    def test_consecutive_backslashes_escape_in_set(self):
-        q = Query.update(self.table_abc).set("foo", "a\\\\b")
+    def test_backslash_and_quote_escape_in_set_mysql(self):
+        q = MySQLQuery.update(self.table_abc).set("foo", "it\\'s")
 
-        self.assertEqual("UPDATE \"abc\" SET \"foo\"='a\\\\\\\\b'", str(q))
+        self.assertEqual("UPDATE `abc` SET `foo`='it\\\\''s'", str(q))
+
+    def test_consecutive_backslashes_escape_in_set_mysql(self):
+        q = MySQLQuery.update(self.table_abc).set("foo", "a\\\\b")
+
+        self.assertEqual("UPDATE `abc` SET `foo`='a\\\\\\\\b'", str(q))
 
     def test_update__table_schema(self):
         table = Table("abc", "schema1")

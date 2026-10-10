@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from pypika import Field, Query, Table
+from pypika.dialects import ClickHouseQuery, MSSQLQuery, MySQLQuery, PostgreSQLQuery, SQLLiteQuery
 from pypika.terms import AtTimezone
 
 
@@ -101,4 +102,59 @@ class IdentifierEscapingTests(TestCase):
             'FROM "customers""" WHERE """id"=\'abc\' AND "email"""=\'abc@abc.com\' '
             'ORDER BY "customer_email""","""id"',
             query.get_sql(),
+        )
+
+    def test_backslashes_in_identifiers_are_never_escaped(self):
+        # Delimited identifiers treat a backslash as a literal character on every
+        # backend, so they must render identically regardless of dialect
+        table = Table("a\\b")
+        field = Field("f\\g", table=table)
+        expected = {
+            Query: 'SELECT "f\\g" FROM "a\\b"',
+            MySQLQuery: "SELECT `f\\g` FROM `a\\b`",
+            PostgreSQLQuery: 'SELECT "f\\g" FROM "a\\b"',
+            SQLLiteQuery: 'SELECT "f\\g" FROM "a\\b"',
+            MSSQLQuery: 'SELECT "f\\g" FROM "a\\b"',
+            ClickHouseQuery: 'SELECT "f\\g" FROM "a\\b"',
+        }
+        for query_cls, expected_sql in expected.items():
+            self.assertEqual(expected_sql, str(query_cls.from_(table).select(field)), query_cls.__name__)
+
+
+class ValueBackslashEscapingTests(TestCase):
+    # MySQL and ClickHouse treat a backslash as an escape character in string
+    # literals by default, so values are escaped to round-trip; other dialects
+    # keep master's literal rendering. NO_BACKSLASH_ESCAPES server modes cannot
+    # be detected client-side, so escaping follows the default mode.
+
+    def assert_value_rendering(self, value, expected_by_dialect):
+        table = Table("t")
+        for query_cls, expected_sql in expected_by_dialect.items():
+            query = query_cls.update(table).set(table.foo, value)
+            self.assertEqual(expected_sql, str(query), query_cls.__name__)
+
+    def test_trailing_backslash(self):
+        self.assert_value_rendering(
+            "bar\\",
+            {
+                MySQLQuery: "UPDATE `t` SET `foo`='bar\\\\'",
+                ClickHouseQuery: 'ALTER TABLE "t" UPDATE "foo"=\'bar\\\\\'',
+                Query: "UPDATE \"t\" SET \"foo\"='bar\\'",
+                PostgreSQLQuery: "UPDATE \"t\" SET \"foo\"='bar\\'",
+                SQLLiteQuery: "UPDATE \"t\" SET \"foo\"='bar\\'",
+                MSSQLQuery: "UPDATE \"t\" SET \"foo\"='bar\\'",
+            },
+        )
+
+    def test_backslash_and_quote_char(self):
+        self.assert_value_rendering(
+            "it\\'s",
+            {
+                MySQLQuery: "UPDATE `t` SET `foo`='it\\\\''s'",
+                ClickHouseQuery: "ALTER TABLE \"t\" UPDATE \"foo\"='it\\\\''s'",
+                Query: "UPDATE \"t\" SET \"foo\"='it\\''s'",
+                PostgreSQLQuery: "UPDATE \"t\" SET \"foo\"='it\\''s'",
+                SQLLiteQuery: "UPDATE \"t\" SET \"foo\"='it\\''s'",
+                MSSQLQuery: "UPDATE \"t\" SET \"foo\"='it\\''s'",
+            },
         )
