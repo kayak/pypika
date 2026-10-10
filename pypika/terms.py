@@ -32,6 +32,7 @@ __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
 
 
+T = TypeVar("T")
 NodeT = TypeVar("NodeT", bound="Node")
 
 
@@ -96,10 +97,34 @@ class Term(Node):
         wrapper_cls = wrapper_cls or ValueWrapper
         return wrapper_cls(val)
 
+    @overload
+    @staticmethod
+    def wrap_json(val: QueryBuilder, wrapper_cls: Any = None) -> QueryBuilder: ...
+
+    @overload
+    @staticmethod
+    def wrap_json(val: Term, wrapper_cls: Any = None) -> Term: ...
+
+    @overload
+    @staticmethod
+    def wrap_json(val: None, wrapper_cls: Any = None) -> NullValue: ...
+
+    @overload
+    @staticmethod
+    def wrap_json(val: str | int | bool, wrapper_cls: None = None) -> ValueWrapper: ...
+
+    @overload
+    @staticmethod
+    def wrap_json(val: str | int | bool, wrapper_cls: type[T]) -> T: ...
+
+    @overload
+    @staticmethod
+    def wrap_json(val: Any, wrapper_cls: Any = None) -> JSON: ...
+
     @staticmethod
     def wrap_json(
-        val: Term | QueryBuilder | None | str | int | bool, wrapper_cls=None
-    ) -> Term | QueryBuilder | NullValue | ValueWrapper | JSON:
+        val: Term | QueryBuilder | str | int | bool | Any | None, wrapper_cls: type[T] | Any | None = None
+    ) -> Term | QueryBuilder | NullValue | ValueWrapper | T | JSON:
         from .queries import QueryBuilder
 
         if isinstance(val, (Term, QueryBuilder)):
