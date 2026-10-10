@@ -36,7 +36,7 @@ NodeT = TypeVar("NodeT", bound="Node")
 
 
 class Node:
-    is_aggregate = None
+    is_aggregate: bool | None = None
 
     def nodes_(self) -> Iterator[NodeT]:
         yield self
@@ -64,10 +64,38 @@ class Term(Node):
     def fields_(self) -> set[Field]:
         return set(self.find_(Field))
 
+    @overload
+    @staticmethod
+    def wrap_constant(val: Node, wrapper_cls: type[Term] | None = None) -> Node: ...
+
+    @overload
+    @staticmethod
+    def wrap_constant(val: None, wrapper_cls: type[Term] | None = None) -> NullValue: ...
+
+    @overload
+    @staticmethod
+    def wrap_constant(val: list, wrapper_cls: type[Term] | None = None) -> Array: ...
+
+    @overload
+    @staticmethod
+    def wrap_constant(val: tuple, wrapper_cls: type[Term] | None = None) -> Tuple: ...
+
+    @overload
+    @staticmethod
+    def wrap_constant(val: Any) -> ValueWrapper: ...
+
+    @overload
+    @staticmethod
+    def wrap_constant(val: Any, wrapper_cls: None = None) -> ValueWrapper: ...
+
+    @overload
+    @staticmethod
+    def wrap_constant(val: Any, wrapper_cls: type[Term]) -> Term: ...
+
     @staticmethod
     def wrap_constant(
-        val, wrapper_cls: type[Term] | None = None
-    ) -> ValueError | NodeT | LiteralValue | Array | Tuple | ValueWrapper:
+        val: Node | list | tuple | Any | None, wrapper_cls: type[Term] | None = None
+    ) -> Node | NullValue | Array | Tuple | ValueWrapper | Term:
         """
         Used for wrapping raw inputs such as numbers in Criterions and Operator.
 
