@@ -87,6 +87,28 @@ class SelectTests(unittest.TestCase):
             q.get_sql(with_namespace=False),
         )
 
+    def test_get_sql_with_namespace_true_keeps_with_clause_body_unqualified(self):
+        subquery = Query.from_("efg").select("fizz")
+        q = Query.with_(subquery, "an_alias").from_("abc").select("foo")
+
+        self.assertEqual(
+            'WITH an_alias AS (SELECT "fizz" FROM "efg") SELECT "abc"."foo" FROM "abc"',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_get_sql_with_namespace_true_with_join(self):
+        q = (
+            Query.from_(self.table_abc)
+            .join(self.table_efg)
+            .on(self.table_abc.bar == self.table_efg.buz)
+            .select(self.table_abc.foo, self.table_efg.fiz)
+        )
+
+        self.assertEqual(
+            'SELECT "abc"."foo","efg"."fiz" FROM "abc" JOIN "efg" ON "abc"."bar"="efg"."buz"',
+            q.get_sql(with_namespace=True),
+        )
+
     def test_select__table_schema(self):
         q = Query.from_(Table("abc", "schema1")).select("*")
 
