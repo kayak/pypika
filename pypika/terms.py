@@ -622,6 +622,9 @@ class Criterion(Term):
         raise NotImplementedError()
 
 
+T = TypeVar("T")
+
+
 class EmptyCriterion(Criterion):
     is_aggregate = None
     tables_ = set()
@@ -629,16 +632,16 @@ class EmptyCriterion(Criterion):
     def fields_(self) -> set[Field]:
         return set()
 
-    def __and__(self, other: Any) -> Any:
+    def __and__(self, other: T) -> T:
         return other
 
-    def __or__(self, other: Any) -> Any:
+    def __or__(self, other: T) -> T:
         return other
 
-    def __xor__(self, other: Any) -> Any:
+    def __xor__(self, other: T) -> T:
         return other
 
-    def __invert__(self) -> Any:
+    def __invert__(self) -> Self:
         return self
 
 
