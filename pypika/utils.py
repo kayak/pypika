@@ -127,12 +127,7 @@ def resolve_is_aggregate(values: list[bool | None]) -> bool | None:
 
 def format_quotes(value: Any, quote_char: str | None) -> str:
     if quote_char:
-        # Escape backslashes first: in SQL string literals a backslash escapes the
-        # next character, so a trailing "\" would eat the closing quote (or a
-        # doubled quote would not terminate the value). Doubling backslashes
-        # before doubling the quote char keeps values round-trip safe.
-        value = str(value).replace("\\", "\\\\")
-        value = value.replace(quote_char, quote_char * 2)
+        value = str(value).replace(quote_char, quote_char * 2)
 
     return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
 
