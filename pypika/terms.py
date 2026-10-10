@@ -439,6 +439,14 @@ class ValueWrapper(Term):
         if isinstance(value, (date, datetime, time)):
             return cls.get_formatted_value(value.isoformat(), **kwargs)
         if isinstance(value, str):
+            # MySQL and ClickHouse treat a backslash as an escape character in
+            # string literals by default, so it must be doubled for the value to
+            # round-trip; otherwise a trailing backslash would escape the closing
+            # quote. Other dialects treat it literally, so it is left untouched.
+            # NO_BACKSLASH_ESCAPES server modes cannot be detected client-side;
+            # escaping follows the dialects' default mode.
+            if kwargs.get("dialect") in (Dialects.MYSQL, Dialects.CLICKHOUSE):
+                value = value.replace("\\", "\\\\")
             return format_quotes(value, quote_char)
         if isinstance(value, bool):
             return str.lower(str(value))
