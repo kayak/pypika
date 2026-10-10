@@ -38,6 +38,11 @@ class UpdateTests(unittest.TestCase):
 
         self.assertEqual("UPDATE \"abc\" SET \"foo\"='it\\\\''s'", str(q))
 
+    def test_consecutive_backslashes_escape_in_set(self):
+        q = Query.update(self.table_abc).set("foo", "a\\\\b")
+
+        self.assertEqual("UPDATE \"abc\" SET \"foo\"='a\\\\\\\\b'", str(q))
+
     def test_update__table_schema(self):
         table = Table("abc", "schema1")
         q = Query.update(table).set(table.foo, 1).where(table.foo == 0)
