@@ -314,7 +314,7 @@ class VerticaCreateQueryBuilder(CreateQueryBuilder):
     def _as_select_sql(self, **kwargs: Any) -> str:
         return "{preserve_rows} AS ({query})".format(
             preserve_rows=self._preserve_rows_sql(),
-            query=self._as_select.get_sql(**kwargs),
+            query=self._as_select.get_sql(**dict(kwargs, with_namespace=False)),
         )
 
     def _preserve_rows_sql(self) -> str:
