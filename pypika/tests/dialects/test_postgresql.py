@@ -51,6 +51,11 @@ class JSONObjectTests(unittest.TestCase):
 
         self.assertEqual('SELECT \'["a","b","c"]\'', str(q))
 
+    def test_json_boolean_and_null_values(self):
+        q = PostgreSQLQuery.select(JSON({"enabled": True, "values": [False, None]}))
+
+        self.assertEqual('SELECT \'{"enabled":true,"values":[false,null]}\'', str(q))
+
     def test_json_value_from_dict_recursive(self):
         q = PostgreSQLQuery.select(JSON({"a": "z", "b": {"c": "foo"}, "d": 1}))
 

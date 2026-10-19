@@ -502,6 +502,10 @@ class JSON(Term):
             return self._get_list_sql(value, **kwargs)
         if isinstance(value, str):
             return self._get_str_sql(value, **kwargs)
+        if isinstance(value, bool):
+            return str(value).lower()
+        if value is None:
+            return "null"
         return str(value)
 
     def _get_dict_sql(self, value: dict, **kwargs: Any) -> str:
