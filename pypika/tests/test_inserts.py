@@ -396,6 +396,41 @@ class PostgresInsertIntoOnConflictTests(unittest.TestCase):
             str(qs),
         )
 
+    def test_with_statement_and_on_conflict_do_update(self):
+        sub_query = (
+            PostgreSQLQuery.into(self.table_abc)
+            .insert(1, "m")
+            .on_conflict("id")
+            .do_update("name", "m")
+        )
+
+        test_query = Query.with_(sub_query, "an_alias").from_(AliasedQuery("an_alias")).select("*")
+
+        self.assertEqual(
+            'WITH an_alias AS '
+            '(INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT ("id") DO UPDATE SET "name"=\'m\') '
+            'SELECT * FROM an_alias',
+            str(test_query),
+        )
+
+    def test_with_statement_and_on_conflict_do_update_where(self):
+        sub_query = (
+            PostgreSQLQuery.into(self.table_abc)
+            .insert(1, "m")
+            .on_conflict("id")
+            .do_update("name", "m")
+            .where(self.table_abc.id.eq(0))
+        )
+
+        test_query = Query.with_(sub_query, "an_alias").from_(AliasedQuery("an_alias")).select("*")
+
+        self.assertEqual(
+            'WITH an_alias AS '
+            '(INSERT INTO "abc" VALUES (1,\'m\') ON CONFLICT ("id") DO UPDATE SET "name"=\'m\' WHERE "abc"."id"=0) '
+            'SELECT * FROM an_alias',
+            str(test_query),
+        )
+
     def test_on_conflict_do_nothing_where(self):
         with self.assertRaises(QueryException):
             (
