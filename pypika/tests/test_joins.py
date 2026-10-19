@@ -1,3 +1,4 @@
+import operator
 import unittest
 
 from pypika import (
@@ -7,6 +8,7 @@ from pypika import (
     JoinException,
     JoinType,
     MySQLQuery,
+    PostgreSQLQuery,
     Query,
     SetOperationException,
     Table,
@@ -697,6 +699,144 @@ class JoinBehaviorTests(unittest.TestCase):
             'ON "subq"."x"="abc"."id"',
             str(test_query),
         )
+
+
+class NestedSetOperationTests(unittest.TestCase):
+    query_cls = Query
+    table1, table2, table3, table4 = Tables("abc", "efg", "hij", "lmn")
+
+    def setUp(self):
+        self.query1 = self.query_cls.from_(self.table1).select("foo")
+        self.query2 = self.query_cls.from_(self.table2).select("foo")
+        self.query3 = self.query_cls.from_(self.table3).select("foo")
+        self.query4 = self.query_cls.from_(self.table4).select("foo")
+
+    def test_nested_right_operands(self):
+        for operation, keyword in (
+            ("union", "UNION"),
+            ("union_all", "UNION ALL"),
+            ("intersect", "INTERSECT"),
+            ("except_of", "EXCEPT"),
+            ("minus", "MINUS"),
+        ):
+            with self.subTest(operation=operation):
+                query = getattr(self.query1, operation)(self.query2.union(self.query3))
+
+                self.assertEqual(
+                    '(SELECT "foo" FROM "abc") ' + keyword + ' '
+                    '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))',
+                    str(query),
+                )
+
+    def test_two_compound_operands(self):
+        query = self.query1.intersect(self.query2).union(self.query3.union_all(self.query4))
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") INTERSECT (SELECT "foo" FROM "efg") UNION '
+            '((SELECT "foo" FROM "hij") UNION ALL (SELECT "foo" FROM "lmn"))',
+            str(query),
+        )
+
+    def test_deeply_nested_operand(self):
+        query = self.query1.union(self.query2.union(self.query3.intersect(self.query4)))
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION ((SELECT "foo" FROM "efg") UNION '
+            '((SELECT "foo" FROM "hij") INTERSECT (SELECT "foo" FROM "lmn")))',
+            str(query),
+        )
+
+    def test_nested_operator_overloads(self):
+        for operation, keyword in ((operator.add, "UNION"), (operator.mul, "UNION ALL"), (operator.sub, "MINUS")):
+            with self.subTest(operation=keyword):
+                query = operation(self.query1.union(self.query2), self.query3.union_all(self.query4))
+
+                self.assertEqual(
+                    '(SELECT "foo" FROM "abc") UNION (SELECT "foo" FROM "efg") ' + keyword + ' '
+                    '((SELECT "foo" FROM "hij") UNION ALL (SELECT "foo" FROM "lmn"))',
+                    str(query),
+                )
+
+    def test_querybuilder_operators_with_compound_right_operand(self):
+        for operation, keyword in ((operator.add, "UNION"), (operator.mul, "UNION ALL"), (operator.sub, "MINUS")):
+            with self.subTest(operation=keyword):
+                query = operation(self.query1, self.query2.union(self.query3))
+
+                self.assertEqual(
+                    '(SELECT "foo" FROM "abc") ' + keyword + ' '
+                    '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))',
+                    str(query),
+                )
+
+    def test_nested_orderby_limit_offset(self):
+        inner = self.query2.union(self.query3).orderby(self.table2.foo).limit(2).offset(1)
+        query = self.query1.union(inner).orderby(self.table1.foo).limit(5).offset(3)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION ((SELECT "foo" FROM "efg") UNION '
+            '(SELECT "foo" FROM "hij") ORDER BY "foo" LIMIT 2 OFFSET 1) ORDER BY "foo" LIMIT 5 OFFSET 3',
+            str(query),
+        )
+
+    def test_nested_subquery_alias(self):
+        inner = self.query1.union(self.query2.union(self.query3)).as_("combined")
+        query = self.query_cls.from_(inner).select(inner.foo)
+
+        self.assertEqual(
+            'SELECT "combined"."foo" FROM ((SELECT "foo" FROM "abc") UNION '
+            '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))) "combined"',
+            str(query),
+        )
+
+    def test_nested_subquery_auto_alias(self):
+        inner = self.query1.union(self.query2.union(self.query3))
+        query = self.query_cls.from_(inner).select(inner.foo)
+
+        self.assertEqual(
+            'SELECT "sq0"."foo" FROM ((SELECT "foo" FROM "abc") UNION '
+            '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))) "sq0"',
+            str(query),
+        )
+
+    def test_nested_quote_char_override(self):
+        query = self.query1.union(self.query2.union(self.query3))
+
+        self.assertEqual(
+            '(SELECT foo FROM abc) UNION ((SELECT foo FROM efg) UNION (SELECT foo FROM hij))',
+            query.get_sql(quote_char=None),
+        )
+
+    def test_mismatched_nested_operand(self):
+        inner = self.query2.select("bar").union(self.query3.select("bar"))
+        query = self.query1.union(inner)
+
+        with self.assertRaises(SetOperationException) as context:
+            str(query)
+
+        self.assertEqual(
+            'Queries must have an equal number of select statements in a set operation.\n\n'
+            'Main Query:\n(SELECT "foo" FROM "abc")\n\nSet Operations Query:\n'
+            '((SELECT "foo","bar" FROM "efg") UNION (SELECT "foo","bar" FROM "hij"))',
+            str(context.exception),
+        )
+
+    def test_inner_mismatch_is_reported_first(self):
+        inner = self.query2.union(self.query3.select("bar"))
+        query = self.query1.select("bar", "baz").union(inner)
+
+        with self.assertRaises(SetOperationException) as context:
+            str(query)
+
+        self.assertEqual(
+            'Queries must have an equal number of select statements in a set operation.\n\n'
+            'Main Query:\n(SELECT "foo" FROM "efg")\n\nSet Operations Query:\n'
+            '(SELECT "foo","bar" FROM "hij")',
+            str(context.exception),
+        )
+
+
+class PostgresNestedSetOperationTests(NestedSetOperationTests):
+    query_cls = PostgreSQLQuery
 
 
 class UnionTests(unittest.TestCase):

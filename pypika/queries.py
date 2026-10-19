@@ -561,7 +561,7 @@ class _SetOperation(Selectable, Term):
     def __init__(
         self,
         base_query: QueryBuilder,
-        set_operation_query: QueryBuilder,
+        set_operation_query: QueryBuilder | _SetOperation,
         set_operation: SetOperation,
         alias: str | None = None,
         wrapper_cls: type[ValueWrapper] = ValueWrapper,
@@ -621,7 +621,7 @@ class _SetOperation(Selectable, Term):
     def __mul__(self, other: Selectable) -> _SetOperation:
         return self.union_all(other)
 
-    def __sub__(self, other: QueryBuilder) -> _SetOperation:
+    def __sub__(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return self.minus(other)
 
     def __str__(self) -> str:
@@ -643,7 +643,12 @@ class _SetOperation(Selectable, Term):
                 subquery=self.base_query.wrap_set_operation_queries, **kwargs
             )
 
-            if len(self.base_query._selects) != len(set_operation_query._selects):
+            set_operation_selects = (
+                set_operation_query.base_query._selects
+                if isinstance(set_operation_query, _SetOperation)
+                else set_operation_query._selects
+            )
+            if len(self.base_query._selects) != len(set_operation_selects):
                 raise SetOperationException(
                     "Queries must have an equal number of select statements in a set operation."
                     "\n\nMain Query:\n{query1}\n\nSet Operations Query:\n{query2}".format(
@@ -1095,23 +1100,23 @@ class QueryBuilder(Selectable, Term):
         self._offset = offset
 
     @builder
-    def union(self, other: QueryBuilder) -> _SetOperation:
+    def union(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return _SetOperation(self, other, SetOperation.union, wrapper_cls=self._wrapper_cls)
 
     @builder
-    def union_all(self, other: QueryBuilder) -> _SetOperation:
+    def union_all(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return _SetOperation(self, other, SetOperation.union_all, wrapper_cls=self._wrapper_cls)
 
     @builder
-    def intersect(self, other: QueryBuilder) -> _SetOperation:
+    def intersect(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return _SetOperation(self, other, SetOperation.intersect, wrapper_cls=self._wrapper_cls)
 
     @builder
-    def except_of(self, other: QueryBuilder) -> _SetOperation:
+    def except_of(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return _SetOperation(self, other, SetOperation.except_of, wrapper_cls=self._wrapper_cls)
 
     @builder
-    def minus(self, other: QueryBuilder) -> _SetOperation:
+    def minus(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return _SetOperation(self, other, SetOperation.minus, wrapper_cls=self._wrapper_cls)
 
     @builder
@@ -1121,13 +1126,13 @@ class QueryBuilder(Selectable, Term):
             value = self.wrap_constant(value, wrapper_cls=self._wrapper_cls)
         self._updates.append((field, value))
 
-    def __add__(self, other: QueryBuilder) -> _SetOperation:
+    def __add__(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return self.union(other)
 
-    def __mul__(self, other: QueryBuilder) -> _SetOperation:
+    def __mul__(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return self.union_all(other)
 
-    def __sub__(self, other: QueryBuilder) -> _SetOperation:
+    def __sub__(self, other: QueryBuilder | _SetOperation) -> _SetOperation:
         return self.minus(other)
 
     @builder
