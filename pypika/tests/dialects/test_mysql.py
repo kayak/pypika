@@ -54,6 +54,14 @@ class UpdateTests(unittest.TestCase):
                 .on_duplicate_key_update(self.table_abc.a, 'b')
             )
 
+    def test_backslashes_in_values_are_escaped(self):
+        # MySQL treats a backslash as an escape character in string literals, so a
+        # trailing backslash must be doubled to round-trip
+        # (https://github.com/kayak/pypika/issues/366)
+        q = MySQLQuery.update(self.table_abc).set("foo", "bar\\")
+
+        self.assertEqual("UPDATE `abc` SET `foo`='bar\\\\'", str(q))
+
 
 class LoadCSVTests(unittest.TestCase):
     table_abc = Table("abc")

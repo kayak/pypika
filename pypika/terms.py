@@ -14,6 +14,7 @@ from pypika.utils import (
     CaseException,
     FunctionException,
     builder,
+    escape_backslashes,
     format_alias_sql,
     format_quotes,
     ignore_copy,
@@ -439,6 +440,14 @@ class ValueWrapper(Term):
         if isinstance(value, (date, datetime, time)):
             return cls.get_formatted_value(value.isoformat(), **kwargs)
         if isinstance(value, str):
+            # MySQL and ClickHouse treat a backslash as an escape character in
+            # string literals by default, so it must be doubled for the value to
+            # round-trip; otherwise a trailing backslash would escape the closing
+            # quote. Other dialects treat it literally, so it is left untouched.
+            # When the value is being collected for a bound parameter it is NOT
+            # an SQL literal, so it must not be escaped.
+            if not kwargs.get("within_parameter"):
+                value = escape_backslashes(value, kwargs.get("dialect"))
             return format_quotes(value, quote_char)
         if isinstance(value, bool):
             return str.lower(str(value))
@@ -469,7 +478,10 @@ class ValueWrapper(Term):
         if isinstance(self.value, (int, float)):
             value_sql = self.value
         else:
-            value_sql = self.get_value_sql(quote_char=quote_char, **kwargs)
+            # Mark that the value is collected for a bound parameter, so value
+            # escaping that only applies to SQL literals (e.g. backslash escaping)
+            # is skipped; the bound value must be the original value.
+            value_sql = self.get_value_sql(quote_char=quote_char, within_parameter=True, **kwargs)
         param_sql, param_key = self._get_param_data(parameter, **kwargs)
         parameter.update_parameters(param_key=param_key, value=value_sql, **kwargs)
 

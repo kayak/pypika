@@ -17,6 +17,13 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT 0 FROM "abc"', str(q))
 
+    def test_backslashes_in_values_are_literal(self):
+        # SQLite treats a backslash as a literal character in string literals,
+        # so values are left untouched
+        q = SQLLiteQuery.update(self.table_abc).set("foo", "bar\\")
+
+        self.assertEqual('UPDATE "abc" SET "foo"=\'bar\\\'', str(q))
+
 
 class ReplaceTests(unittest.TestCase):
     def test_normal_replace(self):

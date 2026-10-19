@@ -28,6 +28,13 @@ class UpdateTests(unittest.TestCase):
 
         self.assertEqual("UPDATE \"abc\" SET \"1\"=ARRAY[1,'a',true]", str(q))
 
+    def test_backslashes_in_values_are_literal(self):
+        # PostgreSQL treats a backslash as a literal character in string literals,
+        # so values are left untouched
+        q = PostgreSQLQuery.update(self.table_abc).set("foo", "bar\\")
+
+        self.assertEqual("UPDATE \"abc\" SET \"foo\"='bar\\'", str(q))
+
 
 class JSONObjectTests(unittest.TestCase):
     def test_alias_set_correctly(self):

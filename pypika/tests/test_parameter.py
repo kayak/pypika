@@ -9,8 +9,10 @@ from pypika import (
     PyformatParameter,
     QmarkParameter,
     Query,
+    Table,
     Tables,
 )
+from pypika.dialects import ClickHouseQuery, MySQLQuery
 from pypika.terms import ListParameter, ParameterValueWrapper
 
 
@@ -204,3 +206,43 @@ class ParametrizedTestsWithValues(unittest.TestCase):
         sql = q.get_sql(parameter=parameter)
         self.assertEqual('INSERT INTO "abc" ("a","b","c") VALUES (%(param1)s,%(param2)s,%(param3)s)', sql)
         self.assertEqual({"param1": 1, "param2": 2.2, "param3": "foo"}, parameter.get_parameters())
+
+
+class ParametrizedBackslashTests(unittest.TestCase):
+    # MySQL and ClickHouse escape backslashes in inline SQL string literals, but a
+    # value collected for a bound parameter is not an SQL literal: the bound value
+    # must be the original, unescaped value.
+
+    def test_mysql_format_parameter_keeps_original_value(self):
+        parameter = FormatParameter()
+        q = MySQLQuery.update(Table("t")).set("col", "a\\b")
+
+        self.assertEqual("UPDATE `t` SET `col`=%s", q.get_sql(parameter=parameter))
+        self.assertEqual(["a\\b"], parameter.get_parameters())
+
+    def test_mysql_qmark_parameter_keeps_original_value(self):
+        parameter = QmarkParameter()
+        q = MySQLQuery.update(Table("t")).set("col", "a\\b")
+
+        self.assertEqual("UPDATE `t` SET `col`=?", q.get_sql(parameter=parameter))
+        self.assertEqual(["a\\b"], parameter.get_parameters())
+
+    def test_mysql_named_parameter_keeps_original_value(self):
+        parameter = NamedParameter("param")
+        q = MySQLQuery.update(Table("t")).set("col", "a\\b")
+
+        self.assertEqual("UPDATE `t` SET `col`=:param", q.get_sql(parameter=parameter))
+        self.assertEqual({"param": "a\\b"}, parameter.get_parameters())
+
+    def test_clickhouse_format_parameter_keeps_original_value(self):
+        parameter = FormatParameter()
+        q = ClickHouseQuery.update(Table("t")).set("col", "a\\b")
+
+        self.assertEqual('ALTER TABLE "t" UPDATE "col"=%s', q.get_sql(parameter=parameter))
+        self.assertEqual(["a\\b"], parameter.get_parameters())
+
+    def test_mysql_inline_literal_is_still_escaped(self):
+        # Side by side with the parameter tests above: the inline path still escapes
+        q = MySQLQuery.update(Table("t")).set("col", "a\\b")
+
+        self.assertEqual("UPDATE `t` SET `col`='a\\\\b'", q.get_sql())
