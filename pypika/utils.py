@@ -103,7 +103,7 @@ def ignore_copy(func: Callable[[_Self, str], R]) -> Callable[[_Self, str], R]:
             "__setstate__",
             "__getnewargs__",
         ]:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+            raise AttributeError(f"{self.__class__.__name__!r} object has no attribute {name!r}")
 
         return func(self, name)
 
@@ -151,4 +151,6 @@ def validate(*args: Any, exc: Exception | None = None, type: type | None = None)
     if type is not None:
         for arg in args:
             if not isinstance(arg, type):
+                if exc is None:
+                    raise ValueError(f"Expected {arg!r} to be {type}")
                 raise exc
