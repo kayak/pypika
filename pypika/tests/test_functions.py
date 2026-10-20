@@ -798,12 +798,12 @@ class DateFunctionsTests(unittest.TestCase):
     def test_current_date(self):
         query = Query.select(fn.CurDate())
 
-        self.assertEqual("SELECT CURRENT_DATE()", str(query))
+        self.assertEqual("SELECT CURRENT_DATE", str(query))
 
     def test_current_time(self):
         query = Query.select(fn.CurTime())
 
-        self.assertEqual("SELECT CURRENT_TIME()", str(query))
+        self.assertEqual("SELECT CURRENT_TIME", str(query))
 
     def test_current_timestamp(self):
         query = Query.select(fn.CurTimestamp())
