@@ -1,19 +1,23 @@
+import operator
+import sqlite3
 import unittest
 from datetime import (
     date,
     datetime,
     time,
 )
+from itertools import product
 
 from pypika import (
     Criterion,
     EmptyCriterion,
     Field,
+    Query,
     Table,
     functions as fn,
 )
 from pypika.queries import QueryBuilder
-from pypika.terms import ExistsCriterion, Mod
+from pypika.terms import ExistsCriterion, Mod, ValueWrapper
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -812,6 +816,68 @@ class ComplexCriterionTests(unittest.TestCase):
         c = Field('foo"\'').between("a'", "c'")
 
         self.assertEqual('"foo""\'" BETWEEN \'a\'\'\' AND \'c\'\'\'', str(c))
+
+
+class ComparisonGroupingTests(unittest.TestCase):
+    def test_compound_operands_on_either_side(self):
+        a, b, c, d = (Field(name) for name in ("a", "b", "c", "d"))
+        for combine, boolean in ((operator.and_, "AND"), (operator.or_, "OR"), (operator.xor, "XOR")):
+            for compare, symbol in (
+                (operator.eq, "="),
+                (operator.ne, "<>"),
+                (operator.lt, "<"),
+                (operator.le, "<="),
+                (operator.gt, ">"),
+                (operator.ge, ">="),
+            ):
+                compound = combine(a, b)
+                for left, right, expected in (
+                    (compound, c, '("a" {boolean} "b"){symbol}"c"'),
+                    (c, compound, '"c"{symbol}("a" {boolean} "b")'),
+                    (compound, combine(c, d), '("a" {boolean} "b"){symbol}("c" {boolean} "d")'),
+                ):
+                    with self.subTest(boolean=boolean, symbol=symbol, expected=expected):
+                        self.assertEqual(expected.format(boolean=boolean, symbol=symbol), str(compare(left, right)))
+
+    def test_comparison_results_in_sqlite(self):
+        connection = sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute("CREATE TABLE flags(a INTEGER, b INTEGER, c INTEGER)")
+        connection.executemany("INSERT INTO flags VALUES(?,?,?)", product((0, 1, None), repeat=3))
+        table = Table("flags")
+        for expression, expected in (
+            (ValueWrapper(0) == (table.a | table.b), "0=(a OR b)"),
+            (table.c == (table.a | table.b), "c=(a OR b)"),
+            ((table.a | table.b) == table.c, "(a OR b)=c"),
+            (table.c == (table.a & table.b), "c=(a AND b)"),
+            ((table.a & table.b) == table.c, "(a AND b)=c"),
+            ((table.a | table.b) != (table.b & table.c), "(a OR b)<>(b AND c)"),
+            (table.c < ((table.a | table.b) & table.c), "c<((a OR b) AND c)"),
+            ((table.c == (table.a | table.b)) & (table.a == 1), "c=(a OR b) AND a=1"),
+        ):
+            with self.subTest(expected=expected):
+                query = Query.from_(table).select(expression)
+                self.assertEqual(
+                    connection.execute("SELECT " + expected + " FROM flags").fetchall(),
+                    connection.execute(query.get_sql()).fetchall(),
+                )
+
+    def test_nested_boolean_contexts(self):
+        a, b, c, d = (Field(name) for name in ("a", "b", "c", "d"))
+        comparison = c == ((a | b) & d)
+        self.assertEqual('"c"=(("a" OR "b") AND "d")', str(comparison))
+        self.assertEqual('"c"=(("a" OR "b") AND "d") AND "a"=1', str(comparison & (a == 1)))
+        self.assertEqual('NOT "c"=(("a" OR "b") AND "d")', str(~comparison))
+
+    def test_compound_comparison_preserves_namespace_quotes_and_alias(self):
+        table = Table("flags").as_("f")
+        expression = (table.c == (table.a | table.b)).as_("same")
+        query = Query.from_(table).select(expression)
+        self.assertEqual('SELECT "f"."c"=("f"."a" OR "f"."b") same FROM "flags" "f"', query.get_sql())
+        self.assertEqual(
+            "SELECT `f`.`c`=(`f`.`a` OR `f`.`b`) `same` FROM `flags` `f`",
+            query.get_sql(quote_char="`", alias_quote_char="`"),
+        )
 
 
 class FieldsAsCriterionTests(unittest.TestCase):

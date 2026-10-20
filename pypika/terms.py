@@ -878,6 +878,7 @@ class BasicCriterion(Criterion):
         self.right = self.right.replace_table(current_table, new_table)
 
     def get_sql(self, quote_char: str = '"', with_alias: bool = False, **kwargs: Any) -> str:
+        kwargs["subcriterion"] = True
         sql = "{left}{comparator}{right}".format(
             comparator=self.comparator.value,
             left=self.left.get_sql(quote_char=quote_char, **kwargs),
