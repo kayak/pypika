@@ -544,7 +544,10 @@ class PostgreSQLQueryBuilder(QueryBuilder):
 
         conflict_query = " ON CONFLICT"
         if self._on_conflict_fields:
-            fields = [f.get_sql(with_alias=True, **kwargs) for f in self._on_conflict_fields]
+            fields = [
+                f.replace_table(self._insert_table, None).get_sql(with_alias=True, **dict(kwargs, with_namespace=False))
+                for f in self._on_conflict_fields
+            ]
             conflict_query += " (" + ', '.join(fields) + ")"
 
         if self._on_conflict_wheres:
@@ -572,18 +575,19 @@ class PostgreSQLQueryBuilder(QueryBuilder):
         elif len(self._on_conflict_do_updates) > 0:
             updates = []
             for field, value in self._on_conflict_do_updates:
+                field_sql = field.replace_table(field.table, None).get_sql(**kwargs)
                 if value:
                     updates.append(
                         "{field}={value}".format(
-                            field=field.get_sql(**kwargs),
+                            field=field_sql,
                             value=value.get_sql(with_namespace=True, **kwargs),
                         )
                     )
                 else:
                     updates.append(
                         "{field}=EXCLUDED.{value}".format(
-                            field=field.get_sql(**kwargs),
-                            value=field.get_sql(**kwargs),
+                            field=field_sql,
+                            value=field_sql,
                         )
                     )
             action_sql = " DO UPDATE SET {updates}".format(updates=",".join(updates))
