@@ -80,8 +80,16 @@ class AliasedQuery(Selectable):
         self.query = query
 
     def get_sql(self, **kwargs: Any) -> str:
+        with_alias = kwargs.pop("with_alias", False)
+        quote_char = kwargs.pop("quote_char", None)
+
+        query_sql = format_quotes(self.name, quote_char)
+        query_alias = getattr(self, 'alias', None)
+
         if self.query is None:
-            return self.name
+            if with_alias:
+                return format_alias_sql(query_sql, query_alias, quote_char=quote_char, **kwargs)
+            return query_sql
         return self.query.get_sql(**kwargs)
 
     def __eq__(self, other: AliasedQuery) -> bool:
