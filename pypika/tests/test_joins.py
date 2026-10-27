@@ -3,6 +3,7 @@ import unittest
 
 from pypika import (
     SYSTEM_TIME,
+    ClickHouseQuery,
     Field,
     Interval,
     JoinException,
@@ -837,6 +838,57 @@ class NestedSetOperationTests(unittest.TestCase):
 
 class PostgresNestedSetOperationTests(NestedSetOperationTests):
     query_cls = PostgreSQLQuery
+
+
+class UnwrappedNestedSetOperationTests(unittest.TestCase):
+    table1, table2, table3, table4 = Tables("abc", "efg", "hij", "lmn")
+
+    def test_nested_right_operand_keeps_parentheses(self):
+        query1, query2, query3 = (
+            Query._builder(wrap_set_operation_queries=False).from_(table).select("foo")
+            for table in (self.table1, self.table2, self.table3)
+        )
+        query = query1.except_of(query2.union(query3))
+
+        self.assertEqual(
+            'SELECT "foo" FROM "abc" EXCEPT (SELECT "foo" FROM "efg" UNION SELECT "foo" FROM "hij")',
+            str(query),
+        )
+
+    def test_clickhouse_nested_right_operands(self):
+        query1, query2, query3, query4 = (
+            ClickHouseQuery.from_(table).select("foo") for table in (self.table1, self.table2, self.table3, self.table4)
+        )
+
+        for operation, keyword in (("union_all", "UNION ALL"), ("except_of", "EXCEPT")):
+            with self.subTest(operation=operation):
+                query = getattr(query1, operation)(query2.union_all(query3))
+
+                self.assertEqual(
+                    'SELECT "foo" FROM "abc" ' + keyword + ' '
+                    '(SELECT "foo" FROM "efg" UNION ALL SELECT "foo" FROM "hij")',
+                    str(query),
+                )
+
+        with self.subTest(operation="deeply nested"):
+            query = query1.union_all(query2.except_of(query3.union_all(query4)))
+
+            self.assertEqual(
+                'SELECT "foo" FROM "abc" UNION ALL (SELECT "foo" FROM "efg" EXCEPT '
+                '(SELECT "foo" FROM "hij" UNION ALL SELECT "foo" FROM "lmn"))',
+                str(query),
+            )
+
+    def test_clickhouse_flat_operands_stay_unwrapped(self):
+        query1, query2, query3 = (
+            ClickHouseQuery.from_(table).select("foo") for table in (self.table1, self.table2, self.table3)
+        )
+        query = query1.union_all(query2).except_of(query3)
+
+        self.assertEqual(
+            'SELECT "foo" FROM "abc" UNION ALL SELECT "foo" FROM "efg" EXCEPT SELECT "foo" FROM "hij"',
+            str(query),
+        )
 
 
 class UnionTests(unittest.TestCase):

@@ -639,8 +639,10 @@ class _SetOperation(Selectable, Term):
 
         querystring = base_querystring
         for set_operation, set_operation_query in self._set_operation:
+            # A nested set operation is always parenthesised so that it keeps its grouping
             set_operation_querystring = set_operation_query.get_sql(
-                subquery=self.base_query.wrap_set_operation_queries, **kwargs
+                subquery=isinstance(set_operation_query, _SetOperation) or self.base_query.wrap_set_operation_queries,
+                **kwargs,
             )
 
             set_operation_selects = (
