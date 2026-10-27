@@ -1286,7 +1286,8 @@ class QueryBuilder(Selectable, Term):
         has_reference_to_foreign_table = self._foreign_table
         has_update_from = self._update_table and self._from
 
-        kwargs["with_namespace"] = any(
+        caller_with_namespace = kwargs.get("with_namespace", False) and not subquery
+        kwargs["with_namespace"] = caller_with_namespace or any(
             [
                 has_joins,
                 has_multiple_from_clauses,
@@ -1407,7 +1408,10 @@ class QueryBuilder(Selectable, Term):
 
     def _with_sql(self, **kwargs: Any) -> str:
         return "WITH " + ",".join(
-            clause.name + " AS (" + clause.get_sql(subquery=False, with_alias=False, **kwargs) + ") "
+            clause.name
+            + " AS ("
+            + clause.get_sql(subquery=False, with_alias=False, **dict(kwargs, with_namespace=False))
+            + ") "
             for clause in self._with
         )
 
@@ -2118,7 +2122,7 @@ class CreateQueryBuilder:
 
     def _as_select_sql(self, **kwargs: Any) -> str:
         return " AS ({query})".format(
-            query=self._as_select.get_sql(**kwargs),
+            query=self._as_select.get_sql(**dict(kwargs, with_namespace=False)),
         )
 
     def _prepare_columns_input(self, columns: list[str | Column]) -> list[Column]:
