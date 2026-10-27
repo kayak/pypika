@@ -63,6 +63,9 @@ class Selectable(Node):
 
     @ignore_copy
     def __getattr__(self, name: str) -> Field:
+        if name == "__isabstractmethod__":
+            # ABCMeta probes class attributes for this marker.
+            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
         return self.field(name)
 
     @ignore_copy
@@ -104,6 +107,8 @@ class Schema:
 
     @ignore_copy
     def __getattr__(self, item: str) -> Table:
+        if item == "__isabstractmethod__":
+            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
         return Table(item, schema=self)
 
     def get_sql(self, quote_char: str | None = None, **kwargs: Any) -> str:
@@ -121,6 +126,8 @@ class Schema:
 class Database(Schema):
     @ignore_copy
     def __getattr__(self, item: str) -> Schema:
+        if item == "__isabstractmethod__":
+            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
         return Schema(item, parent=self)
 
 
