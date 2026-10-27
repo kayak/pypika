@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from datetime import date, datetime, time
 from enum import Enum
+from ipaddress import IPv4Address, IPv6Address
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JSONOperators, Matching, Order
@@ -442,7 +443,7 @@ class ValueWrapper(Term):
             return format_quotes(value, quote_char)
         if isinstance(value, bool):
             return str.lower(str(value))
-        if isinstance(value, uuid.UUID):
+        if isinstance(value, (uuid.UUID, IPv4Address, IPv6Address)):
             return cls.get_formatted_value(str(value), **kwargs)
         if value is None:
             return "null"

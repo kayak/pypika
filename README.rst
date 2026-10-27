@@ -910,6 +910,18 @@ Insert with values
 
     INSERT INTO customers VALUES (1,'Jane','Doe','jane@example.com')
 
+``IPv4Address`` and ``IPv6Address`` values from Python's ``ipaddress`` module are quoted as strings, like UUIDs:
+
+.. code-block:: python
+
+    from ipaddress import IPv4Address
+
+    q = Query.into(Table('servers')).columns('ip').insert(IPv4Address('192.0.2.1'))
+
+.. code-block:: sql
+
+    INSERT INTO "servers" ("ip") VALUES ('192.0.2.1')
+
 Multiple rows of data can be inserted either by chaining the ``insert`` function or passing multiple tuples as args.
 
 .. code-block:: python
