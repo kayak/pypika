@@ -7,6 +7,15 @@ from pypika.utils import QueryException
 
 
 class SelectTests(unittest.TestCase):
+    table_abc = Table("abc")
+
+    def test_backslashes_in_values_are_literal(self):
+        # MSSQL treats a backslash as a literal character in string literals,
+        # so values are left untouched
+        q = MSSQLQuery.update(self.table_abc).set("foo", "bar\\")
+
+        self.assertEqual('UPDATE "abc" SET "foo"=\'bar\\\'', str(q))
+
     def test_normal_select(self):
         q = MSSQLQuery.from_("abc").select("def")
 

@@ -5,6 +5,8 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar, overload
 
+from pypika.enums import Dialects
+
 if sys.version_info >= (3, 10):
     from typing import Concatenate, ParamSpec
 else:
@@ -130,6 +132,22 @@ def format_quotes(value: Any, quote_char: str | None) -> str:
         value = str(value).replace(quote_char, quote_char * 2)
 
     return "{quote}{value}{quote}".format(value=value, quote=quote_char or "")
+
+
+def escape_backslashes(value: str, dialect: Dialects | None) -> str:
+    """
+    Doubles backslashes in a string value for dialects that treat a backslash as
+    an escape character in string literals (MySQL and ClickHouse). There a trailing
+    backslash would otherwise escape the closing quote of the literal, producing
+    invalid SQL. Dialects that treat backslashes literally (PostgreSQL, SQLite,
+    MSSQL, ...) are left untouched.
+
+    Server-side modes such as MySQL's NO_BACKSLASH_ESCAPES cannot be detected
+    client-side; escaping follows the dialects' default mode.
+    """
+    if dialect in (Dialects.MYSQL, Dialects.CLICKHOUSE):
+        return value.replace("\\", "\\\\")
+    return value
 
 
 def format_alias_sql(
