@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import inspect
 import re
 import sys
@@ -415,8 +416,23 @@ class Negative(Term):
     def is_aggregate(self) -> bool | None:
         return self.term.is_aggregate
 
-    def get_sql(self, **kwargs: Any) -> str:
-        return "-{term}".format(term=self.term.get_sql(**kwargs))
+    def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
+        term = self.term
+        if term.alias is not None:
+            # Some terms render their alias even without with_alias=True.
+            term = copy.copy(term)
+            term.alias = None
+        term_sql = term.get_sql(**kwargs)
+        # Preserve the operand's grouping and avoid turning consecutive minus
+        # signs into a SQL comment, including when the operand is a literal.
+        if isinstance(self.term, ArithmeticExpression) or term_sql.startswith("-"):
+            term_sql = "({})".format(term_sql)
+        sql = "-{}".format(term_sql)
+        if with_alias:
+            # Keep operand aliases outside the parentheses, as result aliases.
+            alias = self.alias if self.alias is not None else self.term.alias
+            return format_alias_sql(sql, alias, **kwargs)
+        return sql
 
 
 class ValueWrapper(Term):
