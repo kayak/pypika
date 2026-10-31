@@ -1260,15 +1260,17 @@ class ArithmeticExpression(Term):
 
     def get_sql(self, with_alias: bool = False, **kwargs: Any) -> str:
         left_op, right_op = [getattr(side, "operator", None) for side in [self.left, self.right]]
+        left_sql = self.left.get_sql(**kwargs)
+        right_sql = self.right.get_sql(**kwargs)
+        # Subtracting a negative operand must not produce "--", which SQL parses as a comment.
+        right_needs_parens = self.right_needs_parens(self.operator, right_op) or (
+            self.operator == Arithmetic.sub and right_sql.startswith("-")
+        )
 
         arithmetic_sql = "{left}{operator}{right}".format(
             operator=self.operator.value,
-            left=("({})" if self.left_needs_parens(self.operator, left_op) else "{}").format(
-                self.left.get_sql(**kwargs)
-            ),
-            right=("({})" if self.right_needs_parens(self.operator, right_op) else "{}").format(
-                self.right.get_sql(**kwargs)
-            ),
+            left=("({})" if self.left_needs_parens(self.operator, left_op) else "{}").format(left_sql),
+            right=("({})" if right_needs_parens else "{}").format(right_sql),
         )
 
         if with_alias:
