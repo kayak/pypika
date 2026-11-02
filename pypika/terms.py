@@ -45,8 +45,10 @@ class Node:
     def nodes_(self) -> Iterator[NodeT]:
         yield self
 
-    def find_(self, type: type[NodeT]) -> list[NodeT]:
-        return [node for node in self.nodes_() if isinstance(node, type)]
+    def find_(self, node_type: type[NodeT]) -> list[NodeT]:
+        return [  # type:ignore[var-annotated]
+            node for node in self.nodes_() if isinstance(node, node_type)
+        ]
 
 
 class Term(Node):
