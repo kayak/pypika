@@ -1,3 +1,4 @@
+import sqlite3
 import unittest
 
 from pypika import (
@@ -13,6 +14,7 @@ from pypika import Query as Q
 from pypika import Table as T
 from pypika import functions as fn
 from pypika.enums import Dialects, SqlTypes
+from pypika.terms import QmarkParameter, ValueWrapper
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -104,6 +106,36 @@ class ArithmeticTests(unittest.TestCase):
 
         self.assertEqual('SELECT 1-"a" FROM "abc"', str(q1))
         self.assertEqual('SELECT 1-"a" FROM "abc"', str(q2))
+
+    def test__subtraction__negative_right_operand(self):
+        q = Q.from_(self.t).select(
+            self.t.a - (-1), self.t.a - (-1.5), self.t.a - (-self.t.b), self.t.a - (-self.t.b * 2)
+        )
+
+        self.assertEqual('SELECT "a"-(-1),"a"-(-1.5),"a"-(-"b"),"a"-(-"b"*2) FROM "abc"', str(q))
+        self.assertEqual("SELECT a-(-1),a-(-1.5),a-(-b),a-(-b*2) FROM abc", q.get_sql(quote_char=None))
+
+    def test__subtraction__negative_right_operand_is_not_a_comment(self):
+        connection = sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute('CREATE TABLE "abc" ("id" INTEGER, "a" INTEGER, "b" INTEGER)')
+        connection.executemany('INSERT INTO "abc" VALUES (?, ?, ?)', [(1, 10, 0), (2, 20, 0)])
+
+        q = Q.update(self.t).set(self.t.b, 1).set(self.t.a, self.t.a - (-5)).where(self.t.id == 2)
+        connection.execute(str(q))
+
+        rows = connection.execute('SELECT "id","a","b" FROM "abc" ORDER BY "id"').fetchall()
+        self.assertEqual([(1, 10, 0), (2, 25, 1)], rows)
+
+    def test__subtraction__preserves_parameter_order(self):
+        parameter = QmarkParameter()
+        sql = (ValueWrapper(10) - 5).get_sql(parameter=parameter)
+
+        self.assertEqual("?-?", sql)
+        self.assertEqual([10, 5], parameter.get_parameters())
+        connection = sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        self.assertEqual((5,), connection.execute("SELECT " + sql, parameter.get_parameters()).fetchone())
 
     def test__multiplication__fields(self):
         q1 = Q.from_("abc").select(F("a") * F("b"))
