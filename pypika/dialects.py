@@ -944,7 +944,7 @@ class SQLLiteValueWrapper(ValueWrapper):
 
 class SQLLiteQuery(Query):
     """
-    Defines a query class for use with Microsoft SQL Server.
+    Defines a query class for use with SQLite.
     """
 
     @classmethod
