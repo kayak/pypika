@@ -277,10 +277,20 @@ class CurDate(Function):
     def __init__(self, alias=None):
         super().__init__("CURRENT_DATE", alias=alias)
 
+    def get_function_sql(self, **kwargs):
+        # CURRENT_DATE is a keyword and takes no arguments, so the empty
+        # parentheses are omitted, matching CurTimestamp above.
+        return "CURRENT_DATE"
+
 
 class CurTime(Function):
     def __init__(self, alias=None):
         super().__init__("CURRENT_TIME", alias=alias)
+
+    def get_function_sql(self, **kwargs):
+        # CURRENT_TIME is a keyword and takes no arguments, so the empty
+        # parentheses are omitted, matching CurTimestamp above.
+        return "CURRENT_TIME"
 
 
 class Extract(Function):
