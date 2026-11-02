@@ -10,6 +10,7 @@ from pypika.queries import (
     CreateQueryBuilder,
     Database,
     DropQueryBuilder,
+    MergeQueryBuilder,
     Query,
     QueryBuilder,
     Selectable,
@@ -93,6 +94,10 @@ class MySQLQuery(Query):
     @classmethod
     def drop_table(cls, table: str | Table) -> MySQLDropQueryBuilder:
         return MySQLDropQueryBuilder().drop_table(table)
+
+    @classmethod
+    def merge_into(cls, table: str | Table, **kwargs: Any) -> MergeQueryBuilder:
+        raise QueryException("MySQL does not support MERGE, use on_duplicate_key_update() instead")
 
 
 class MySQLQueryBuilder(QueryBuilder):
@@ -414,6 +419,17 @@ class PostgreSQLQuery(Query):
     def _builder(cls, **kwargs) -> PostgreSQLQueryBuilder:
         return PostgreSQLQueryBuilder(**kwargs)
 
+    @classmethod
+    def _merge_builder(cls, **kwargs: Any) -> PostgreSQLMergeQueryBuilder:
+        return PostgreSQLMergeQueryBuilder(**kwargs)
+
+
+class PostgreSQLMergeQueryBuilder(MergeQueryBuilder):
+    QUERY_CLS = PostgreSQLQuery
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(dialect=Dialects.POSTGRESQL, **kwargs)
+
 
 class PostgreSQLQueryBuilder(QueryBuilder):
     ALIAS_QUOTE_CHAR = '"'
@@ -699,6 +715,24 @@ class MSSQLQuery(Query):
     def _builder(cls, **kwargs: Any) -> MSSQLQueryBuilder:
         return MSSQLQueryBuilder(**kwargs)
 
+    @classmethod
+    def _merge_builder(cls, **kwargs: Any) -> MSSQLMergeQueryBuilder:
+        return MSSQLMergeQueryBuilder(**kwargs)
+
+
+class MSSQLMergeQueryBuilder(MergeQueryBuilder):
+    QUERY_CLS = MSSQLQuery
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(dialect=Dialects.MSSQL, **kwargs)
+
+    @builder
+    def then_do_nothing(self) -> None:
+        raise QueryException("MSSQL does not support DO NOTHING in a MERGE clause")
+
+    def get_sql(self, **kwargs: Any) -> str:
+        return super().get_sql(**kwargs) + ";"
+
 
 class MSSQLQueryBuilder(FetchNextAndOffsetRowsQueryBuilder):
     QUERY_CLS = MSSQLQuery
@@ -887,7 +921,7 @@ class ClickHouseQueryBuilder(QueryBuilder):
         return super()._apply_pagination(querystring, **kwargs)
 
     def _limit_by_sql(self, **kwargs: Any) -> str:
-        (n, offset, by) = self._limit_by
+        n, offset, by = self._limit_by
         by = ",".join(term.get_sql(with_alias=True, **kwargs) for term in by)
         if offset != 0:
             return f" LIMIT {n} OFFSET {offset} BY ({by})"
