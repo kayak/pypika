@@ -1,12 +1,15 @@
+import operator
 import unittest
 
 from pypika import (
     SYSTEM_TIME,
+    ClickHouseQuery,
     Field,
     Interval,
     JoinException,
     JoinType,
     MySQLQuery,
+    PostgreSQLQuery,
     Query,
     SetOperationException,
     Table,
@@ -696,6 +699,195 @@ class JoinBehaviorTests(unittest.TestCase):
             '(SELECT * FROM "abc")) "subq" '
             'ON "subq"."x"="abc"."id"',
             str(test_query),
+        )
+
+
+class NestedSetOperationTests(unittest.TestCase):
+    query_cls = Query
+    table1, table2, table3, table4 = Tables("abc", "efg", "hij", "lmn")
+
+    def setUp(self):
+        self.query1 = self.query_cls.from_(self.table1).select("foo")
+        self.query2 = self.query_cls.from_(self.table2).select("foo")
+        self.query3 = self.query_cls.from_(self.table3).select("foo")
+        self.query4 = self.query_cls.from_(self.table4).select("foo")
+
+    def test_nested_right_operands(self):
+        for operation, keyword in (
+            ("union", "UNION"),
+            ("union_all", "UNION ALL"),
+            ("intersect", "INTERSECT"),
+            ("except_of", "EXCEPT"),
+            ("minus", "MINUS"),
+        ):
+            with self.subTest(operation=operation):
+                query = getattr(self.query1, operation)(self.query2.union(self.query3))
+
+                self.assertEqual(
+                    '(SELECT "foo" FROM "abc") ' + keyword + ' '
+                    '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))',
+                    str(query),
+                )
+
+    def test_two_compound_operands(self):
+        query = self.query1.intersect(self.query2).union(self.query3.union_all(self.query4))
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") INTERSECT (SELECT "foo" FROM "efg") UNION '
+            '((SELECT "foo" FROM "hij") UNION ALL (SELECT "foo" FROM "lmn"))',
+            str(query),
+        )
+
+    def test_deeply_nested_operand(self):
+        query = self.query1.union(self.query2.union(self.query3.intersect(self.query4)))
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION ((SELECT "foo" FROM "efg") UNION '
+            '((SELECT "foo" FROM "hij") INTERSECT (SELECT "foo" FROM "lmn")))',
+            str(query),
+        )
+
+    def test_nested_operator_overloads(self):
+        for operation, keyword in ((operator.add, "UNION"), (operator.mul, "UNION ALL"), (operator.sub, "MINUS")):
+            with self.subTest(operation=keyword):
+                query = operation(self.query1.union(self.query2), self.query3.union_all(self.query4))
+
+                self.assertEqual(
+                    '(SELECT "foo" FROM "abc") UNION (SELECT "foo" FROM "efg") ' + keyword + ' '
+                    '((SELECT "foo" FROM "hij") UNION ALL (SELECT "foo" FROM "lmn"))',
+                    str(query),
+                )
+
+    def test_querybuilder_operators_with_compound_right_operand(self):
+        for operation, keyword in ((operator.add, "UNION"), (operator.mul, "UNION ALL"), (operator.sub, "MINUS")):
+            with self.subTest(operation=keyword):
+                query = operation(self.query1, self.query2.union(self.query3))
+
+                self.assertEqual(
+                    '(SELECT "foo" FROM "abc") ' + keyword + ' '
+                    '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))',
+                    str(query),
+                )
+
+    def test_nested_orderby_limit_offset(self):
+        inner = self.query2.union(self.query3).orderby(self.table2.foo).limit(2).offset(1)
+        query = self.query1.union(inner).orderby(self.table1.foo).limit(5).offset(3)
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION ((SELECT "foo" FROM "efg") UNION '
+            '(SELECT "foo" FROM "hij") ORDER BY "foo" LIMIT 2 OFFSET 1) ORDER BY "foo" LIMIT 5 OFFSET 3',
+            str(query),
+        )
+
+    def test_nested_subquery_alias(self):
+        inner = self.query1.union(self.query2.union(self.query3)).as_("combined")
+        query = self.query_cls.from_(inner).select(inner.foo)
+
+        self.assertEqual(
+            'SELECT "combined"."foo" FROM ((SELECT "foo" FROM "abc") UNION '
+            '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))) "combined"',
+            str(query),
+        )
+
+    def test_nested_subquery_auto_alias(self):
+        inner = self.query1.union(self.query2.union(self.query3))
+        query = self.query_cls.from_(inner).select(inner.foo)
+
+        self.assertEqual(
+            'SELECT "sq0"."foo" FROM ((SELECT "foo" FROM "abc") UNION '
+            '((SELECT "foo" FROM "efg") UNION (SELECT "foo" FROM "hij"))) "sq0"',
+            str(query),
+        )
+
+    def test_nested_quote_char_override(self):
+        query = self.query1.union(self.query2.union(self.query3))
+
+        self.assertEqual(
+            '(SELECT foo FROM abc) UNION ((SELECT foo FROM efg) UNION (SELECT foo FROM hij))',
+            query.get_sql(quote_char=None),
+        )
+
+    def test_mismatched_nested_operand(self):
+        inner = self.query2.select("bar").union(self.query3.select("bar"))
+        query = self.query1.union(inner)
+
+        with self.assertRaises(SetOperationException) as context:
+            str(query)
+
+        self.assertEqual(
+            'Queries must have an equal number of select statements in a set operation.\n\n'
+            'Main Query:\n(SELECT "foo" FROM "abc")\n\nSet Operations Query:\n'
+            '((SELECT "foo","bar" FROM "efg") UNION (SELECT "foo","bar" FROM "hij"))',
+            str(context.exception),
+        )
+
+    def test_inner_mismatch_is_reported_first(self):
+        inner = self.query2.union(self.query3.select("bar"))
+        query = self.query1.select("bar", "baz").union(inner)
+
+        with self.assertRaises(SetOperationException) as context:
+            str(query)
+
+        self.assertEqual(
+            'Queries must have an equal number of select statements in a set operation.\n\n'
+            'Main Query:\n(SELECT "foo" FROM "efg")\n\nSet Operations Query:\n'
+            '(SELECT "foo","bar" FROM "hij")',
+            str(context.exception),
+        )
+
+
+class PostgresNestedSetOperationTests(NestedSetOperationTests):
+    query_cls = PostgreSQLQuery
+
+
+class UnwrappedNestedSetOperationTests(unittest.TestCase):
+    table1, table2, table3, table4 = Tables("abc", "efg", "hij", "lmn")
+
+    def test_nested_right_operand_keeps_parentheses(self):
+        query1, query2, query3 = (
+            Query._builder(wrap_set_operation_queries=False).from_(table).select("foo")
+            for table in (self.table1, self.table2, self.table3)
+        )
+        query = query1.except_of(query2.union(query3))
+
+        self.assertEqual(
+            'SELECT "foo" FROM "abc" EXCEPT (SELECT "foo" FROM "efg" UNION SELECT "foo" FROM "hij")',
+            str(query),
+        )
+
+    def test_clickhouse_nested_right_operands(self):
+        query1, query2, query3, query4 = (
+            ClickHouseQuery.from_(table).select("foo") for table in (self.table1, self.table2, self.table3, self.table4)
+        )
+
+        for operation, keyword in (("union_all", "UNION ALL"), ("except_of", "EXCEPT")):
+            with self.subTest(operation=operation):
+                query = getattr(query1, operation)(query2.union_all(query3))
+
+                self.assertEqual(
+                    'SELECT "foo" FROM "abc" ' + keyword + ' '
+                    '(SELECT "foo" FROM "efg" UNION ALL SELECT "foo" FROM "hij")',
+                    str(query),
+                )
+
+        with self.subTest(operation="deeply nested"):
+            query = query1.union_all(query2.except_of(query3.union_all(query4)))
+
+            self.assertEqual(
+                'SELECT "foo" FROM "abc" UNION ALL (SELECT "foo" FROM "efg" EXCEPT '
+                '(SELECT "foo" FROM "hij" UNION ALL SELECT "foo" FROM "lmn"))',
+                str(query),
+            )
+
+    def test_clickhouse_flat_operands_stay_unwrapped(self):
+        query1, query2, query3 = (
+            ClickHouseQuery.from_(table).select("foo") for table in (self.table1, self.table2, self.table3)
+        )
+        query = query1.union_all(query2).except_of(query3)
+
+        self.assertEqual(
+            'SELECT "foo" FROM "abc" UNION ALL SELECT "foo" FROM "efg" EXCEPT SELECT "foo" FROM "hij"',
+            str(query),
         )
 
 
