@@ -687,7 +687,7 @@ class Field(Criterion, JSON):
             from pypika.queries import Table
 
             table = Table(table)
-        self.table: str | Selectable | None = table
+        self.table: Selectable | None = table
 
     def nodes_(self) -> Iterator[NodeT]:
         yield self
@@ -706,7 +706,8 @@ class Field(Criterion, JSON):
         :return:
             A copy of the field with the tables replaced.
         """
-        self.table = new_table if self.table == current_table else self.table
+        if self.table == current_table:
+            self.table = new_table
 
     def get_sql(self, **kwargs: Any) -> str:
         with_alias = kwargs.pop("with_alias", False)
@@ -723,8 +724,8 @@ class Field(Criterion, JSON):
                 name=field_sql,
             )
 
-        field_alias = getattr(self, "alias", None)
         if with_alias:
+            field_alias = getattr(self, "alias", None)
             return format_alias_sql(field_sql, field_alias, quote_char=quote_char, **kwargs)
         return field_sql
 
