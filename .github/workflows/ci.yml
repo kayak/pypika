@@ -16,7 +16,7 @@ jobs:
 
   test:
     name: Unit tests on Python ${{ matrix.python-version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'ubuntu-latest' && (matrix.python-version == '3.8' || matrix.python-version == '3.9') && 'ubuntu-24.04' || matrix.os }}
     strategy:
       fail-fast: false
       matrix:
