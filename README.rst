@@ -102,7 +102,7 @@ Both of the above examples result in the following SQL:
 
 An alias for the table can be given using the ``.as_`` function on ``pypika.Table``
 
-.. code-block:: sql
+.. code-block:: python
 
     customers = Table('x_view_customers').as_('customers')
     q = Query.from_(customers).select(customers.id, customers.phone)
@@ -113,7 +113,7 @@ An alias for the table can be given using the ``.as_`` function on ``pypika.Tabl
 
 A schema can also be specified. Tables can be referenced as attributes on the schema.
 
-.. code-block:: sql
+.. code-block:: python
 
     from pypika import Table, Query, Schema
 
@@ -126,7 +126,7 @@ A schema can also be specified. Tables can be referenced as attributes on the sc
 
 Also references to databases can be used. Schemas can be referenced as attributes on the database.
 
-.. code-block:: sql
+.. code-block:: python
 
     from pypika import Table, Query, Database
 
@@ -184,7 +184,7 @@ Using ``pypika.Table``
 
 An alias can also be used for fields and expressions.
 
-.. code-block:: sql
+.. code-block:: python
 
     q = Query.from_(accounts).select(
         (accounts.revenue - accounts.cost).as_('profit')
