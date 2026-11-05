@@ -1,6 +1,6 @@
 import unittest
 
-from pypika import SYSTEM_TIME, PostgreSQLQuery, Query, Table
+from pypika import SYSTEM_TIME, AliasedQuery, PostgreSQLQuery, Query, Table
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -48,12 +48,45 @@ class DeleteTests(unittest.TestCase):
                 'DELETE FROM "abc" FOR PORTION OF "valid_period" FROM \'2020-01-01\' TO \'2020-02-01\'', str(q)
             )
 
+    def test_with_clause(self):
+        sub_query = Query.from_(self.table_abc).select(self.table_abc.id)
+        test_query = AliasedQuery("test")
+
+        q = (
+            Query.with_(sub_query, "test")
+            .from_(self.table_abc)
+            .delete()
+            .where(self.table_abc.id.isin(Query.from_(test_query).select(test_query.id)))
+        )
+
+        self.assertEqual(
+            'WITH test AS (SELECT "id" FROM "abc") DELETE FROM "abc" WHERE "id" IN (SELECT "test"."id" FROM test)',
+            str(q),
+        )
+
 
 class PostgresDeleteTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
         cls.table_abc = Table("abc")
+
+    def test_with_clause_and_using(self):
+        sub_query = Query.from_(self.table_abc).select(self.table_abc.id)
+        test_query = AliasedQuery("test")
+
+        q = (
+            PostgreSQLQuery.with_(sub_query, "test")
+            .from_(self.table_abc)
+            .delete()
+            .using(test_query)
+            .where(self.table_abc.id == test_query.id)
+        )
+
+        self.assertEqual(
+            'WITH test AS (SELECT "id" FROM "abc") DELETE FROM "abc" USING test WHERE "abc"."id"="test"."id"',
+            str(q),
+        )
 
     def test_delete_returning(self):
         q1 = (

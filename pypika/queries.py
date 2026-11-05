@@ -1355,7 +1355,9 @@ class QueryBuilder(Selectable, Term):
             return querystring
 
         if self._delete_from:
-            querystring = self._delete_sql(**kwargs)
+            querystring = self._with_sql(**kwargs) if self._with else ""
+
+            querystring += self._delete_sql(**kwargs)
 
         elif not self._select_into and self._insert_table:
             querystring = self._with_sql(**kwargs) if self._with else ""
