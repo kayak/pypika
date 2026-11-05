@@ -15,12 +15,14 @@ class TableStructureTests(unittest.TestCase):
 
     def test_table_with_no_superclass(self):
         with self.assertRaises(TypeError):
+
             @table_class("test_table")
             class T:
                 pass
 
     def test_table_with_bad_superclass(self):
         with self.assertRaises(TypeError):
+
             @table_class("test_table")
             class T(object):
                 pass
@@ -74,6 +76,7 @@ class TableStructureTests(unittest.TestCase):
 
     def test_table_for_system_time_sql(self):
         with self.subTest("with between criterion"):
+
             @table_class("test_table")
             class T(Table):
                 pass
@@ -83,6 +86,7 @@ class TableStructureTests(unittest.TestCase):
             self.assertEqual('"test_table" FOR SYSTEM_TIME BETWEEN \'2020-01-01\' AND \'2020-02-01\'', str(table))
 
         with self.subTest("with as of criterion"):
+
             @table_class("test_table")
             class T(Table):
                 pass
@@ -92,6 +96,7 @@ class TableStructureTests(unittest.TestCase):
             self.assertEqual('"test_table" FOR SYSTEM_TIME AS OF \'2020-01-01\'', str(table))
 
         with self.subTest("with from to criterion"):
+
             @table_class("test_table")
             class T(Table):
                 pass
@@ -102,6 +107,7 @@ class TableStructureTests(unittest.TestCase):
 
     def test_table_for_period_sql(self):
         with self.subTest("with between criterion"):
+
             @table_class("test_table")
             class T(Table):
                 pass
@@ -111,6 +117,7 @@ class TableStructureTests(unittest.TestCase):
             self.assertEqual('"test_table" FOR "valid_period" BETWEEN \'2020-01-01\' AND \'2020-02-01\'', str(table))
 
         with self.subTest("with as of criterion"):
+
             @table_class("test_table")
             class T(Table):
                 pass
@@ -120,6 +127,7 @@ class TableStructureTests(unittest.TestCase):
             self.assertEqual('"test_table" FOR "valid_period" AS OF \'2020-01-01\'', str(table))
 
         with self.subTest("with from to criterion"):
+
             @table_class("test_table")
             class T(Table):
                 pass
@@ -240,6 +248,7 @@ class TableDialectTests(unittest.TestCase):
 
     def test_table_with_bad_query_cls(self):
         with self.assertRaises(TypeError):
+
             @table_class("test_table", query_cls=object)
             class T(Table):
                 pass
