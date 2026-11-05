@@ -63,6 +63,82 @@ class SelectTests(unittest.TestCase):
 
         self.assertEqual('SELECT * FROM "abc"', str(q))
 
+    def test_get_sql_with_namespace_true_qualifies_columns(self):
+        q = Query.from_("abc").select("foo", "bar")
+
+        self.assertEqual(
+            'SELECT "abc"."foo","abc"."bar" FROM "abc"',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_get_sql_default_unqualified_columns(self):
+        q = Query.from_("abc").select("foo", "bar")
+
+        self.assertEqual(
+            'SELECT "foo","bar" FROM "abc"',
+            q.get_sql(),
+        )
+
+    def test_get_sql_with_namespace_false_unqualified_columns(self):
+        q = Query.from_("abc").select("foo", "bar")
+
+        self.assertEqual(
+            'SELECT "foo","bar" FROM "abc"',
+            q.get_sql(with_namespace=False),
+        )
+
+    def test_get_sql_with_namespace_true_keeps_with_clause_body_unqualified(self):
+        subquery = Query.from_("efg").select("fizz")
+        q = Query.with_(subquery, "an_alias").from_("abc").select("foo")
+
+        self.assertEqual(
+            'WITH an_alias AS (SELECT "fizz" FROM "efg") SELECT "abc"."foo" FROM "abc"',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_get_sql_with_namespace_true_with_join(self):
+        q = (
+            Query.from_(self.table_abc)
+            .join(self.table_efg)
+            .on(self.table_abc.bar == self.table_efg.buz)
+            .select(self.table_abc.foo, self.table_efg.fiz)
+        )
+
+        self.assertEqual(
+            'SELECT "abc"."foo","efg"."fiz" FROM "abc" JOIN "efg" ON "abc"."bar"="efg"."buz"',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_get_sql_with_namespace_true_set_operation_members_stay_unqualified(self):
+        # Set-operation members are rendered with subquery=True, so they keep their own
+        # namespace decision and ignore the caller-provided with_namespace (see the
+        # "Scope of the fix" section of the PR description). Update this pin
+        # deliberately if the parentheses/namespacing coupling is ever separated.
+        q = Query.from_("abc").select("foo").union(Query.from_("efg").select("bar"))
+
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") UNION (SELECT "bar" FROM "efg")',
+            q.get_sql(with_namespace=True),
+        )
+
+    def test_postgres_data_modifying_cte_with_join_default_rendering(self):
+        # Pins default (no-kwarg) rendering for a dialect whose internals inspect
+        # kwargs: the PostgreSQL insert CTE body and the joined outer query.
+        insert_query = PostgreSQLQuery.into("target").insert(1, "m")
+        q = (
+            Query.with_(insert_query, "an_alias")
+            .from_(self.table_abc)
+            .join(self.table_efg)
+            .on(self.table_abc.id == self.table_efg.id)
+            .select(self.table_abc.foo)
+        )
+
+        self.assertEqual(
+            "WITH an_alias AS (INSERT INTO \"target\" VALUES (1,'m')) "
+            'SELECT "abc"."foo" FROM "abc" JOIN "efg" ON "abc"."id"="efg"."id"',
+            str(q),
+        )
+
     def test_select__table_schema(self):
         q = Query.from_(Table("abc", "schema1")).select("*")
 
