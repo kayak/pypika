@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pypika import Field, Query, Table
+from pypika import JSON, Field, Query, Table
 from pypika.dialects import ClickHouseQuery, MSSQLQuery, MySQLQuery, PostgreSQLQuery, SQLLiteQuery
 from pypika.terms import AtTimezone
 
@@ -158,3 +158,49 @@ class ValueBackslashEscapingTests(TestCase):
                 MSSQLQuery: "UPDATE \"t\" SET \"foo\"='it\\''s'",
             },
         )
+
+
+class JSONStringEscapingTests(TestCase):
+    def test_double_quotes_in_value(self):
+        query = PostgreSQLQuery.select(JSON(['say "hello"']))
+
+        self.assertEqual(r"""SELECT '["say \"hello\""]'""", str(query))
+
+    def test_backslashes_in_value(self):
+        query = PostgreSQLQuery.select(JSON(["C:\\tmp\\"]))
+
+        self.assertEqual(r"""SELECT '["C:\\tmp\\"]'""", str(query))
+
+    def test_control_characters_in_value(self):
+        query = PostgreSQLQuery.select(JSON("\b\f\n\r\t\x00\x01\x1f"))
+
+        self.assertEqual(r"""SELECT '"\b\f\n\r\t\u0000\u0001\u001f"'""", str(query))
+
+    def test_nested_dictionary_keys_and_values(self):
+        query = PostgreSQLQuery.select(JSON({'a"b': [{"c\\d": "it's\nready"}]}))
+
+        self.assertEqual(r"""SELECT '{"a\"b":[{"c\\d":"it''s\nready"}]}'""", str(query))
+
+    def test_apostrophes_are_escaped_for_sql(self):
+        query = PostgreSQLQuery.select(JSON(["Scrooge Mc'Duck"]))
+
+        self.assertEqual("""SELECT '["Scrooge Mc''Duck"]'""", str(query))
+
+    def test_unicode_is_preserved(self):
+        query = PostgreSQLQuery.select(JSON({"中文": "café 😀"}))
+
+        self.assertEqual("""SELECT '{"中文":"café 😀"}'""", str(query))
+
+    def test_alias_is_preserved(self):
+        query = PostgreSQLQuery.select(JSON('say "hello"').as_('payload'))
+
+        self.assertEqual(r'''SELECT '"say \"hello\""' "payload"''', str(query))
+
+    def test_json_escapes_are_preserved_by_sql_dialect(self):
+        value = 'a"b\\c\n'
+        for query_cls in (Query, PostgreSQLQuery, SQLLiteQuery, MSSQLQuery):
+            with self.subTest(dialect=query_cls.__name__):
+                self.assertEqual(r"""SELECT '"a\"b\\c\n"'""", str(query_cls.select(JSON(value))))
+        for query_cls in (MySQLQuery, ClickHouseQuery):
+            with self.subTest(dialect=query_cls.__name__):
+                self.assertEqual(r"""SELECT '"a\\"b\\\\c\\n"'""", str(query_cls.select(JSON(value))))

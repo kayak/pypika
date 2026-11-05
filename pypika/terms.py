@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import inspect
+import json
 import re
 import sys
 import uuid
@@ -606,11 +607,12 @@ class JSON(Term):
         return "".join(["[", ",".join(pairs), "]"])
 
     @staticmethod
-    def _get_str_sql(value: str, quote_char: str = '"', **kwargs: Any) -> str:
-        return format_quotes(value, quote_char)
+    def _get_str_sql(value: str, **kwargs: Any) -> str:
+        return json.dumps(value, ensure_ascii=False)
 
     def get_sql(self, secondary_quote_char: str = "'", **kwargs: Any) -> str:
-        sql = format_quotes(self._recursive_get_sql(self.value), secondary_quote_char)
+        value = escape_backslashes(self._recursive_get_sql(self.value), kwargs.get("dialect"))
+        sql = format_quotes(value, secondary_quote_char)
         return format_alias_sql(sql, self.alias, **kwargs)
 
     def get_json_value(self, key_or_index: str | int) -> BasicCriterion:
