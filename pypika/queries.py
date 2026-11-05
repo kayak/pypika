@@ -259,6 +259,36 @@ class Table(Selectable):
         return self._query_cls.into(self).insert(*terms)
 
 
+T = TypeVar("T", bound=Table)
+
+
+def table_class(
+    name: str,
+    schema: Schema | str | None = None,
+    alias: str | None = None,
+    query_cls: type[Query] | None = None,
+):
+    """
+    A decorator for creating a new table via class-style syntax.
+
+    >>> @table_class("user")
+    ... class User(Table):
+    ...     id = Field("_id")
+    ...     name = Field("name", alias="username")
+    """
+
+    def builder(cls: type[T]) -> T:
+        if not issubclass(cls, Table):
+            raise TypeError(f"{cls.__name__} must be a subclass of Table.")
+        table = cls(name=name, schema=schema, alias=alias, query_cls=query_cls)
+        for field in cls.__dict__.values():
+            if isinstance(field, Field):
+                field.table = table
+        return table
+
+    return builder
+
+
 def make_tables(*names: tuple[str, str] | str, **kwargs: Any) -> list[Table]:
     """
     Shortcut to create many tables. If `names` param is a tuple, the first
