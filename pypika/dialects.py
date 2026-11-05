@@ -965,6 +965,11 @@ class SQLLiteQueryBuilder(QueryBuilder):
         self._replace = True
         self._insert_or_replace = True
 
+    def _apply_pagination(self, querystring: str, **kwargs) -> str:
+        if self._limit is None and self._offset:
+            querystring += " LIMIT -1"
+        return super()._apply_pagination(querystring, **kwargs)
+
     def _replace_sql(self, **kwargs: Any) -> str:
         prefix = "INSERT OR " if self._insert_or_replace else ""
         return prefix + super()._replace_sql(**kwargs)

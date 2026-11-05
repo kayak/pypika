@@ -1,3 +1,4 @@
+import sqlite3
 import unittest
 
 from pypika import Table
@@ -23,6 +24,32 @@ class SelectTests(unittest.TestCase):
         q = SQLLiteQuery.update(self.table_abc).set("foo", "bar\\")
 
         self.assertEqual('UPDATE "abc" SET "foo"=\'bar\\\'', str(q))
+
+
+class PaginationTests(unittest.TestCase):
+    def test_pagination_executes_in_sqlite(self):
+        table = Table("abc")
+        query = SQLLiteQuery.from_(table).select(table.id).orderby(table.id)
+        cases = [
+            (query.offset(2), [(3,), (4,)]),
+            (query.offset(0), [(1,), (2,), (3,), (4,)]),
+            (query.offset(10), []),
+            (query.limit(2).offset(1), [(2,), (3,)]),
+            (query.limit(0).offset(1), []),
+            (query.limit(2).offset(0), [(1,), (2,)]),
+            (query.offset(2).limit(None), [(3,), (4,)]),
+        ]
+        with sqlite3.connect(":memory:") as connection:
+            connection.execute("CREATE TABLE abc (id INTEGER)")
+            connection.executemany("INSERT INTO abc VALUES (?)", [(1,), (2,), (3,), (4,)])
+            for paginated_query, expected in cases:
+                with self.subTest(sql=str(paginated_query)):
+                    self.assertEqual(expected, connection.execute(str(paginated_query)).fetchall())
+
+    def test_offset_only_does_not_change_the_limit(self):
+        query = SQLLiteQuery.from_("abc").select("id").offset(2)
+        self.assertEqual('SELECT "id" FROM "abc" LIMIT -1 OFFSET 2', str(query))
+        self.assertEqual('SELECT "id" FROM "abc" LIMIT 1 OFFSET 2', str(query.limit(1)))
 
 
 class ReplaceTests(unittest.TestCase):
