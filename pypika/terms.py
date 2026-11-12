@@ -1593,6 +1593,11 @@ class AggregateFunction(Function):
         self._include_filter = True
         self._filters += filters
 
+    def replace_table(self, current_table: Table | None, new_table: Table | None) -> Self:
+        aggregate = super().replace_table(current_table, new_table)
+        aggregate._filters = [criterion.replace_table(current_table, new_table) for criterion in aggregate._filters]
+        return aggregate
+
     def get_filter_sql(self, **kwargs: Any) -> str:
         if self._include_filter:
             return "WHERE {criterions}".format(criterions=Criterion.all(self._filters).get_sql(**kwargs))
