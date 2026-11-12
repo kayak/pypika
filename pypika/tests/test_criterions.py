@@ -1044,3 +1044,30 @@ class AllTests(unittest.TestCase):
     def test_with_generator(self):
         crit = Criterion.all(Field(letter) for letter in "abcd")
         self.assertEqual(str(crit), '"a" AND "b" AND "c" AND "d"')
+
+
+class SubqueryMembershipTests(unittest.TestCase):
+    def test_subquery_in_values(self):
+        query = Query.from_("abc").select("foo")
+        self.assertEqual('(SELECT "foo" FROM "abc") IN (1,2)', str(query.isin([1, 2])))
+
+    def test_subquery_not_in_values(self):
+        query = Query.from_("abc").select("foo")
+        self.assertEqual('(SELECT "foo" FROM "abc") NOT IN (1,2)', str(query.notin([1, 2])))
+
+    def test_subquery_in_subquery(self):
+        query = Query.from_("abc").select("foo")
+        container = Query.from_("def").select("bar")
+        self.assertEqual(
+            '(SELECT "foo" FROM "abc") IN (SELECT "bar" FROM "def")',
+            str(query.isin(container)),
+        )
+
+    def test_subquery_membership_in_where(self):
+        table = Table("abc")
+        subquery = Query.from_(table).select(table.foo).where(table.foo == 1)
+        query = Query.from_(table).select(table.foo).where((table.foo > 0) & subquery.notin([2]))
+        self.assertEqual(
+            'SELECT "foo" FROM "abc" WHERE "foo">0 AND (SELECT "foo" FROM "abc" WHERE "foo"=1) NOT IN (2)',
+            str(query),
+        )
