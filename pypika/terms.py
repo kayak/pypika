@@ -1810,6 +1810,8 @@ class Interval(Term):
 
         if self.largest == "MICROSECOND":
             expr = getattr(self, "microseconds")
+            if self.is_negative:
+                expr = -expr
             unit = "MICROSECOND"
 
         elif hasattr(self, "quarters"):
