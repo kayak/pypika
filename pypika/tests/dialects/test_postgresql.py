@@ -281,3 +281,40 @@ class ReturningClauseTests(unittest.TestCase):
             'RETURNING "xyz"."a"',
             str(q),
         )
+
+
+class JSONChainingTests(unittest.TestCase):
+    table = Table("abc")
+
+    def test_contains_nested_array(self):
+        criterion = self.table.data.get_json_value("array_key").contains(["value2"])
+        query = PostgreSQLQuery.from_(self.table).select("*").where(criterion)
+        self.assertEqual("""SELECT * FROM "abc" WHERE "data"->'array_key'@>'["value2"]'""", str(query))
+
+    def test_chained_keys_and_index(self):
+        term = self.table.data.get_json_value("items").get_json_value(0).get_text_value("name")
+        query = PostgreSQLQuery.from_(self.table).select(term)
+        self.assertEqual('SELECT "data"->\'items\'->0->>\'name\' FROM "abc"', str(query))
+
+    def test_path_json_contains(self):
+        term = self.table.data.get_path_json_value("{a,b}").contains({"active": True})
+        query = PostgreSQLQuery.from_(self.table).select("*").where(term)
+        self.assertEqual("""SELECT * FROM "abc" WHERE "data"#>'{a,b}'@>'{"active":true}'""", str(query))
+
+    def test_nested_has_key(self):
+        term = self.table.data.get_json_value("a").has_key("b")
+        query = PostgreSQLQuery.from_(self.table).select(term)
+        self.assertEqual('SELECT "data"->\'a\'?\'b\' FROM "abc"', str(query))
+
+    def test_chained_alias(self):
+        term = self.table.data.get_json_value("a").get_json_value("b")
+        query = PostgreSQLQuery.from_(self.table).select(term.as_("nested"))
+        self.assertEqual('SELECT "data"->\'a\'->\'b\' "nested" FROM "abc"', str(query))
+        self.assertIsNone(term.alias)
+
+    def test_replace_table_in_chain(self):
+        term = self.table.data.get_json_value("a").get_json_value("b")
+        replacement = Table("other")
+        changed = term.replace_table(self.table, replacement)
+        self.assertEqual({self.table}, term.tables_)
+        self.assertEqual({replacement}, changed.tables_)

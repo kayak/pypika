@@ -615,14 +615,14 @@ class JSON(Term):
         sql = format_quotes(value, secondary_quote_char)
         return format_alias_sql(sql, self.alias, **kwargs)
 
-    def get_json_value(self, key_or_index: str | int) -> BasicCriterion:
-        return BasicCriterion(JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index))
+    def get_json_value(self, key_or_index: str | int) -> JSONCriterion:
+        return JSONCriterion(JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index))
 
     def get_text_value(self, key_or_index: str | int) -> BasicCriterion:
         return BasicCriterion(JSONOperators.GET_TEXT_VALUE, self, self.wrap_constant(key_or_index))
 
-    def get_path_json_value(self, path_json: str) -> BasicCriterion:
-        return BasicCriterion(JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json))
+    def get_path_json_value(self, path_json: str) -> JSONCriterion:
+        return JSONCriterion(JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json))
 
     def get_path_text_value(self, path_json: str) -> BasicCriterion:
         return BasicCriterion(JSONOperators.GET_PATH_TEXT_VALUE, self, self.wrap_json(path_json))
@@ -937,7 +937,7 @@ class BasicCriterion(Criterion):
         :param right:
             The term on the right side of the expression.
         """
-        super().__init__(alias)
+        super().__init__(alias=alias)
         self.comparator = comparator
         self.left = left
         self.right = right
@@ -976,6 +976,10 @@ class BasicCriterion(Criterion):
         if with_alias:
             return format_alias_sql(sql, self.alias, **kwargs)
         return sql
+
+
+class JSONCriterion(BasicCriterion, JSON):
+    """A JSON-valued expression that supports further JSON operations."""
 
 
 class ContainsCriterion(Criterion):
