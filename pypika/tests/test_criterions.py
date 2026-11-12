@@ -1071,3 +1071,70 @@ class SubqueryMembershipTests(unittest.TestCase):
             'SELECT "foo" FROM "abc" WHERE "foo">0 AND (SELECT "foo" FROM "abc" WHERE "foo"=1) NOT IN (2)',
             str(query),
         )
+
+
+class FilteredAggregateReplaceTableTests(unittest.TestCase):
+    def setUp(self):
+        self.old = Table("trades", alias="old")
+        self.new = Table("archived_trades", alias="new")
+
+    def execute(self, expression, flags=None):
+        query = Query.from_(self.new)
+        if flags is not None:
+            query = query.cross_join(flags).cross()
+        with sqlite3.connect(":memory:") as connection:
+            connection.execute("CREATE TABLE archived_trades (pnl INTEGER, side TEXT)")
+            connection.executemany(
+                "INSERT INTO archived_trades VALUES (?, ?)",
+                [(10, "BUY"), (-5, "SELL"), (20, "BUY"), (None, "BUY")],
+            )
+            connection.execute("CREATE TABLE flags (enabled INTEGER)")
+            connection.execute("INSERT INTO flags VALUES (1)")
+            return connection.execute(str(query.select(expression))).fetchall()
+
+    def test_replaces_aggregate_filter_and_keeps_original(self):
+        original = fn.Sum(self.old.pnl).filter(self.old.side == "BUY")
+        before = str(original)
+        replaced = original.replace_table(self.old, self.new)
+
+        self.assertEqual(self.execute(replaced), [(30,)])
+        self.assertEqual(str(original), before)
+        self.assertIsNot(original, replaced)
+
+    def test_replaces_filter_when_argument_has_no_table(self):
+        original = fn.Count("*").filter(self.old.side == "BUY")
+        self.assertEqual(self.execute(original.replace_table(self.old, self.new)), [(3,)])
+
+    def test_replaces_multiple_filter_criteria(self):
+        original = fn.Sum(self.old.pnl).filter(self.old.side == "BUY", self.old.pnl > 15)
+        self.assertEqual(self.execute(original.replace_table(self.old, self.new)), [(20,)])
+
+    def test_replaces_filter_in_nested_aggregate(self):
+        original = fn.Coalesce(fn.Sum(self.old.pnl).filter(self.old.side == "BUY"), 0)
+        self.assertEqual(self.execute(original.replace_table(self.old, self.new)), [(30,)])
+
+    def test_preserves_other_table_in_filter(self):
+        flags = Table("flags", alias="f")
+        original = fn.Sum(self.old.pnl).filter((self.old.side == "BUY") & (flags.enabled == 1))
+        replaced = original.replace_table(self.old, self.new)
+
+        self.assertIn('"f"."enabled"', str(replaced))
+        self.assertEqual(self.execute(replaced, flags=flags), [(30,)])
+
+    def test_chained_replacements_keep_previous_expressions(self):
+        original = fn.Sum(self.old.pnl).filter(self.old.side == "BUY")
+        intermediate = original.replace_table(self.old, Table("archived_trades", alias="middle"))
+        before = str(intermediate)
+        replaced = intermediate.replace_table(Table("archived_trades", alias="middle"), self.new)
+
+        self.assertEqual(self.execute(replaced), [(30,)])
+        self.assertEqual(str(intermediate), before)
+        self.assertIn('"old"."side"', str(original))
+
+    def test_unfiltered_aggregate_still_replaces_arguments(self):
+        self.assertEqual(self.execute(fn.Sum(self.old.pnl).replace_table(self.old, self.new)), [(25,)])
+
+    def test_unrelated_table_does_not_change_expression(self):
+        original = fn.Sum(self.old.pnl).filter(self.old.side == "BUY")
+        replaced = original.replace_table(Table("unrelated"), self.new)
+        self.assertEqual(str(replaced), str(original))

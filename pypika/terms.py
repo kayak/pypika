@@ -615,14 +615,14 @@ class JSON(Term):
         sql = format_quotes(value, secondary_quote_char)
         return format_alias_sql(sql, self.alias, **kwargs)
 
-    def get_json_value(self, key_or_index: str | int) -> BasicCriterion:
-        return BasicCriterion(JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index))
+    def get_json_value(self, key_or_index: str | int) -> JSONCriterion:
+        return JSONCriterion(JSONOperators.GET_JSON_VALUE, self, self.wrap_constant(key_or_index))
 
     def get_text_value(self, key_or_index: str | int) -> BasicCriterion:
         return BasicCriterion(JSONOperators.GET_TEXT_VALUE, self, self.wrap_constant(key_or_index))
 
-    def get_path_json_value(self, path_json: str) -> BasicCriterion:
-        return BasicCriterion(JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json))
+    def get_path_json_value(self, path_json: str) -> JSONCriterion:
+        return JSONCriterion(JSONOperators.GET_PATH_JSON_VALUE, self, self.wrap_json(path_json))
 
     def get_path_text_value(self, path_json: str) -> BasicCriterion:
         return BasicCriterion(JSONOperators.GET_PATH_TEXT_VALUE, self, self.wrap_json(path_json))
@@ -937,7 +937,7 @@ class BasicCriterion(Criterion):
         :param right:
             The term on the right side of the expression.
         """
-        super().__init__(alias)
+        super().__init__(alias=alias)
         self.comparator = comparator
         self.left = left
         self.right = right
@@ -976,6 +976,10 @@ class BasicCriterion(Criterion):
         if with_alias:
             return format_alias_sql(sql, self.alias, **kwargs)
         return sql
+
+
+class JSONCriterion(BasicCriterion, JSON):
+    """A JSON-valued expression that supports further JSON operations."""
 
 
 class ContainsCriterion(Criterion):
@@ -1593,6 +1597,11 @@ class AggregateFunction(Function):
         self._include_filter = True
         self._filters += filters
 
+    def replace_table(self, current_table: Table | None, new_table: Table | None) -> Self:
+        aggregate = super().replace_table(current_table, new_table)
+        aggregate._filters = [criterion.replace_table(current_table, new_table) for criterion in aggregate._filters]
+        return aggregate
+
     def get_filter_sql(self, **kwargs: Any) -> str:
         if self._include_filter:
             return "WHERE {criterions}".format(criterions=Criterion.all(self._filters).get_sql(**kwargs))
@@ -1801,6 +1810,8 @@ class Interval(Term):
 
         if self.largest == "MICROSECOND":
             expr = getattr(self, "microseconds")
+            if self.is_negative:
+                expr = -expr
             unit = "MICROSECOND"
 
         elif hasattr(self, "quarters"):
