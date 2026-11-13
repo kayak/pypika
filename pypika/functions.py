@@ -257,6 +257,14 @@ class Now(Function):
     def __init__(self, alias=None):
         super().__init__("NOW", alias=alias)
 
+    def get_function_sql(self, **kwargs):
+        # Handle SQLite compatibility - it uses CURRENT_TIMESTAMP instead of NOW()
+        from .enums import Dialects
+
+        if kwargs.get('dialect') == Dialects.SQLLITE:
+            return "CURRENT_TIMESTAMP"
+        return super(Now, self).get_function_sql(**kwargs)
+
 
 class UtcTimestamp(Function):
     def __init__(self, alias=None):
