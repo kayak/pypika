@@ -1629,6 +1629,18 @@ class AnalyticFunction(AggregateFunction):
         self._include_over = False
 
     @builder
+    def replace_table(self, current_table: Table | None, new_table: Table | None) -> Self:
+        analytic = super().replace_table(current_table, new_table)
+        analytic._partition = [
+            term.replace_table(current_table, new_table) if hasattr(term, "replace_table") else term
+            for term in analytic._partition
+        ]
+        analytic._orderbys = [
+            (field.replace_table(current_table, new_table), orient) for field, orient in analytic._orderbys
+        ]
+        return analytic
+
+    @builder
     def over(self, *terms: Any) -> None:
         self._include_over = True
         self._partition += terms
