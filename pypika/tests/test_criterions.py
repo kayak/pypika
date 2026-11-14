@@ -335,6 +335,62 @@ class CriterionTests(unittest.TestCase):
         self.assertEqual('SELECT "abc" FROM "items" WHERE ("foo" | 1)=1', str(q))
 
 
+class NullPredicateGroupingTests(unittest.TestCase):
+    def test_compound_operands(self):
+        a, b, c = (Field(name) for name in ("a", "b", "c"))
+        for expression, expected in (
+            ((a == 1) & (b == 2), '"a"=1 AND "b"=2'),
+            ((a == 1) | (b == 2), '"a"=1 OR "b"=2'),
+            ((a == 1) & ((b == 2) | (c == 3)), '"a"=1 AND ("b"=2 OR "c"=3)'),
+        ):
+            for method, suffix, prefix in (
+                ("isnull", "IS NULL", ""),
+                ("isnotnull", "IS NOT NULL", ""),
+                ("notnull", "IS NULL", "NOT "),
+            ):
+                with self.subTest(expected=expected, method=method):
+                    self.assertEqual(f"{prefix}({expected}) {suffix}", str(getattr(expression, method)()))
+
+    def test_results_in_sqlite(self):
+        connection = sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute("CREATE TABLE flags(a INTEGER, b INTEGER, c INTEGER)")
+        connection.executemany("INSERT INTO flags VALUES(?,?,?)", product((0, 1, None), repeat=3))
+        table = Table("flags")
+        for expression, sql in (
+            ((table.a == 1) & (table.b == 1), "a=1 AND b=1"),
+            ((table.a == 1) | (table.b == 1), "a=1 OR b=1"),
+            ((table.a == 1) & ((table.b == 1) | (table.c == 1)), "a=1 AND (b=1 OR c=1)"),
+        ):
+            for method, suffix in (("isnull", "IS NULL"), ("isnotnull", "IS NOT NULL"), ("notnull", "IS NOT NULL")):
+                predicate = getattr(expression, method)()
+                expected = f"({sql}) {suffix}"
+                query = Query.from_(table).select(predicate.as_("result"))
+                with self.subTest(sql=sql, method=method, context="select"):
+                    self.assertEqual(
+                        connection.execute(f"SELECT {expected} FROM flags").fetchall(),
+                        connection.execute(str(query)).fetchall(),
+                    )
+                for combine, operator_sql in ((operator.and_, "AND"), (operator.or_, "OR")):
+                    query = Query.from_(table).select("*").where(combine(predicate, table.c == 1))
+                    with self.subTest(sql=sql, method=method, context=operator_sql):
+                        self.assertEqual(
+                            connection.execute(f"SELECT * FROM flags WHERE ({expected}) {operator_sql} c=1").fetchall(),
+                            connection.execute(str(query)).fetchall(),
+                        )
+
+    def test_namespace_quotes_and_alias(self):
+        table = Table("flags", alias="f")
+        for method, suffix in (("isnull", "IS NULL"), ("isnotnull", "IS NOT NULL")):
+            predicate = getattr((table.a == 1) & (table.b == 2), method)().as_("result")
+            query = Query.from_(table).select(predicate)
+            with self.subTest(method=method):
+                self.assertEqual(
+                    f"SELECT (`f`.`a`=1 AND `f`.`b`=2) {suffix} `result` FROM `flags` `f`",
+                    query.get_sql(quote_char="`", alias_quote_char="`"),
+                )
+
+
 class NotTests(unittest.TestCase):
     table_abc, table_efg = Table("abc", alias="cx0"), Table("efg", alias="cx1")
 
