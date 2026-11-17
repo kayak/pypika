@@ -1,11 +1,84 @@
+import sqlite3
 import unittest
+from contextlib import closing
 
-from pypika import Criterion, JoinType, Order, Query, Tables
+from pypika import Criterion, JoinType, Order, Query, Table, Tables
 from pypika import analytics as an
 from pypika.analytics import Lag, Lead
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
+
+
+class AnalyticReplaceTableTests(unittest.TestCase):
+    def setUp(self):
+        self.source = Table("ticks").as_("old")
+        self.target = Table("ticks").as_("new")
+
+    def test_rebinds_partition_and_ordering(self):
+        for factory in (lambda t: an.Rank(), lambda t: an.Sum(t.amount), lambda t: an.Lag(t.amount, 1, 0)):
+            with self.subTest(factory=factory):
+                original = (
+                    factory(self.source).over(self.source.category).orderby(self.source.sequence, order=Order.desc)
+                )
+                expected = (
+                    factory(self.target).over(self.target.category).orderby(self.target.sequence, order=Order.desc)
+                )
+                before = original.get_sql(with_namespace=True)
+                rebound = original.replace_table(self.source, self.target)
+                self.assertEqual(rebound.get_sql(with_namespace=True), expected.get_sql(with_namespace=True))
+                self.assertEqual(original.get_sql(with_namespace=True), before)
+                self.assertIs(type(rebound), type(original))
+
+    def test_preserves_raw_partitions_and_unrelated_tables(self):
+        unrelated = Table("other").as_("other")
+        original = an.Rank().over(1, "category", self.source.category, unrelated.category).orderby(self.source.sequence)
+        expected = an.Rank().over(1, "category", self.target.category, unrelated.category).orderby(self.target.sequence)
+        rebound = original.replace_table(self.source, self.target)
+        self.assertEqual(rebound.get_sql(with_namespace=True), expected.get_sql(with_namespace=True))
+
+    def test_preserves_multiple_orderings_and_empty_window(self):
+        original = (
+            an.Rank()
+            .over(self.source.category, self.source.sequence)
+            .orderby(self.source.sequence, order=Order.desc)
+            .orderby(self.source.id)
+        )
+        expected = (
+            an.Rank()
+            .over(self.target.category, self.target.sequence)
+            .orderby(self.target.sequence, order=Order.desc)
+            .orderby(self.target.id)
+        )
+        self.assertEqual(
+            original.replace_table(self.source, self.target).get_sql(with_namespace=True),
+            expected.get_sql(with_namespace=True),
+        )
+        empty = an.Rank().over()
+        self.assertEqual(empty.replace_table(self.source, self.target).get_sql(), empty.get_sql())
+
+    def test_rebound_query_executes_with_filter_frame_and_alias(self):
+        expression = (
+            an.Sum(self.source.amount)
+            .filter(self.source.amount > 10)
+            .over(self.source.category)
+            .orderby(self.source.sequence)
+            .rows(an.Preceding(), an.CURRENT_ROW)
+            .as_("running_total")
+        )
+        query = Query.from_(self.source).select(self.source.id, expression).orderby(self.source.id)
+        before = str(query)
+        rebound = query.replace_table(self.source, self.target)
+        with closing(sqlite3.connect(":memory:")) as connection:
+            connection.execute("CREATE TABLE ticks (id INTEGER, category TEXT, sequence INTEGER, amount INTEGER)")
+            connection.executemany(
+                "INSERT INTO ticks VALUES (?, ?, ?, ?)", [(1, "A", 1, 10), (2, "A", 2, 20), (3, "B", 1, 7)]
+            )
+            expected = [(1, None), (2, 20), (3, None)]
+            self.assertEqual(connection.execute(before).fetchall(), expected)
+            self.assertEqual(connection.execute(str(rebound)).fetchall(), expected)
+        self.assertEqual(str(query), before)
+        self.assertIn('"running_total"', str(rebound))
 
 
 class RankTests(unittest.TestCase):
