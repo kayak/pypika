@@ -1346,6 +1346,9 @@ class ArithmeticExpression(Term):
         if left_op is None:
             # If the left expression is a single item.
             return False
+        if curr_op in (Arithmetic.lshift, Arithmetic.rshift) or left_op in (Arithmetic.lshift, Arithmetic.rshift):
+            # Preserve explicit nesting without relying on dialect-specific shift precedence.
+            return True
         if curr_op in self.add_order:
             # If the current operator is '+' or '-'.
             return False
@@ -1367,6 +1370,8 @@ class ArithmeticExpression(Term):
         if right_op is None:
             # If the right expression is a single item.
             return False
+        if curr_op in (Arithmetic.lshift, Arithmetic.rshift) or right_op in (Arithmetic.lshift, Arithmetic.rshift):
+            return True
         if curr_op == Arithmetic.add:
             return False
         if curr_op == Arithmetic.div:
