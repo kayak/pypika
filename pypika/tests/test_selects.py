@@ -25,7 +25,7 @@ from pypika import (
 )
 from pypika import Field as F
 from pypika import functions as fn
-from pypika.terms import ValueWrapper
+from pypika.terms import Star, ValueWrapper
 
 __author__ = "Timothy Heys"
 __email__ = "theys@kayak.com"
@@ -62,6 +62,20 @@ class SelectTests(unittest.TestCase):
         q = Query.from_("abc").select("*")
 
         self.assertEqual('SELECT * FROM "abc"', str(q))
+
+    def test_select__star_with_excluded_columns(self):
+        table = self.table_abc
+        exclude = Query.from_(table).select(table.star.exclude("foo", "bar"), table.foo.as_("renamed"))
+        except_ = Query.from_(table).select(Star().except_("column name"))
+
+        self.assertEqual('SELECT "abc".* EXCLUDE ("foo","bar"),"foo" "renamed" FROM "abc"', str(exclude))
+        self.assertEqual('SELECT * EXCEPT (`column name`) FROM `abc`', except_.get_sql(quote_char="`"))
+
+    def test_select__aliased_excluded_columns_before_string_star(self):
+        table = self.table_abc
+        query = Query.from_(table, as_keyword=True).select(table.foo, table.star.exclude("bar").as_("kept"), "*")
+
+        self.assertEqual('SELECT "abc".* EXCLUDE ("bar") AS "kept",* FROM "abc"', str(query))
 
     def test_select__table_schema(self):
         q = Query.from_(Table("abc", "schema1")).select("*")

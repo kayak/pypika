@@ -21,6 +21,7 @@ from pypika.terms import (
     Term,
     Tuple,
     ValueWrapper,
+    _StarWithExclusions,
 )
 from pypika.utils import (
     JoinException,
@@ -1194,7 +1195,7 @@ class QueryBuilder(Selectable, Term):
 
         if term == "*":
             self._select_star = True
-            self._selects = [Star()]
+            self._selects = [select for select in self._selects if isinstance(select, _StarWithExclusions)] + [Star()]
             return
 
         self._select_field(Field(term, table=self._from[0]))
