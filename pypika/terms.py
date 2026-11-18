@@ -16,6 +16,7 @@ from pypika.enums import Arithmetic, Boolean, Comparator, Dialects, Equality, JS
 from pypika.utils import (
     CaseException,
     FunctionException,
+    QueryException,
     builder,
     escape_backslashes,
     format_alias_sql,
@@ -804,6 +805,33 @@ class Star(Field):
         if self.table is not None:
             yield from self.table.nodes_()
 
+    def exclude(self, column: str, *columns: str) -> _StarWithExclusions:
+        """Project all columns except the named top-level columns using DuckDB's ``* EXCLUDE (...)``.
+
+        Examples
+        --------
+        >>> from pypika import Query, Table
+        >>> events = Table("events")
+        >>> print(Query.from_(events).select(events.star.exclude("raw payload")))
+        SELECT "events".* EXCLUDE ("raw payload") FROM "events"
+        """
+        return _StarWithExclusions(self, "EXCLUDE", (column, *columns))
+
+    def except_(self, column: str, *columns: str) -> _StarWithExclusions:
+        """Project all columns except the named top-level columns using ``* EXCEPT (...)``.
+
+        For Spark or Databricks, render the query with ``get_sql(quote_char="`")``.
+        This projection does not support a single alias for the expanded columns.
+
+        Examples
+        --------
+        >>> from pypika import Query
+        >>> from pypika.terms import Star
+        >>> print(Query.from_("events").select(Star().except_("raw payload")).get_sql(quote_char="`"))
+        SELECT * EXCEPT (`raw payload`) FROM `events`
+        """
+        return _StarWithExclusions(self, "EXCEPT", (column, *columns))
+
     def get_sql(
         self, with_alias: bool = False, with_namespace: bool = False, quote_char: str | None = None, **kwargs: Any
     ) -> str:
@@ -812,6 +840,34 @@ class Star(Field):
             return "{}.*".format(format_quotes(namespace, quote_char))
 
         return "*"
+
+
+class _StarWithExclusions(Term):
+    # A partial wildcard is an ordinary SELECT item and must not suppress explicitly selected fields.
+    def __init__(self, star: Star, keyword: str, columns: tuple[str, ...]) -> None:
+        super().__init__()
+        self._star: Field = star
+        self._keyword = keyword
+        self._columns = columns
+
+    def nodes_(self) -> Iterator[NodeT]:
+        yield from super().nodes_()
+        yield from self._star.nodes_()
+
+    @builder
+    def replace_table(self, current_table: Table | None, new_table: Table | None) -> None:
+        self._star = self._star.replace_table(current_table, new_table)
+
+    def get_sql(self, quote_char: str | None = None, with_alias: bool = False, **kwargs: Any) -> str:
+        kwargs["with_namespace"] = True
+        star_sql = self._star.get_sql(quote_char=quote_char, **kwargs)
+        columns_sql = ",".join(format_quotes(column, quote_char) for column in self._columns)
+        sql = f"{star_sql} {self._keyword} ({columns_sql})"
+        if with_alias and self.alias is not None:
+            if self._keyword == "EXCEPT":
+                raise QueryException("A projection alias is not supported for * EXCEPT")
+            return format_alias_sql(sql, self.alias, quote_char=quote_char, **kwargs)
+        return sql
 
 
 class Tuple(Criterion):
