@@ -1083,6 +1083,8 @@ class BetweenCriterion(RangeCriterion):
             A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
+        self.start = self.start.replace_table(current_table, new_table)
+        self.end = self.end.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
         sql = "{term} BETWEEN {start} AND {end}".format(
