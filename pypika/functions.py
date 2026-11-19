@@ -299,6 +299,11 @@ class Extract(Function):
         super().__init__("EXTRACT", LiteralValue(date_part), alias=alias)
         self.field = field
 
+    def replace_table(self, current_table, new_table):
+        extract = super().replace_table(current_table, new_table)
+        extract.field = extract.field.replace_table(current_table, new_table)
+        return extract
+
     def get_special_params_sql(self, **kwargs):
         return "FROM {field}".format(field=self.field.get_sql(**kwargs))
 
