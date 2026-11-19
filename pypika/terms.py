@@ -1077,6 +1077,7 @@ class ContainsCriterion(Criterion):
             A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
+        self.container = self.container.replace_table(current_table, new_table)
 
     def get_sql(self, subquery: Any = None, **kwargs: Any) -> str:
         sql = "{term} {not_}IN {container}".format(
