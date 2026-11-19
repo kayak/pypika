@@ -97,6 +97,45 @@ class UpdateTests(unittest.TestCase):
             str(q),
         )
 
+    def test_replace_table_in_set_values(self):
+        from_table = Table('from_table')
+        staging = Table('staging')
+
+        q = (
+            Query.update(self.table_abc)
+            .set(self.table_abc.lname, from_table.long_name)
+            .from_(from_table)
+            .where(self.table_abc.fname.eq(from_table.full_name))
+        )
+        replaced = q.replace_table(from_table, staging)
+
+        self.assertEqual(
+            'UPDATE "abc" SET "lname"="staging"."long_name" FROM "staging" '
+            'WHERE "abc"."fname"="staging"."full_name"',
+            str(replaced),
+        )
+        self.assertEqual(
+            'UPDATE "abc" SET "lname"="from_table"."long_name" FROM "from_table" '
+            'WHERE "abc"."fname"="from_table"."full_name"',
+            str(q),
+        )
+
+    def test_replace_update_table_in_set_values(self):
+        table_ghi = Table("ghi")
+
+        q = (
+            Query.update(self.table_abc)
+            .join(self.table_def)
+            .on(self.table_def.abc_id == self.table_abc.id)
+            .set(self.table_abc.lname, self.table_abc.fname + self.table_def.lname)
+            .replace_table(self.table_abc, table_ghi)
+        )
+
+        self.assertEqual(
+            'UPDATE "ghi" JOIN "def" ON "def"."abc_id"="ghi"."id" SET "lname"="ghi"."fname"+"def"."lname"',
+            str(q),
+        )
+
     def test_update_with_statement(self):
         table_efg = Table('efg')
 
