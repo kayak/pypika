@@ -1000,6 +1000,14 @@ class CriterionOperationsTests(unittest.TestCase):
 
         self.assertEqual('"cx1"."foo" IS NULL', str(f))
 
+    def test_containscriterion_replace_table(self):
+        f = self.table_abc.foo.isin([self.table_abc.bar, 1]).replace_table(self.table_abc, self.table_efg)
+        sub = Query.from_(self.table_abc).select(self.table_abc.bar)
+        g = self.table_abc.foo.notin(sub).replace_table(self.table_abc, self.table_efg)
+
+        self.assertEqual('"cx1"."foo" IN ("cx1"."bar",1)', str(f))
+        self.assertEqual('"cx1"."foo" NOT IN (SELECT "cx1"."bar" FROM "efg" "cx1")', str(g))
+
 
 class AnyTests(unittest.TestCase):
     def test_zero_args_returns_empty_criterion(self):
