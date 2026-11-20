@@ -349,11 +349,11 @@ XOR
 Convenience Methods
 """""""""""""""""""
 
-In the `Criterion` class, there are the static methods `any` and `all` that allow building chains AND and OR expressions with a list of terms.
+``Criterion.all()`` combines conditions with ``AND``, and ``Criterion.any()`` combines them with ``OR``.
 
 .. code-block:: python
 
-    from pypika import Criterion
+    from pypika import Criterion, Query, Table
 
     customers = Table('customers')
     q = Query.from_(customers).select(
@@ -369,7 +369,21 @@ In the `Criterion` class, there are the static methods `any` and `all` that allo
 
 .. code-block:: sql
 
-    SELECT id,fname FROM customers WHERE is_registered AND age>=18 AND lname = "Jones"
+    SELECT "id","fname" FROM "customers" WHERE "is_registered" AND "age">=18 AND "lname"='Jones'
+
+To find registered customers with an email address or a phone number, pass
+both contact conditions to ``Criterion.any()``. Chaining ``.where()`` adds the
+resulting group to the registration condition with ``AND``.
+
+.. code-block:: python
+
+    q = Query.from_(customers).select(customers.id).where(customers.is_registered).where(
+        Criterion.any([customers.email.isnotnull(), customers.phone.isnotnull()])
+    )
+
+.. code-block:: sql
+
+    SELECT "id" FROM "customers" WHERE "is_registered" AND ("email" IS NOT NULL OR "phone" IS NOT NULL)
 
 
 Grouping and Aggregating
