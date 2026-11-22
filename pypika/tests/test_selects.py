@@ -815,6 +815,16 @@ class GroupByTests(unittest.TestCase):
             str(q),
         )
 
+    def test_groupby_same_name_alias_with_join(self):
+        other = Table("other")
+        field = other.foo.as_("foo")
+        q = Query.from_(self.t).join(other).on(self.t.id == other.id).select(field).groupby(field)
+
+        self.assertEqual(
+            'SELECT "other"."foo" "foo" FROM "abc" JOIN "other" ON "abc"."id"="other"."id" GROUP BY "other"."foo"',
+            str(q),
+        )
+
     def test_groupby_with_case_uses_the_alias(self):
         q = (
             Query.from_(self.t)

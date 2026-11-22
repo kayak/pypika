@@ -1554,7 +1554,11 @@ class QueryBuilder(Selectable, Term):
         clauses = []
         selected_aliases = {s.alias for s in self._selects}
         for field in self._groupbys:
-            if groupby_alias and field.alias and field.alias in selected_aliases:
+            # A same-name alias can refer to columns from multiple joined tables.
+            use_qualified_field = (
+                kwargs.get("with_namespace") and isinstance(field, Field) and field.alias == field.name
+            )
+            if groupby_alias and field.alias and field.alias in selected_aliases and not use_qualified_field:
                 clauses.append(format_quotes(field.alias, alias_quote_char or quote_char))
             else:
                 clauses.append(field.get_sql(quote_char=quote_char, alias_quote_char=alias_quote_char, **kwargs))
