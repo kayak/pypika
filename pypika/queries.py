@@ -887,6 +887,10 @@ class QueryBuilder(Selectable, Term):
         self._values = [
             [value.replace_table(current_table, new_table) for value in value_list] for value_list in self._values
         ]
+        self._updates = [
+            (field.replace_table(current_table, new_table), value.replace_table(current_table, new_table))
+            for field, value in self._updates
+        ]
 
         self._wheres = self._wheres.replace_table(current_table, new_table) if self._wheres else None
         self._prewheres = self._prewheres.replace_table(current_table, new_table) if self._prewheres else None
