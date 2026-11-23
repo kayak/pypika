@@ -805,6 +805,31 @@ class DateFunctionsTests(unittest.TestCase):
             'SELECT EXTRACT(YEAR FROM "abc"."foo") FROM "abc" ' 'JOIN "efg" ON "abc"."id"="efg"."t_id"', str(q)
         )
 
+    def test_extract_replace_table(self):
+        new_table = T("new_abc")
+        original = fn.Extract(DatePart.year, self.t.foo, alias="year")
+        replaced = original.replace_table(self.t, new_table)
+
+        self.assertEqual(
+            'EXTRACT(YEAR FROM "new_abc"."foo") "year"',
+            replaced.get_sql(with_namespace=True, with_alias=True, quote_char='"'),
+        )
+        self.assertEqual(
+            'EXTRACT(YEAR FROM "abc"."foo") "year"',
+            original.get_sql(with_namespace=True, with_alias=True, quote_char='"'),
+        )
+
+    def test_extract_replace_table_in_joined_query(self):
+        query = (
+            Q.from_(self.t).join(self.t2).on(self.t.id == self.t2.t_id).select(fn.Extract(DatePart.year, self.t.foo))
+        )
+        replaced = query.replace_table(self.t, T("new_abc"))
+
+        self.assertEqual(
+            'SELECT EXTRACT(YEAR FROM "new_abc"."foo") FROM "new_abc" ' 'JOIN "efg" ON "new_abc"."id"="efg"."t_id"',
+            str(replaced),
+        )
+
     def test_timestampadd(self):
         a = fn.TimestampAdd("year", 1, "2017-10-01")
         self.assertEqual(str(a), "TIMESTAMPADD(year,1,'2017-10-01')")
