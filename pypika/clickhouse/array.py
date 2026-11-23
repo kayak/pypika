@@ -19,7 +19,7 @@ class Array(Term):
         self._converter_cls = converter_cls
         self._converter_options = converter_options or dict()
 
-    def get_sql(self):
+    def get_sql(self, *args, **kwargs):
         if self._converter_cls:
             converted = []
             for value in self._values:
