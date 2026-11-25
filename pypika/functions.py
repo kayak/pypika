@@ -239,12 +239,14 @@ class SplitPart(Function):
 
 class RegexpMatches(Function):
     def __init__(self, term, pattern, modifiers=None, alias=None):
-        super().__init__("REGEXP_MATCHES", term, pattern, modifiers, alias=alias)
+        args = (term, pattern) if modifiers is None else (term, pattern, modifiers)
+        super().__init__("REGEXP_MATCHES", *args, alias=alias)
 
 
 class RegexpLike(Function):
     def __init__(self, term, pattern, modifiers=None, alias=None):
-        super().__init__("REGEXP_LIKE", term, pattern, modifiers, alias=alias)
+        args = (term, pattern) if modifiers is None else (term, pattern, modifiers)
+        super().__init__("REGEXP_LIKE", *args, alias=alias)
 
 
 class Replace(Function):
