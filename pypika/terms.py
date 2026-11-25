@@ -200,10 +200,10 @@ class Term(Node):
     def isnotnull(self) -> NotNullCriterion:
         return NotNullCriterion(self)
 
-    def bitwiseand(self, value: int) -> BitwiseAndCriterion:
+    def bitwiseand(self, value: int | Term) -> BitwiseAndCriterion:
         return BitwiseAndCriterion(self, self.wrap_constant(value))
 
-    def bitwiseor(self, value: int) -> BitwiseOrCriterion:
+    def bitwiseor(self, value: int | Term) -> BitwiseOrCriterion:
         return BitwiseOrCriterion(self, self.wrap_constant(value))
 
     def gt(self, other: Any) -> BasicCriterion:
@@ -1164,7 +1164,7 @@ class BitwiseAndCriterion(Criterion):
     def __init__(self, term: Term, value: Any, alias: str | None = None) -> None:
         super().__init__(alias)
         self.term = term
-        self.value = value
+        self.value = self.wrap_constant(value)
 
     def nodes_(self) -> Iterator[NodeT]:
         yield self
@@ -1184,11 +1184,12 @@ class BitwiseAndCriterion(Criterion):
             A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
+        self.value = self.value.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
         sql = "({term} & {value})".format(
             term=self.term.get_sql(**kwargs),
-            value=self.value,
+            value=self.value.get_sql(**{**kwargs, "with_alias": False}),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
@@ -1197,7 +1198,7 @@ class BitwiseOrCriterion(Criterion):
     def __init__(self, term: Term, value: Any, alias: str | None = None) -> None:
         super().__init__(alias)
         self.term = term
-        self.value = value
+        self.value = self.wrap_constant(value)
 
     def nodes_(self) -> Iterator[NodeT]:
         yield self
@@ -1217,11 +1218,12 @@ class BitwiseOrCriterion(Criterion):
             A copy of the criterion with the tables replaced.
         """
         self.term = self.term.replace_table(current_table, new_table)
+        self.value = self.value.replace_table(current_table, new_table)
 
     def get_sql(self, **kwargs: Any) -> str:
         sql = "({term} | {value})".format(
             term=self.term.get_sql(**kwargs),
-            value=self.value,
+            value=self.value.get_sql(**{**kwargs, "with_alias": False}),
         )
         return format_alias_sql(sql, self.alias, **kwargs)
 
