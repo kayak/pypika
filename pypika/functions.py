@@ -69,7 +69,7 @@ class StdDev(AggregateFunction):
         super().__init__("STDDEV", term, alias=alias)
 
 
-class Abs(AggregateFunction):
+class Abs(Function):
     def __init__(self, term: Term, alias: str | None = None):
         super().__init__("ABS", term, alias=alias)
 
