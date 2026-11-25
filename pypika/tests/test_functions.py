@@ -276,8 +276,8 @@ class ArithmeticTests(unittest.TestCase):
         self.assertEqual('SELECT ("a"+1)*("b"-5) FROM "abc"', str(q2))
         self.assertEqual('SELECT "a"/1*("b"-5) FROM "abc"', str(q3))
         self.assertEqual('SELECT "a"/1*("b"-5) FROM "abc"', str(q4))
-        self.assertEqual('SELECT ("a"+1)*"b"/5 FROM "abc"', str(q5))
-        self.assertEqual('SELECT ("a"+1)*"b"/5 FROM "abc"', str(q6))
+        self.assertEqual('SELECT ("a"+1)*("b"/5) FROM "abc"', str(q5))
+        self.assertEqual('SELECT ("a"+1)*("b"/5) FROM "abc"', str(q6))
 
     def test__complex_op_mul_no_parentheses(self):
         q = Q.from_("abc").select(F("a") + 1 * F("b") - 5)
