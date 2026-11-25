@@ -1374,6 +1374,9 @@ class ArithmeticExpression(Term):
             return False
         if curr_op == Arithmetic.div:
             return True
+        if curr_op == Arithmetic.mul and right_op == Arithmetic.div:
+            # Integer division must finish before multiplying its result.
+            return True
         # The current operator is '*' or '-. If the right operator is '+' or '-', we need to add parentheses:
         # e.g. ... - (A + B), ... - (A - B)
         # Otherwise, no parentheses are necessary:
