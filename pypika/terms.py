@@ -1654,7 +1654,7 @@ class AggregateFunction(Function):
     @builder
     def filter(self, *filters: Any) -> None:
         self._include_filter = True
-        self._filters += filters
+        self._filters = self._filters + list(filters)
 
     def replace_table(self, current_table: Table | None, new_table: Table | None) -> Self:
         aggregate = super().replace_table(current_table, new_table)
@@ -1702,12 +1702,12 @@ class AnalyticFunction(AggregateFunction):
     @builder
     def over(self, *terms: Any) -> None:
         self._include_over = True
-        self._partition += terms
+        self._partition = self._partition + list(terms)
 
     @builder
     def orderby(self, *terms: Any, **kwargs: Any) -> None:
         self._include_over = True
-        self._orderbys += [(term, kwargs.get("order")) for term in terms]
+        self._orderbys = self._orderbys + [(term, kwargs.get("order")) for term in terms]
 
     def _orderby_field(self, field: Field, orient: Order | None, **kwargs: Any) -> str:
         if orient is None:
