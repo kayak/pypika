@@ -472,6 +472,14 @@ class Negative(Term):
         super().__init__()
         self.term = term
 
+    def nodes_(self) -> Iterator[NodeT]:
+        yield self
+        yield from self.term.nodes_()
+
+    @builder
+    def replace_table(self, current_table: Table | None, new_table: Table | None) -> None:
+        self.term = self.term.replace_table(current_table, new_table)
+
     @property
     def is_aggregate(self) -> bool | None:
         return self.term.is_aggregate
