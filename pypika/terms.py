@@ -1651,6 +1651,11 @@ class AggregateFunction(Function):
         self._filters = []
         self._include_filter = False
 
+    def nodes_(self) -> Iterator[NodeT]:
+        yield from super().nodes_()
+        for criterion in self._filters:
+            yield from criterion.nodes_()
+
     @builder
     def filter(self, *filters: Any) -> None:
         self._include_filter = True
@@ -1686,6 +1691,15 @@ class AnalyticFunction(AggregateFunction):
         self._orderbys = []
         self._include_filter = False
         self._include_over = False
+
+    def nodes_(self) -> Iterator[NodeT]:
+        yield from super().nodes_()
+        for term in self._partition:
+            if isinstance(term, Node):
+                yield from term.nodes_()
+        for field, _ in self._orderbys:
+            if isinstance(field, Node):
+                yield from field.nodes_()
 
     @builder
     def replace_table(self, current_table: Table | None, new_table: Table | None) -> Self:
